@@ -11,7 +11,7 @@ Add Comments and the content, there is already a example post to guide you, you 
 By restarting the server, STEEM.CRAFT is ready to use and is going to post by using ingame commands.
 To let users also vote and comment, they have to give a authentification to your STEEM Wallet. 
 After that, your dedicated STEEM Wallet can cast votes and broadcast new comments with the existing private posting key in the name of the user.
-A easy way to do this is using SteemConnect: https://steemconnect.com/authorize/@<your dedicated minecraft server steem wallet name>
+A easy way to do this is using SteemConnect: https://steemconnect.com/authorize/@your dedicated minecraft server steem wallet name
 
 ## Todo
 Everything is currently written in Skript. The plan is to rewrite everything in Java for better performance and doing the whole process directly on the server.
