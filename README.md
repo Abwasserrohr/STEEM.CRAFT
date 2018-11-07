@@ -18,7 +18,7 @@ Everything is currently written in Skript. The plan is to rewrite everything in 
 
 ## Links
 You can visit steem.craft on steemit.com, a dapp for the STEEM Blockchain.
-* [steem.craft on Steemit](https://steemit.com/@steem.craft)
+* [steem.craft](https://steemit.com/@steem.craft) on Steemit
 
 ## Developer
 Currently, STEEM.CRAFT is developed by:
