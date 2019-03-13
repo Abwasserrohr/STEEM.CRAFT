@@ -2,6 +2,11 @@
 STEEM.SK is a script for Bukkit/Spigot, which allows players to interact with the STEEM Blockchain within Minecraft.
 Server owners can create custom transactions with the Steem Blockchain and get data from Steem Nodes.
 
+### Dependencies
+- [Spigot](https://hub.spigotmc.org/stash/projects/SPIGOT) or [PaperSpigot](https://papermc.io/)
+- [Skript](https://github.com/SkriptLang/Skript)
+- [skript-mirror](https://github.com/btk5h/skript-mirror)
+
 ## Setup
 1. Get a Spigot|PaperSpigot Server setup ready. [Here](https://papermc.io/), you can find ready to use files.
 1. Build SteemJ from [here](https://github.com/muksihs/steem-java-api-wrapper) and move the `SteemJ with dependencies.jar` file to the `plugins/skript-mirror/` folder.
