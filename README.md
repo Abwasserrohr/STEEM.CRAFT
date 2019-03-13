@@ -6,6 +6,7 @@ Server owners can create custom transactions with the Steem Blockchain and get d
 - [Spigot](https://hub.spigotmc.org/stash/projects/SPIGOT) or [PaperSpigot](https://papermc.io/)
 - [Skript](https://github.com/SkriptLang/Skript)
 - [skript-mirror](https://github.com/btk5h/skript-mirror)
+- [SteemJ](https://github.com/muksihs/steem-java-api-wrapper)
 
 ## Setup
 1. Get a Spigot|PaperSpigot Server setup ready. [Here](https://papermc.io/), you can find ready to use files.
