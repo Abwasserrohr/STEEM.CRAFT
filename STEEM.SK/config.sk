@@ -5,9 +5,53 @@
 # config.sk is part of the STEEM.SK configuration.
 # ==============
 
+#
+# > Set these values to match your account. Please never post this file
+# > public or private to anyone once filled.
+# > NEVER INSERT PRIVATE KEYS ANYWHERE ELSE IN A SKRIPT FILE, 
+# > since it could get leaked accidentally use the functions below instead.
 options:
   privatepostingkey: "<place your private posting key here>"
-  serversteemwallet: "<place your steem account name here>"
+  serveraccountname: "<place your steem account name here>"
   appname: "STEEM.SK/0.1"
-  BeneficiaryAccount: "skyroad"
-  BeneficiaryWeight: 250
+  DefaultBeneficiaryAccount: "skyroad"
+  DefaultBeneficiaryWeight: 250
+
+#
+# > Please do not change these functions, since they are used to share the data between
+# > other Skript files on the server. Be sure to never leak your private posting key!
+
+#
+# > Function - getPrivatePostingKey
+# > Actions:
+# > Returns the private posting key of the server account.
+function getPrivatePostingKey() :: text :
+  return {@privatepostingkey}
+
+#
+# > Function - getServerAccountName
+# > Actions:
+# > Returns the server account name.
+function getServerAccountName() :: text :
+  return {@privatepostingkey}
+
+#
+# > Function - getAppName
+# > Actions:
+# > Returns the app name which should be used.
+function getAppName() :: text:
+  return {@appname}
+
+#
+# > Function - getDefaultBeneficiaryAccount
+# > Actions:
+# > Returns the default beneficary account.
+function getDefaultBeneficiaryAccount() :: text:
+  return {@DefaultBeneficiaryAccount}
+
+#
+# > Function - getDefaultBeneficiaryWeight
+# > Actions:
+# > Returns the default beneficary weight.
+function getDefaultBeneficiaryWeight() :: number:
+  return {@DefaultBeneficiaryWeight}
