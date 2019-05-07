@@ -25,14 +25,14 @@ options:
 # > Function - getPrivatePostingKey
 # > Actions:
 # > Returns the private posting key of the server account.
-function getPrivatePostingKey() :: text :
+function getPrivatePostingKey() :: text:
   return {@privatepostingkey}
 
 #
 # > Function - getServerAccountName
 # > Actions:
 # > Returns the server account name.
-function getServerAccountName() :: text :
+function getServerAccountName() :: text:
   return {@privatepostingkey}
 
 #
