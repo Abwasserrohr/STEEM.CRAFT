@@ -1,0 +1,16 @@
+#
+# ==============
+# getRandomUUID.sk
+# ==============
+# getRandomUUID.sk is part of the STEEM.CRAFT library.
+# ==============
+
+import:
+  java.util.UUID
+
+#
+# > Function - getRandomUUID
+# > Actions:
+# > Returns a random UUID as text.
+function getRandomUUID() :: text:
+  return "%UUID.randomUUID()%"
