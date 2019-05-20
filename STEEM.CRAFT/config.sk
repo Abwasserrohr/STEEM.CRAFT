@@ -13,7 +13,7 @@
 options:
   privatepostingkey: "<place your private posting key here>"
   serveraccountname: "<place your steem account name here>"
-  appname: "STEEM.SK/0.1"
+  appname: "STEEM.CRAFT/0.1"
   DefaultBeneficiaryAccount: "skyroad"
   DefaultBeneficiaryWeight: 250
 
