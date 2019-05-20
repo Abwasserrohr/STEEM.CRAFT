@@ -9,7 +9,7 @@
 # > Set these values to match your account. Please never post this file
 # > public or private to anyone once filled.
 # > NEVER INSERT PRIVATE KEYS ANYWHERE ELSE IN A SKRIPT FILE, 
-# > since it could get leaked accidentally use the functions below instead.
+# > since it could get leaked accidentally. Use the functions below instead.
 options:
   privatepostingkey: "<place your private posting key here>"
   serveraccountname: "<place your steem account name here>"
