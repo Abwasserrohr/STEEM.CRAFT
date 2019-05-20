@@ -1,0 +1,146 @@
+#
+# ==============
+# customJsonOperation.sk
+# ==============
+# customJsonOperation.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  java.util.ArrayList
+  java.util.HashMap
+  org.apache.commons.lang3.tuple.ImmutablePair
+  eu.bittrade.libs.steemj.SteemJ
+  eu.bittrade.libs.steemj.enums.ValidationType
+  eu.bittrade.libs.steemj.enums.PrivateKeyType
+  eu.bittrade.libs.steemj.configuration.SteemJConfig
+  eu.bittrade.libs.steemj.base.models.operations.CustomJsonOperation
+  eu.bittrade.libs.steemj.base.models.SignedTransaction
+  eu.bittrade.libs.steemj.base.models.AccountName
+
+#
+# > Function - customJsonOperation
+# > Broadcasts a custom json operation.
+# > Parameters:
+# > <text>random transaction uuid
+# > <text>the steem account who should broadcast the transaction
+# > <text>the custom json identifier
+# > <text>the json itself as string
+function customJsonOperation(txuuid:text,account:text,id:text,json:text):
+  #
+  # > To allow other scripts to know if there has been an error or not,
+  # > they can wait until this transaction uuid has been processed.
+  set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "wait"
+  #
+  # > Only prepare one json transaction at a time.
+  while {steemsk::txjson} is set:
+    wait 1 tick
+  #
+  # > Create a HashMap to pass the data using one single variable.
+  set {steemsk::txjson} to new HashMap()
+  {steemsk::txjson}.put("txuuid",{_txuuid})
+  {steemsk::txjson}.put("account",{_account})
+  {steemsk::txjson}.put("id",{_id})
+  {steemsk::txjson}.put("json",{_json})
+  #
+  # > Run the actual custoom json transaction using a thread
+  # > to prevent the game from lagging.
+  $ thread
+  #
+  # > Since we're on a new thread, local variables are no longer availabe
+  # > here. This means that we can currently only use global variables.
+  asyncCustomJsonOperation({steemsk::txjson})
+
+#
+# > Function - asyncCustomJsonOperation
+# > Broadcasts a custom json operation. Should only be used by the
+# > customJsonOperation function.
+# > Parameters:
+# > <HashMap> A HashMap with the keys and values for (text)txuuid, (text)account, (text)id and (text)json is required.
+function asyncCustomJsonOperation(tx:object):
+  #
+  # > Once this function has been called, delete the variable which
+  # > has been used to pass the data into this function.
+  delete {steemsk::txjson}
+  #
+  # > Get the data out of the HashMap, which has been passed into
+  # > the function. A HashMap is used, since lists are slower to delete.
+  set {_txuuid} to {_tx}.get("txuuid")
+  set {_account} to {_tx}.get("account")
+  set {_id} to {_tx}.get("id")
+  set {_json} to {_tx}.get("json")
+
+  #
+  # > To process Steem transactions, SteemJ is used here.
+  set {_steemj} to new SteemJ()
+
+  #
+  # > Custom json operations require at least a private posting key.
+  # > Since higher authentifications aren't needed here, use posting.
+  set {_postingauth} to new ArrayList()
+  #
+  # > AccountNames are not simply a string but have the type AccountName.
+  set {_account} to new AccountName({_account})
+  #
+  # > The AccountName has to be passed within an ArrayList, since there could
+  # > be more required private posting keys for this transactions. This is not
+  # > necessary for most STEEM.CRAFT uses.
+  {_postingauth}.add({_account})
+
+  #
+  # > To get SteemJ fully working, the vadilation and maximum 
+  # > expiration date has to be changed. For this, a instance
+  # > of the SteemJ configuration is necessary.
+  set {_config} to SteemJConfig.getInstance()
+  {_config}.setValidationLevel(ValidationType.SKIP_VALIDATION!)
+  {_config}.setMaximumExpirationDateOffset(400000)
+  
+  #
+  # > Every transaction on Steem needs a private key to broadcast.
+  # > Since our transactions requires a private posting key, we
+  # > have to add the private key for the account. Because the
+  # > player should authorize the server wallet, it is not needed
+  # > to store any private key of a user, but only the private
+  # > posting key of the server wallet. In case of a hack or 
+  # > a leak, just the server operator has to change his key.
+  set {_privatekeys} to new ArrayList()
+  {_privatekeys}.add(new ImmutablePair(PrivateKeyType.POSTING!, getPrivatePostingKey()))
+  {_config}.getPrivateKeyStorage().addAccount({_account},{_privatekeys})
+  delete {_privatekeys}
+ 
+  #
+  # > CustomJsonOperation creates a ready to sign transaction out of the data
+  # > we have.
+  set {_customjson} to new CustomJsonOperation(null, {_postingauth}, {_id}, {_json})
+  
+  #
+  # > Each transaction could hold multiple transactions. While this could be
+  # > useful, only one type of the same operation is allowed per user/block.
+  set {_operations} to new ArrayList()
+  {_operations}.add({_customjson})
+
+  set {_HeadBlockId} to {_steemj}.getDynamicGlobalProperties().getHeadBlockId()
+
+  set {_signedTx} to new SignedTransaction({_HeadBlockId}, {_operations}, null)
+
+  {_signedTx}.sign()
+
+  #
+  # > It would be useful to have BroadcastTransactionSynchronousReturn to know
+  # > the block- and transactionid. But currently, it is not working, since
+  # > SteemJ is trying to check for duplicate transactions. While this is good,
+  # > many Steem nodes don't allow querying transaction ids, which results in a
+  # > error for BroadcastTransactionSynchronousReturn.
+  try {_steemj}.broadcastTransaction({_signedTx})
+
+  #
+  # > To know if there has any error occured while broadcasting the transaction,
+  # > the "last java errror" would have been set with it. This allows the addons
+  # > to check for errors. If the response is "done", no error has been reported.
+  if last java error is set:
+    set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to last java error
+  else:
+    set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "done"
+  #
+  # > To prevent holding the data forever, response data is deleted after 5 seconds.
+  wait 5 seconds
+  delete metadata value "steem-tx-response-%{_txuuid}%" of getDummy()
