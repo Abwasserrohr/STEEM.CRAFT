@@ -14,6 +14,7 @@ options:
   privatepostingkey: "<place your private posting key here>"
   serveraccountname: "<place your steem account name here>"
   appname: "STEEM.CRAFT/0.1"
+  defaultAppTags: ["steemcraft"]
   DefaultBeneficiaryAccount: "skyroad"
   DefaultBeneficiaryWeight: 250
 
@@ -41,6 +42,14 @@ function getServerAccountName() :: text:
 # > Returns the app name which should be used.
 function getAppName() :: text:
   return {@appname}
+
+#
+# > Function - getDefaultAppTags
+# > Actions:
+# > Returns the default app tags which should be used if
+# > no other app tag is defined.
+function getDefaultAppTags() :: object:
+  return {@defaultAppTags}
 
 #
 # > Function - getDefaultBeneficiaryAccount
