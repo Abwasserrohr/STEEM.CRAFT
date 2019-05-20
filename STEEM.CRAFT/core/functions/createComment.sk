@@ -1,0 +1,257 @@
+#
+# ==============
+# createComment.sk
+# ==============
+# createComment.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  java.util.ArrayList
+  java.util.HashMap
+  org.apache.commons.lang3.tuple.ImmutablePair
+  eu.bittrade.libs.steemj.SteemJ
+  eu.bittrade.libs.steemj.enums.PrivateKeyType
+  eu.bittrade.libs.steemj.enums.AssetSymbolType
+  eu.bittrade.libs.steemj.configuration.SteemJConfig
+  eu.bittrade.libs.steemj.base.models.SignedTransaction
+  eu.bittrade.libs.steemj.base.models.AccountName
+  eu.bittrade.libs.steemj.base.models.operations.CommentOperation
+  eu.bittrade.libs.steemj.base.models.BeneficiaryRouteType
+  eu.bittrade.libs.steemj.base.models.operations.CommentOptionsOperation
+  eu.bittrade.libs.steemj.base.models.CommentOptionsExtension
+  eu.bittrade.libs.steemj.base.models.CommentPayoutBeneficiaries
+  eu.bittrade.libs.steemj.base.models.Asset
+  eu.bittrade.libs.steemj.base.models.Permlink
+  eu.bittrade.libs.steemj.util.CondenserUtils
+
+#
+# > Function - createComment:
+# > Creates a comment for the player.
+# > Parameters:
+# > <text>random uuid to identify the transaction and get a response
+# > <text>the account which should broadcast the transaction
+# > <text>the body of the comment
+# > <text>the parent author of the comment
+# > <text>the parent permlink of the comment
+# > [<text>]the title of the comment
+# > [<ArrayList>]the tags of the comment
+# > [<text>]custom json metadata of the comment
+# > [<integer>]percent Steem Dollar (10000 is 50% SBD)
+# > [<text>]beneficary account
+# > [<text>]beneficary weight
+function createComment(txuuid:text,account:text,body:text,parentauthor:text,parentpermlink:text,title:text="-",tags:object=null,customjson:text="none",percentSteemDollars:int=10000,BeneficiaryAccount:text="",BeneficiaryWeight:number=101):
+  #
+  # > Allow addons to know if a transaction has been processed or not.
+  set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "wait"
+  #
+  # > Only process the creation of one comment at a time.
+  while {steemsk::txcomment} is set:
+    wait 1 tick
+  #
+  # > All the important variables are passed into the asyncCreateComment
+  # > using a HashMap to make the function easier to view.
+  set {_tx} to new HashMap()
+  {_tx}.put("account",{_account})
+  {_tx}.put("txuuid","%{_txuuid}%")
+  {_tx}.put("body",{_body})
+  {_tx}.put("parentauthor",{_parentauthor})
+  {_tx}.put("customjson",{_customjson})
+  {_tx}.put("percentSteemDollars",{_percentSteemDollars})
+  {_tx}.put("parentpermlink",{_parentpermlink})
+  {_tx}.put("title",{_title})
+  {_tx}.put("tags",{_tags})
+  {_tx}.put("BeneficiaryAccount",{_BeneficiaryAccount})
+  {_tx}.put("BeneficiaryWeight",{_BeneficiaryWeight})
+  set {steemsk::txcomment} to {_tx}
+  #
+  # > Run the creation of the comment in a separate thread.
+  $ thread
+  #
+  # > Once the function is called within a thread, it can't access
+  # > to local variables, this is why a global variable is used.
+  asyncCreateComment({steemsk::txcomment})
+
+
+#
+# > Function - asyncCreateComment:
+# > Broadcasts a comment, should only be used by the createComment function.
+# > Parameters:
+# > <HashMap>a HashMap with all necessary values for a comment. See above.
+function asyncCreateComment(tx:object):
+  #
+  # > Once this function has been called, delete the global
+  # > variable which has been used to pass the data into this
+  # > threaded function.
+  delete {steemsk::txcomment}
+  
+  #
+  # > Get all the data needed out of the HashMap, this looks better
+  # > than one big line in the function.
+  set {_account} to {_tx}.get("account")
+  set {_txuuid} to {_tx}.get("txuuid")
+  set {_body} to {_tx}.get("body")
+  set {_parentauthor} to {_tx}.get("parentauthor")
+  set {_customjson} to {_tx}.get("customjson")
+  set {_percentSteemDollars} to {_tx}.get("percentSteemDollars")
+  set {_parentpermlink} to {_tx}.get("parentpermlink")
+  set {_title} to {_tx}.get("title")
+  set {_tags} to {_tx}.get("tags")
+  set {_BeneficiaryAccount} to {_tx}.get("BeneficiaryAccount")
+  set {_BeneficiaryWeight} to {_tx}.get("BeneficiaryWeight")
+  
+  #
+  # > To prepare and broadcast comments, SteemJ is needed.
+  set {_steemj} to new SteemJ()
+  
+  #
+  # > Server operators can customize the beneficary account
+  # > and weight for the comments, this is why the configuration
+  # > instance is needed.
+  set {_config} to SteemJConfig.getInstance()
+  if {_BeneficiaryAccount} is "":
+    set {_BeneficiaryAccount} to getDefaultBeneficiaryAccount()
+  if {_BeneficiaryWeight} > 100:
+    set {_BeneficiaryWeight} to getDefaultBeneficiaryWeight()
+  
+  #
+  # > Also, the maximum date offset has to be changed to work.
+  {_config}.setMaximumExpirationDateOffset(400000)
+
+  #
+  # > The beneficary account and weight which have been used above are set here.
+  {_config}.setBeneficiaryAccount(new AccountName({_BeneficiaryAccount}))
+  {_config}.setSteemJWeight({_BeneficiaryWeight})
+  
+  #
+  # > Transactions could hold multiple operations, this is why a ArrayList is
+  # > needed in which our comment operation is added.
+  set {_operations} to new ArrayList()
+
+  #
+  # > If there aren't any tags set, use the default app tags from config.sk.
+  if {_tags} is null:
+    set {_tags} to getDefaultAppTags()
+
+  #
+  # > The permlink is created here. It is currently always build like this:
+  # > "re-parentAuthor-randomuuid".
+  set {_replyto} to {_parentauthor}
+
+  #
+  # > Since permlinks do not support points ".", they're replaced with nothing.
+  replace all "." with "" in {_replyto}
+
+  #
+  # > Then, the permlink string is set.
+  set {_permlinkstring} to "re-%{_replyto}%-%{_txuuid}%"
+
+  #
+  # > The new permlink string is set to a Permlink.
+  set {_permlink} to new Permlink({_permlinkstring})
+  
+  #
+  # > If no custom json is set, generate it using the CondenserUtils from SteemJ.
+  # > Additional metadata could be posted using the {_extraMetadata} HashMap.
+  set {_extraMetadata} to new HashMap()
+  if {_customjson} is "none":
+    set {_jsonMetadata} to CondenserUtils.generateSteemitMetadata({_body}, {_tags},getAppName(), "markdown", {_extraMetadata})
+  else:
+    set {_jsonMetadata} to {_customjson}
+
+  #
+  # > Set the parent author and the author of this commennt to a
+  # > valid AccountName.
+  set {_account} to new AccountName({_account})
+  set {_parent} to new AccountName({_parentauthor})
+  
+  #
+  # > Set the private key of the server wallet to the account which should
+  # > broadcast the transaction.
+  set {_privatekeys} to new ArrayList()
+  {_privatekeys}.add(new ImmutablePair(PrivateKeyType.POSTING!, getPrivatePostingKey()))
+  {_config}.getPrivateKeyStorage().addAccount({_account},{_privatekeys})
+  delete {_privatekeys}
+
+  #
+  # > The parent permlink has to be a permlink too.
+  set {_parentPermlink_permlink} to new Permlink({_parentpermlink})
+
+  #
+  # > The comment operation is created through SteemJ and added to the operations.
+  set {_commentOperation} to new CommentOperation({_parent},{_parentPermlink_permlink},{_account},{_permlink}," ",{_body},{_jsonMetadata})
+  {_operations}.add({_commentOperation})
+
+  #
+  # > Currently, votes and curation rewards are enabled by default.
+  set {_allowVotes} to true
+  set {_allowCurationRewards} to true
+  #
+  # > The maximum accepted payout can be changed to limit the payout value.
+  # > This can prevent abuse by votebots. It is currently not limited since
+  # > there is no such abusive behaviour currently for STEEM.CRAFT.
+  set {_maxAcceptedPayout} to new Asset(1000000000, AssetSymbolType.SBD!)
+
+  #
+  # > If the beneficary for this is above 0, add beneficaries.
+  if {_config}.getSteemJWeight() > 0:
+    #
+    # > Each comment could have mutliple beneficary route types. 
+	# > Currently, only one beneficary is used.
+    set {_beneficiaryRouteType} to new BeneficiaryRouteType({_config}.getBeneficiaryAccount(),{_config}.getSteemJWeight())
+
+    #
+    # > Since there could be multiple beneficaries, we need a ArrayList.
+    set {_beneficiaryRouteTypes} to new ArrayList()
+
+    #
+    # > Our beneficary route is now added to the ArrayList.
+    {_beneficiaryRouteTypes}.add({_beneficiaryRouteType})
+
+    #
+    # > The beneficary routes now have to be set to the CommentPayoutBeneficiaries.
+    set {_commentPayoutBeneficiaries} to new CommentPayoutBeneficiaries()
+    {_commentPayoutBeneficiaries}.setBeneficiaries({_beneficiaryRouteTypes})
+	
+    #
+    # > The beneficaries are a part of the comment option extensions, which are a
+    # > handled as a ArrayList.
+    set {_commentOptionsExtensions} to new ArrayList()
+    {_commentOptionsExtensions}.add({_commentPayoutBeneficiaries})
+	
+    #
+    # > The commentoptionsoperation will create or update a comment.
+    set {_commentOptionsOperation} to new CommentOptionsOperation({_account}, {_permlink},{_maxAcceptedPayout}, {_percentSteemDollars}, {_allowVotes}, {_allowCurationRewards},{_commentOptionsExtensions})
+  else:
+    set {_commentOptionsOperation} to new CommentOptionsOperation({_account}, {_permlink},{_maxAcceptedPayout}, {_percentSteemDollars}, {_allowVotes}, {_allowCurationRewards}, null)
+    
+  #
+  # > Multiple operations could be added to one transaction. This is why
+  # > we have to add our operation to a ArrayList.
+  {_operations}.add({_commentOptionsOperation})
+
+  #
+  # > The head block id is needed to sign the transaction.
+  set {_HeadBlockId} to {_steemj}.getDynamicGlobalProperties().getHeadBlockId()
+
+  set {_signedTx} to new SignedTransaction({_HeadBlockId},{_operations},null)
+
+  {_signedTx}.sign()
+
+  #
+  # > Broadcasting a transaction could result in a error.
+  # > To prevent this from being logged into the console,
+  # > it has the prefix "try".
+  try {_steemj}.broadcastTransaction({_signedTx})
+  
+  #
+  # > If there has been a error in the last broadcast transaction,
+  # > set the error to the response metadata to allow addons to
+  # > send human readable errors.
+  if last java error is set:
+    set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to last java errorlast java error
+  else:
+    set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "done"
+  #
+  # > To prevent the responde from being stored forever, delete it after 5 seconds.
+  wait 5 seconds
+  delete metadata value "steem-tx-response-%{_txuuid}%" of getDummy()
