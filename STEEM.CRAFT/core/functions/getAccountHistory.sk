@@ -1,0 +1,22 @@
+#
+# ==============
+# getAccountHistory.sk
+# ==============
+# getAccountHistory.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  eu.bittrade.libs.steemj.SteemJ
+  eu.bittrade.libs.steemj.base.models.AccountName
+
+#
+# > Function - getAccountHistory
+# > Returns the account history
+# > Parameters:
+# > <text>a steem wallet name
+# > <integer>where should the query start
+# > <integer>limit the returned history
+function getAccountHistory(account:text,start:int,limit:int) :: object:
+  set {_steemj} to new SteemJ()
+  set {_account} to new AccountName({_account})
+  return {_steemj}.getAccountHistory({_account},{_start},{_limit})
