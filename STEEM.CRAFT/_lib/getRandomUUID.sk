@@ -9,8 +9,7 @@ import:
   java.util.UUID
 
 #
-# > Function - getRandomUUID
-# > Actions:
+# > Function - getRandomUUID:
 # > Returns a random UUID as text.
 function getRandomUUID() :: text:
   return "%UUID.randomUUID()%"
