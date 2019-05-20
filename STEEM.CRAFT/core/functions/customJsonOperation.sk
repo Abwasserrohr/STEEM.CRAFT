@@ -108,8 +108,7 @@ function asyncCustomJsonOperation(tx:object):
   delete {_privatekeys}
  
   #
-  # > CustomJsonOperation creates a ready to sign transaction out of the data
-  # > we have.
+  # > CustomJsonOperation creates a operation which can be added to a transaction.
   set {_customjson} to new CustomJsonOperation(null, {_postingauth}, {_id}, {_json})
   
   #
