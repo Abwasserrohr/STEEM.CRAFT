@@ -1,0 +1,99 @@
+#
+# ==============
+# claimRewards.sk
+# ==============
+# claimRewards.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  java.util.ArrayList
+  java.util.HashMap
+  org.apache.commons.lang3.tuple.ImmutablePair
+  eu.bittrade.libs.steemj.SteemJ
+  eu.bittrade.libs.steemj.base.models.AccountName
+  eu.bittrade.libs.steemj.configuration.SteemJConfig
+  eu.bittrade.libs.steemj.enums.PrivateKeyType
+
+#
+# > Function - claimRewards:
+# > Claims the rewards for the specified Steem wallet.
+# > Parameters:
+# > <text>Steem wallet name
+# > <text>random tx uuid (only used for local feedback)
+function claimRewards(account:text,txuuid:text):
+  #
+  # > Addons can wait for the process until done. Set the response to "wait", 
+  # > they should then wait until it is done.
+  set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "wait"
+  #
+  # > Only prepare one claim transaction at once.
+  while {steemsk::txclaim} is set:
+    wait 1 tick
+  #
+  # > Use a HashMap to call the threaded asyncClaimRewards function.
+  set {_tx} to new HashMap()
+  {_tx}.put("account",{_account})
+  {_tx}.put("txuuid","%{_txuuid}%")
+  set {steemsk::txclaim} to {_tx}
+  #
+  # > The response by the Steem node is not instantly, this would halt
+  # > the main game, and needs to be in a thread.
+  $ thread
+  #
+  # > Since this is a thread, only global variables will work here.
+  # > This is why not the local variable above has been used here.
+  asyncClaimRewards({steemsk::txclaim})
+
+#
+# > Function - asyncClaimRewards:
+# > Claims the rewards for the specified Steem wallet.
+# > Meant to only be used by the claimRewards function.
+# > Parameters:
+# > <HashMap>(text)account,(text)txuuid (only used for local feedback)
+function asyncClaimRewards(tx:object):
+  #
+  # > Once this function has been called, remove the global variable
+  # > which has been used to call this function to allow more being
+  # > processed.
+  delete {steemsk::txclaim}
+  
+  #
+  # > Get the txuuid and acccount (as string) out of the HashMap.
+  set {_txuuid} to {_tx}.get("txuuid")
+  set {_account} to {_tx}.get("account")
+  
+  #
+  # > To claim the rewards, SteemJ is needed.
+  set {_steemj} to new SteemJ()
+  set {_config} to SteemJConfig.getInstance()
+  
+  #
+  # > Convert the string to a usable AccountName.
+  set {_account} to new AccountName({_account})
+  
+  #
+  # > SteemJ.claimRewards() uses the default account. Set it here.
+  {_config}.setDefaultAccount({_account})
+  
+  #
+  # > Add the private posting keys of the user to the PrivateKeyStorage to allow
+  # > broadcasting the claimRewards transaction.
+  set {_privatekeys} to new ArrayList()
+  {_privatekeys}.add(new ImmutablePair(PrivateKeyType.POSTING!, getPrivatePostingKey()))
+  {_config}.getPrivateKeyStorage().addAccount({_account},{_privatekeys})
+  delete {_privatekeys}
+  
+  #
+  # > To work, the maximum expiration date offset has to decreased from default.
+  {_config}.setMaximumExpirationDateOffset(400000)
+  
+  #
+  # > claimRewards have a "try" prefix to prevent errors being logged to console.
+  try {_steemj}.claimRewards()
+  
+  #
+  # > If a error has been produced by the claimRewards, it can be handeled by addons.
+  if last java error is set:
+    set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to last java error
+  else:
+    set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "done"
