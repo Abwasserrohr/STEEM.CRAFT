@@ -1,0 +1,16 @@
+#
+# ==============
+# getSteemContent.sk
+# ==============
+# getSteemContent.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+#
+# > Function - getSteemContent:
+# > Returns the content of the specified author and permlink.
+# > Parameters:
+# > <text>author
+# > <text>permlink
+function getSteemContent(author:text,permlink:text) :: object:
+  set {_steemj} to new SteemJ()
+  return {_steemj}.getContent(new AccountName({_author}),new Permlink({_permlink}))
