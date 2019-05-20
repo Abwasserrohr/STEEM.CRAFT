@@ -248,7 +248,7 @@ function asyncCreateComment(tx:object):
   # > set the error to the response metadata to allow addons to
   # > send human readable errors.
   if last java error is set:
-    set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to last java errorlast java error
+    set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to last java error
   else:
     set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "done"
   #
