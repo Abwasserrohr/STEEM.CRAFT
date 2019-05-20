@@ -12,6 +12,5 @@
 function getDummy() :: block:
   if {dummyblock} is not a block:
     add all worlds to {_worlds::*}
-    set {_dummy} to {_worlds::1}
     set {dummyblock} to block at location at 0.0, 0.0, 0.0 in {_worlds::1}
   return {dummyblock}
