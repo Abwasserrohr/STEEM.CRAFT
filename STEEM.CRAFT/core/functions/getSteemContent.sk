@@ -5,6 +5,11 @@
 # getSteemContent.sk is part of the STEEM.CRAFT core functions.
 # ==============
 
+import:
+  eu.bittrade.libs.steemj.SteemJ
+  eu.bittrade.libs.steemj.base.models.AccountName
+  eu.bittrade.libs.steemj.base.models.Permlink
+
 #
 # > Function - getSteemContent:
 # > Returns the content of the specified author and permlink.
