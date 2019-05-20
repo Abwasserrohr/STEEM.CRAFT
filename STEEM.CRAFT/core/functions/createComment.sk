@@ -33,13 +33,13 @@ import:
 # > <text>the body of the comment
 # > <text>the parent author of the comment
 # > <text>the parent permlink of the comment
+# > <ArrayList>the tags of the comment
 # > [<text>]the title of the comment
-# > [<ArrayList>]the tags of the comment
 # > [<text>]custom json metadata of the comment
 # > [<integer>]percent Steem Dollar (10000 is 50% SBD)
 # > [<text>]beneficary account
 # > [<text>]beneficary weight
-function createComment(txuuid:text,account:text,body:text,parentauthor:text,parentpermlink:text,title:text="-",tags:object=null,customjson:text="none",percentSteemDollars:int=10000,BeneficiaryAccount:text="",BeneficiaryWeight:number=101):
+function createComment(txuuid:text,account:text,body:text,parentauthor:text,parentpermlink:text,tags:object,title:text="-",customjson:text="none",percentSteemDollars:int=10000,BeneficiaryAccount:text="",BeneficiaryWeight:number=101):
   #
   # > Allow addons to know if a transaction has been processed or not.
   set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "wait"
@@ -63,6 +63,7 @@ function createComment(txuuid:text,account:text,body:text,parentauthor:text,pare
   {_tx}.put("BeneficiaryAccount",{_BeneficiaryAccount})
   {_tx}.put("BeneficiaryWeight",{_BeneficiaryWeight})
   set {steemsk::txcomment} to {_tx}
+
   #
   # > Run the creation of the comment in a separate thread.
   $ thread
@@ -129,7 +130,7 @@ function asyncCreateComment(tx:object):
 
   #
   # > If there aren't any tags set, use the default app tags from config.sk.
-  if {_tags} is null:
+  if {_tags} is [""]:
     set {_tags} to getDefaultAppTags()
 
   #
