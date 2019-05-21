@@ -20,7 +20,7 @@ import:
 # > <text>decompressed text
 function decompressBase64(text:text) :: text:
   set {_bytes} to Base64.decodeBase64({_text})
-  set {_gzipinput} to new GZIPInputStream(new ByteArrayInputStream({_bytes}))
-  set {_result} to IOUtils.toString({_gzipinput},"Cp1047")
-  IOUtils.closeQuietly({_gzipinput})
+  set {_gzis} to new GZIPInputStream(new ByteArrayInputStream({_bytes}))
+  set {_result} to IOUtils.toString({_gzis},"Cp1047")
+  IOUtils.closeQuietly({_gzis})
   return {_result}
