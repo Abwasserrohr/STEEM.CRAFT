@@ -1,0 +1,26 @@
+#
+# ==============
+# decompressBase64.sk
+# ==============
+# decompressBase64.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  org.apache.commons.codec.binary.Base64
+  org.apache.commons.io.IOUtils
+  java.io.ByteArrayInputStream
+  java.util.zip.GZIPInputStream
+
+#
+# > Function - decompressBase64:
+# > Decompresses a compressed base64 string back into a normal string.
+# > Parameters:
+# > <text>compressed text
+# > Returns:
+# > <text>decompressed text
+function decompressBase64(text:text) :: text:
+  set {_bytes} to Base64.decodeBase64({_text})
+  set {_gzipinput} to new GZIPInputStream(new ByteArrayInputStream({_bytes}))
+  set {_result} to IOUtils.toString({_gzipinput},"Cp1047")
+  IOUtils.closeQuietly({_gzipinput})
+  return {_result}
