@@ -1,0 +1,16 @@
+#
+# ==============
+# getHeadBlockNumber.sk
+# ==============
+# getHeadBlockNumber.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  eu.bittrade.libs.steemj.SteemJ
+
+#
+# > Function - getHeadBlockNumber:
+# > Returns the current head block number.
+function getHeadBlockNumber() :: number:
+  set {_steemj} to new SteemJ()
+  return {_steemj}.getDynamicGlobalProperties().getHeadBlockNumber()
