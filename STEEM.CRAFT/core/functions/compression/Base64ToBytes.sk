@@ -1,0 +1,19 @@
+#
+# ==============
+# Base64ToBytes.sk
+# ==============
+# Base64ToBytes.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  org.apache.commons.codec.binary.Base64
+
+#
+# > Function - Base64ToBytes:
+# > Decodes base64 into bytes
+# > Parameters:
+# > <text>byte64 string
+# > Returns:
+# > <text>bytes
+function Base64ToBytes(base64:text) :: object:
+  return Base64.decodeBase64({_base64})

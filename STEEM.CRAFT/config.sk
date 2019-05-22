@@ -14,9 +14,16 @@ options:
   privatepostingkey: "<place your private posting key here>"
   serveraccountname: "<place your steem account name here>"
   appname: "STEEM.CRAFT/0.1"
+  defaultAppTags: ["steemcraft"]
   DefaultBeneficiaryAccount: "skyroad"
   DefaultBeneficiaryWeight: 250
-
+  #
+  # > Currently supported formats: yaml.
+  storagetype: "yaml"
+  #
+  # > Chat prefix that is shown in STEEM.CRAFT addons.
+  chatprefix: "&7[&6&lSTEEM.CRAFT&7] &8&l>>&7"
+  
 #
 # > Please do not change these functions, since they are used to share the data between
 # > other Skript files on the server. Be sure to never leak your private posting key!
@@ -33,7 +40,7 @@ function getPrivatePostingKey() :: text:
 # > Actions:
 # > Returns the server account name.
 function getServerAccountName() :: text:
-  return {@privatepostingkey}
+  return {@serveraccountname}
 
 #
 # > Function - getAppName
@@ -41,6 +48,14 @@ function getServerAccountName() :: text:
 # > Returns the app name which should be used.
 function getAppName() :: text:
   return {@appname}
+
+#
+# > Function - getDefaultAppTags
+# > Actions:
+# > Returns the default app tags which should be used if
+# > no other app tag is defined.
+function getDefaultAppTags() :: object:
+  return {@defaultAppTags}
 
 #
 # > Function - getDefaultBeneficiaryAccount
@@ -55,3 +70,17 @@ function getDefaultBeneficiaryAccount() :: text:
 # > Returns the default beneficary weight.
 function getDefaultBeneficiaryWeight() :: number:
   return {@DefaultBeneficiaryWeight}
+
+#
+# > Function - getStorageType
+# > Actions:
+# > Returns the current storage type.
+function getStorageType() :: text:
+  return {@storagetype}
+
+#
+# > Function - getChatPrefix
+# > Actions:
+# > Returns the chat prefix.
+function getChatPrefix() :: text:
+  return {@chatprefix}

@@ -1,0 +1,100 @@
+#
+# ==============
+# steemconnect.sk
+# ==============
+# steemconnect.sk is part of the STEEM.CRAFT addons.
+# ==============
+# > This addon allows players to easily connect to the server
+# > using SteemConnect links. SteemConnect is a trusted place
+# > to sign transactions to the Steem Blockchain.
+# ==============
+
+import:
+  net.md_5.bungee.api.chat.TextComponent
+  net.md_5.bungee.api.chat.ComponentBuilder
+  net.md_5.bungee.api.chat.ClickEvent
+  net.md_5.bungee.api.chat.HoverEvent
+  net.md_5.bungee.api.chat.HoverEvent$Action as HoverEventAction
+  net.md_5.bungee.api.chat.ClickEvent$Action as ClickEventAction
+
+#
+# > Command - /steemconnect <steem account>
+# > Gives the player links to connect the account to the server.
+# > Also validates if the account is synced correctly and stores
+# > the steem name once the verification is done.
+command /steemconnect [<text>]:
+  trigger:
+    #
+    # > If the player is already synced with this account, there
+    # > is no need to repeat the process.
+    if getSyncedAccount(player) is arg-1:
+      message "%getChatPrefix()% You're already connected to this account."
+      stop
+
+    #
+    # > If the player has not set any argument, send the usage.
+    if arg-1 is not set:
+      message "%getChatPrefix()% Usage: /steemconnect <steem account>"
+      stop
+
+    #
+    # > If the account name doesn't exist, tell the player
+    # > about this and add a usage for support.
+    else if getAccount(arg-1) is not set:
+      message "%getChatPrefix()% Steem account %arg-1% not found."
+      message "%getChatPrefix()% Usage: /steemconnect <steem account>"
+      stop
+
+    #
+    # > If the account doesn't have the uuid saved in the profile, send a link
+    # > which sets the player's uuid to the profile of the steem account.
+    if validateSyncedSteemAccountUUID(player,arg-1) is false:
+
+      #
+      # > Create a new ComponentBuilder to make clickable and hoverable text.
+      set {_builder} to new ComponentBuilder(new TextComponent(getChatPrefix()))
+      set {_uuid} to uuid of player
+      set {_updateprofileurl} to "https://app.steemconnect.com/sign/profile-update?minecraftuuid=%{_uuid}%"
+      set {_msg} to new TextComponent("Click here to sync your Steem account.")
+      {_msg}.setClickEvent(new ClickEvent(ClickEventAction.OPEN_URL!,{_updateprofileurl}))
+      {_msg}.setHoverEvent(new HoverEvent(HoverEventAction.SHOW_TEXT!,new ComponentBuilder("Click here to open.").create()))
+      {_builder}.append({_msg})
+
+      #
+      # > This is a temporary fix until ComponentBuilder works again.
+      execute console command "/tellraw %player% ["""",{""text"":""%getChatPrefix()% ""},{""text"":""Click here to sync your Steem account."",""clickEvent"":{""action"":""open_url"",""value"":""%{_updateprofileurl}%""}}]"
+
+      #
+      # > The function currently doesn't work correctly, use backup command above.
+      # > player.sendMessage({_builder}.create())
+      message "%getChatPrefix()% Once you're done: /steemconnect %arg-1%"
+      stop
+
+    #
+    # > If the account doesn't have the server account authorized, send a link
+    # > which authorizes the server account.
+    if validateSyncedSteemAccountAuths(player,arg-1) is false:
+
+      #
+      # > Create a new ComponentBuilder to make clickable and hoverable text.
+      set {_builder} to new ComponentBuilder(new TextComponent(getChatPrefix()))
+      set {_updateprofileurl} to "https://app.steemconnect.com/authorize/@%getServerAccountName()%"
+      set {_msg} to new TextComponent("Click here to authorize the server.")
+      {_msg}.setClickEvent(new ClickEvent(ClickEventAction.OPEN_URL!,{_updateprofileurl}))
+      {_msg}.setHoverEvent(new HoverEvent(HoverEventAction.SHOW_TEXT!,new ComponentBuilder("Click here to open.").create()))
+      {_builder}.append({_msg})
+
+      #
+      # > This is a temporary fix until ComponentBuilder works again.
+      execute console command "/tellraw %player% ["""",{""text"":""%getChatPrefix()% ""},{""text"":""Click here to authorize the server."",""clickEvent"":{""action"":""open_url"",""value"":""%{_updateprofileurl}%""}}]"
+
+      #
+      # > The function currently doesn't work correctly, use backup command above.
+      # > player.sendMessage({_builder}.create())
+      message "%getChatPrefix()% Once you're done: /steemconnect %arg-1%"
+      stop
+
+    #
+    # > If the event has not been stopped yet, the account is synced.
+    setSyncedAccount(player,arg-1)
+    message "%getChatPrefix()% Your account has been successfully connected."

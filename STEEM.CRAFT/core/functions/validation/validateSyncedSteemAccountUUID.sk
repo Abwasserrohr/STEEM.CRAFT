@@ -1,0 +1,54 @@
+#
+# ==============
+# validateSyncedSteemAccountUUID.sk
+# ==============
+# validateSyncedSteemAccountUUID.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+
+#
+# > Function - validateSyncedSteemAccountUUID
+# > Returns true if the synced steem account is connected properly, if not,
+# > false is returned.
+# > Parameters:
+# > <offline player>the player which should be checked for being synced
+# > <text>the steem account which should be checked for being synced
+# > Returns:
+# > <boolean>true=synced | false=not synced
+function validateSyncedSteemAccountUUID(player:offline player, account:text="checkstorage") :: boolean:
+  #
+  # > If there has been no account defined, use already synced one to
+  # > validate.
+  if {_account} is "checkstorage":
+    set {_account} to getSyncedAccount({_player})
+    #
+    # > If there is no account defined in the parameters and not stored
+    # > on the server, return false.
+    if {_account} is false:
+      return false
+
+  #
+  # > Since there is an account stored, get the account from the
+  # > Steem Blockchain to check if the saved uuid matches with the player.
+  set {_accountdata} to getAccount({_account})
+  if {_accountdata} is set:
+    set {_json} to {_accountdata}.getJsonMetadata()
+    set {_objectMapper} to new ObjectMapper()
+    set {_jsonNode} to {_objectMapper}.readTree({_json})
+
+    #
+    # > The profile needs the minecraftuuid value set to the ingame uuid.
+    # > If this value doesn't match, it will return false.
+    # > The JsonMetadata of the account should contain at least the following data:
+    # > {"profile":{"minecraftuuid":"minecraft uuid value of the player"}}
+    set {_steemuuid} to {_jsonNode}.get("profile").get("minecraftuuid").textValue()
+
+    #
+    # > The uuid of a {_player} has to be stored in a variable
+    # > before it can be used to check for the same string.
+    set {_uuid} to uuid of {_player}
+    if {_uuid} is {_steemuuid}:
+      return true
+  return false

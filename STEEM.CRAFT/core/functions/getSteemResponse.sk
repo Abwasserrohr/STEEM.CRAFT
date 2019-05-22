@@ -1,0 +1,12 @@
+#
+# ==============
+# getSteemResponse.sk
+# ==============
+# getSteemResponse.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+#
+# > Function - getSteemResponse:
+# > Retuns the current steem response for the transaction uuid.
+function getSteemResponse(txuuid:text) :: object:
+  return metadata value "steem-tx-response-%{_txuuid}%" of getDummy()

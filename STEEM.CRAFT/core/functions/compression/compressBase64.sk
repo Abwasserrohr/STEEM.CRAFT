@@ -1,0 +1,27 @@
+#
+# ==============
+# compressBase64.sk
+# ==============
+# compressBase64.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  org.apache.commons.codec.binary.Base64
+  org.apache.commons.io.IOUtils
+  java.io.ByteArrayOutputStream
+  java.util.zip.GZIPOutputStream
+
+#
+# > Function - compressBase64:
+# > Compresses a string into a compressed base64 string.
+# > Parameters:
+# > <text>regular text
+# > Returns:
+# > <text>compressed base64 string
+function compressBase64(text:text) :: text:
+  set {_baos} to new ByteArrayOutputStream()
+  set {_gzos} to new GZIPOutputStream({_baos})
+  {_gzos}.write({_text}.getBytes("Cp1047"))
+  IOUtils.closeQuietly({_gzos})
+  set {_bytes} to {_baos}.toByteArray()
+  return Base64.encodeBase64String({_bytes})
