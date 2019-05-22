@@ -38,17 +38,22 @@ command /steemconnect [<text>]:
       stop
 
     #
+    # > Some players might not use only lowercase letters. Convert the
+    # > text to lower case only to prevent such mistakes.
+    set {_steemaccount} to arg-1.toLowerCase()
+
+    #
     # > If the account name doesn't exist, tell the player
     # > about this and add a usage for support.
-    else if getAccount(arg-1) is not set:
-      message "%getChatPrefix()% Steem account %arg-1% not found."
+    if getAccount({_steemaccount}) is not set:
+      message "%getChatPrefix()% Steem account %{_steemaccount}% not found."
       message "%getChatPrefix()% Usage: /steemconnect <steem account>"
       stop
 
     #
     # > If the account doesn't have the uuid saved in the profile, send a link
     # > which sets the player's uuid to the profile of the steem account.
-    if validateSyncedSteemAccountUUID(player,arg-1) is false:
+    if validateSyncedSteemAccountUUID(player,{_steemaccount}) is false:
 
       #
       # > Create a new ComponentBuilder to make clickable and hoverable text.
@@ -67,13 +72,13 @@ command /steemconnect [<text>]:
       #
       # > The function currently doesn't work correctly, use backup command above.
       # > player.sendMessage({_builder}.create())
-      message "%getChatPrefix()% Once you're done: /steemconnect %arg-1%"
+      message "%getChatPrefix()% Once you're done: /steemconnect %{_steemaccount}%"
       stop
 
     #
     # > If the account doesn't have the server account authorized, send a link
     # > which authorizes the server account.
-    if validateSyncedSteemAccountAuths(player,arg-1) is false:
+    if validateSyncedSteemAccountAuths(player,{_steemaccount}) is false:
 
       #
       # > Create a new ComponentBuilder to make clickable and hoverable text.
@@ -91,10 +96,10 @@ command /steemconnect [<text>]:
       #
       # > The function currently doesn't work correctly, use backup command above.
       # > player.sendMessage({_builder}.create())
-      message "%getChatPrefix()% Once you're done: /steemconnect %arg-1%"
+      message "%getChatPrefix()% Once you're done: /steemconnect %{_steemaccount}%"
       stop
 
     #
     # > If the event has not been stopped yet, the account is synced.
-    setSyncedAccount(player,arg-1)
+    setSyncedAccount(player,{_steemaccount})
     message "%getChatPrefix()% Your account has been successfully connected."
