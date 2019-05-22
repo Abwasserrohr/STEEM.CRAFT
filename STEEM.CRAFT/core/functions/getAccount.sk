@@ -1,0 +1,24 @@
+#
+# ==============
+# getAccount.sk
+# ==============
+# getAccount.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  eu.bittrade.libs.steemj.SteemJ
+  eu.bittrade.libs.steemj.base.models.AccountName
+  java.util.ArrayList
+
+#
+# > Function - getAccount
+# > Returns a steem wallet account
+# > Parameters:
+# > <text>a steem wallet account name
+function getAccount(account:text) :: object:
+  set {_steemj} to new SteemJ()
+  set {_account} to {_account}.toLowerCase()
+  set {_account} to new AccountName({_account})
+  set {_accountrequest} to new ArrayList()
+  {_accountrequest}.add({_account})
+  return {_steemj}.getAccounts({_accountrequest}).get(0)
