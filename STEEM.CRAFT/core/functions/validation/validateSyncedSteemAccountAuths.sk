@@ -1,0 +1,38 @@
+#
+# ==============
+# validateSyncedSteemAccountAuths.sk
+# ==============
+# validateSyncedSteemAccountAuths.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+#
+# > Function - validateSyncedSteemAccountAuths
+# > Returns true if the synced steem account is connected properly, if not,
+# > false is returned.
+# > Parameters:
+# > <offline player>the player which should be checked for being synced
+# > <text>the steem account which should be checked for being synced
+# > Returns:
+# > <boolean>true=synced | false=not synced
+function validateSyncedSteemAccountAuths(player:offline player, account:text="checkstorage") :: boolean:
+  #
+  # > If there has been no account defined, use already synced one to
+  # > validate.
+  if {_account} is "checkstorage":
+    set {_account} to getSyncedAccount({_player})
+    #
+    # > If there is no account defined in the parameters and not stored
+    # > on the server, return false.
+    if {_account} is false:
+      return false
+
+  #
+  # > Since there is an account stored, get the account from the
+  # > Steem Blockchain to check if the server has the needed auths.
+  set {_accountdata} to getAccount({_account})
+  if {_accountdata} is set:
+    set {_neededauth} to getServerAccountName()
+    loop ...{_accountdata}.getPosting().getAccountAuths().keySet():
+      if "%loop-value%" is {_neededauth}:
+        return true
+    return false
