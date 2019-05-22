@@ -1,0 +1,28 @@
+#
+# ==============
+# getSyncedAccount.sk
+# ==============
+# getSyncedAccount.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+#
+# > Function - getSyncedAccount
+# > Returns the synced steem wallet account for the player.
+# > If the player isn't synced, return false.
+# > Parameters:
+# > <player>player
+function getSyncedAccount(player:offline player) :: object:
+  #
+  # > Since getting the synced account could be slow from some formats,
+  # > it is being cached here within the metadata of the player.
+  if metadata value "steemaccount" of {_player} is not set:
+    set {_account} to getStorageData("steem",{_player},"account")
+    set metadata value "steemaccount" of {_player} to {_account}
+  else:
+    set {_account} to metadata value "steemaccount" of {_player}
+  #
+  # > Only return the account if it actually exists.
+  if {_account} is set:
+    return {_account}
+  else:
+    return false
