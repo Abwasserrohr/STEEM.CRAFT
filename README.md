@@ -1,5 +1,5 @@
-# STEEM.SK
-STEEM.SK is a script for Bukkit/Spigot, which allows players to interact with the STEEM Blockchain within Minecraft.
+# STEEM.CRAFT
+STEEM.CRAFT is a script for Bukkit/Spigot, which allows players to interact with the STEEM Blockchain within Minecraft.
 Server owners can create custom transactions with the Steem Blockchain and get data from Steem Nodes.
 
 ### Core dependencies
