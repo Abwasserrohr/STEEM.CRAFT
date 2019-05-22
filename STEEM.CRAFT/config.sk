@@ -20,7 +20,10 @@ options:
   #
   # > Currently supported formats: yaml.
   storagetype: "yaml"
-
+  #
+  # > Chat prefix that is shown in STEEM.CRAFT addons.
+  chatprefix: "&7[&6&lSTEEM.CRAFT&7] &8&l>>&7"
+  
 #
 # > Please do not change these functions, since they are used to share the data between
 # > other Skript files on the server. Be sure to never leak your private posting key!
@@ -74,3 +77,10 @@ function getDefaultBeneficiaryWeight() :: number:
 # > Returns the current storage type.
 function getStorageType() :: text:
   return {@storagetype}
+
+#
+# > Function - getChatPrefix
+# > Actions:
+# > Returns the chat prefix.
+function getChatPrefix() :: text:
+  return {@chatprefix}
