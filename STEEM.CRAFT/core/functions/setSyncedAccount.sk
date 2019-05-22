@@ -1,0 +1,17 @@
+#
+# ==============
+# setSyncedAccount.sk
+# ==============
+# setSyncedAccount.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+#
+# > Function - setSyncedAccount
+# > Sets the synced steem account wallet for this player to the text.
+# > There is no validation, make sure that the player actually owns
+# > the synced steem account.
+# > Parameters:
+# > <offline player>player who owns the steem account
+# > <text>steem account that should be synced
+function setSyncedAccount(player:offline player,account:text) :: object:
+  saveStorageData("steem",{_player},"account",{_account})
