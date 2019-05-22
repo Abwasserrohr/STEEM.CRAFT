@@ -1,0 +1,40 @@
+#
+# ==============
+# storage.sk
+# ==============
+# storage.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+#
+# > Function - saveStorageData
+# > Saves data for a username and a specific usage type to the desired format.
+# > Parameters:
+# > <text>usage identifier
+# > <offline player>the player who should be saved
+# > <text>data key
+# > <object>data value
+function saveStorageData(usage:text,player:offline player,key:text,data:object):
+  #
+  # > Get the storage type out of the configuration to allow the server
+  # > operator multiple storage formats.
+  set {_storageformat} to getStorageType()
+  if {_storageformat} is "yaml":
+    saveyamluserdata({_usage},{_player},{_key},{_data})
+
+#
+# > Function - getStorageData
+# > Returns the requested data from the desired storage format.
+# > Try to cache results, since this may not very fast.
+# > Parameters:
+# > <text>usage identifier
+# > <offline player>the player who should be saved
+# > <text>data key
+# > Returns:
+# > <object>data value
+function getStorageData(usage:text,player:offline player,key:text) :: object:
+  #
+  # > Get the storage type out of the configuration to allow the server
+  # > operator multiple storage formats.
+  set {_storageformat} to getStorageType()
+  if {_storageformat} is "yaml":
+    return getyamluserdata({_usage},{_player},{_key})
