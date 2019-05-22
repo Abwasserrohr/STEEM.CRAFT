@@ -1,0 +1,32 @@
+#
+# ==============
+# yaml.sk
+# ==============
+# yaml.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+#
+# > Function - saveyamluserdata
+# > Saves data for a username and a specific usage type in a yaml file.
+# > Parameters:
+# > <text>usage identifier
+# > <offline player>the player who should be saved
+# > <text>data key
+# > <object>data value
+function saveyamluserdata(usage:text,player:offline player,key:text,data:object):
+  set {_uuid} to uuid of {_player}
+  set yaml value "%{_key}%" from "plugins/Skript/storage/%{_usage}%/%{_uuid}%.yml" to {_data}
+
+#
+# > Function - getyamluserdata
+# > Returns the yaml user data to the player by parsing the file.
+# > Try to cache results, since this is not very fast.
+# > Parameters:
+# > <text>usage identifier
+# > <offline player>the player who should be saved
+# > <text>data key
+# > Returns:
+# > <object>data value
+function getyamluserdata(usage:text,player:offline player,key:text) :: object:
+  set {_uuid} to uuid of {_player}
+  return yaml value "%{_key}%" from "plugins/Skript/storage/%{_usage}%/%{_uuid}%.yml"
