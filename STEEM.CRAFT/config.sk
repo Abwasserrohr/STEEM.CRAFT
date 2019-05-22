@@ -17,6 +17,9 @@ options:
   defaultAppTags: ["steemcraft"]
   DefaultBeneficiaryAccount: "skyroad"
   DefaultBeneficiaryWeight: 250
+  #
+  # > Currently supported formats: yaml.
+  storagetype: "yaml"
 
 #
 # > Please do not change these functions, since they are used to share the data between
@@ -64,3 +67,10 @@ function getDefaultBeneficiaryAccount() :: text:
 # > Returns the default beneficary weight.
 function getDefaultBeneficiaryWeight() :: number:
   return {@DefaultBeneficiaryWeight}
+
+#
+# > Function - getStorageType
+# > Actions:
+# > Returns the current storage type.
+function getStorageType() :: text:
+  return {@storagetype}
