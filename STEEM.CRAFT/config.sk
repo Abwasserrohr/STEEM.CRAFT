@@ -37,7 +37,7 @@ function getPrivatePostingKey() :: text:
 # > Actions:
 # > Returns the server account name.
 function getServerAccountName() :: text:
-  return {@privatepostingkey}
+  return {@serveraccountname}
 
 #
 # > Function - getAppName
