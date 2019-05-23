@@ -1,0 +1,553 @@
+#
+# ==============
+# steemworlds.sk v0.0.1
+# ==============
+# steemworlds.sk is part of the STEEM.CRAFT addons.
+# ==============
+# > Steemworlds allows the player to store his steemworld to the
+# > Steem Blockchain. Steemworlds are a flat world by default to
+# > not create not necessary data.
+# ==============
+
+#
+# > Important Note:
+# > steemworlds.sk is still not fully ready to use. While saving and loading worlds works, the
+# > methods may change which could break already stored worlds later on. Once steemworlds.sk
+# > reaches it's version to v1.0.0, the saving will either not be changed anymore or there will
+# > be backwards compatibility for versions after v1.0.0. Until then, use it with care and store
+# > backups on your side.
+
+#
+# > Steemworld comments, which hold data which refers to the world
+# > on the Steem Blockchain, can be altered in various ways. Do not
+# > change these by yourself if you don't want to create your own
+# > world network which doesn't connect to other servers.
+options:
+  #
+  # > The post prefix changes how the comment looks like on blog based Steem apps.
+  # > This could get changed in the future to link to a world explorer.
+  postprefix: <a href=""https://steemit.com/@steem.craft""><img src=""https://cdn.steemitimages.com/DQmUzWn7xJhLpPhGAczEpkcph4gNMrRdcCeTC5RVHnRQrjE/steemheader-left.png""></a>
+  #
+  # > The json id is used to identify STEEM.CRAFT world transactions.
+  jsonidplots: STEEM.CRAFT/worlds
+  #
+  # The app is used to know which app is responsible for the comments.
+  commentapp: STEEM.CRAFT
+  #
+  # > The format is used to detect the format of the comment.
+  commentformat: markdown
+  #
+  # > The tags can be used to query specific contents from the blockchain.
+  commenttags: ["steemsk","steemcraft"]
+  #
+  # > The title is used on almost all Steem based blog apps to see what
+  # > the comment is about.
+  commenttitle: "World - <world>"
+  #
+  # > The maximum length of json transactions may change. It is currently
+  # > set at a maximum length of 2000. To prevent exeeding this, it is
+  # > set at 1800 to prevent any problems by too long custom json.
+  customjsonlength: 1800
+  #
+  # > The comment parent author is the author of the comments which hold
+  # > all the worlds. If this is changed, all already saved worlds can't
+  # > be loaded anymore.
+  commentparentauthor: steem.craft
+  #
+  # > The commennt parent permlink works the same way the parent author works.
+  # > If this is changed, you can't load worlds from other comment parent permlinks.
+  commentparentpermlink: steemcraft11052019065000
+
+import:
+	java.io.File
+	java.nio.file.Files
+	java.util.regex.Pattern
+	org.apache.commons.io.FileUtils
+	com.fasterxml.jackson.databind.ObjectMapper
+	com.fasterxml.jackson.databind.node.ArrayNode
+	com.fasterxml.jackson.databind.node.ObjectNode
+	org.bukkit.Bukkit
+	org.bukkit.WorldCreator
+	org.bukkit.World$Environment
+	org.bukkit.WorldType
+	com.boydti.fawe.object.schematic.Schematic
+	com.sk89q.worldedit.regions.CuboidRegion
+	com.sk89q.worldedit.bukkit.BukkitWorld
+	com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat
+	com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats
+	com.sk89q.worldedit.EditSession
+	com.sk89q.worldedit.world.World
+	com.sk89q.worldedit.math.BlockVector3
+
+#
+# > Command - /steemworldsave | /swsave, /scsave, /sws
+# > Actions:
+# > Saves the world of the player, if it is a steemworld of the player.
+command /steemworldsave:
+  aliases: /swsave, /scsave, /sws
+  trigger:
+    if "%player's world%" is not "steemworlds-%player%":
+      message "%getChatPrefix()% You can only save your own world."
+      stop
+    saveSteemWorld(player)
+
+#
+# > Command - /steemworldload | /swload, /scload, /swl
+# > Actions:
+# > Loads the world of the player, if it is a steemworld of the player.
+command /steemworldload:
+  aliases: /swload, /scload, /swl
+  trigger:
+    #
+    # > To show off that saving and loading works, there is a single world per
+    # > user, which is hardcoded for now. It is always named "steemworlds-steemusername"
+    if "%player's world%" contains "steemworlds-":
+      set {_account} to "%player's world%"
+      replace all "steemworlds-" with "" in {_account}
+      #
+      # > The following process needs to be executed as a thread, a global variable
+      # > is used to call the function.
+      while {sc::accountload} is set:
+        wait 1 tick
+      set {sc::accountload} to {_account}
+      $ thread
+      loadSteemWorld({sc::accountload},"re-steemcraft-%player's world%",player)
+
+#
+# > Command - /visit | /steemworldvisit | /swvisit | /scvisit | /swv
+# > Actions:
+# > Visits a steem user and loads the world. Currently, there are no checks
+# > involved if there is actually a world saved. 
+command /visit [<text>]:
+  aliases: /steemworldvisit, /swvisit, /scvisit, /swv
+  trigger:
+    set {_steemaccount} to arg-1
+    set {_steemaccount} to {_steemaccount}.toLowerCase()
+    #
+    # > Only create a world, if the steem account exists.
+    if getAccount({_steemaccount}) is set:
+      createSteemWorld({_steemaccount})
+    #
+    # > The createsteemworld is currently not async. But the dependency
+    # > FastAsyncWorldEdit allows doing it. This will be added soon to
+    # > remove any lag from visiting worlds.
+    while metadata value "steemworlds-%{_steemaccount}%" of getDummy() is "wait":
+      wait 1 tick
+    #
+    # > Teleport the player after the world has been created.
+    teleport player to spawn of "steemworlds-%{_steemaccount}%" parsed as world
+
+#
+# > Function - saveSteemWorld:
+# > Saves the world of the player.
+# > Parameters:
+# > <player>the player who wants to save the own world.
+function saveSteemWorld(player:player):
+  #
+  # > Only save the world if the player is online.
+  if {_player} is online:
+    #
+    # > Get the steem account of the player. Since the server
+    # > 	will broadcast transactions, the steem account needs 
+    # > to be synced with the server.
+    set {_steemname} to getSyncedAccount({_player})
+    if {_steemname} is false:
+      message "%getChatPrefix()% You have to sync your account first:" to {_player}
+      message "%getChatPrefix()% /steemconnect <steem username>" to {_player}
+      stop
+    if validateSyncedSteemAccountUUID({_player}) is false:
+      message "%getChatPrefix()% Your Steem account UUID doesn't match with yours." to {_player}
+      message "%getChatPrefix()% /steemconnect <steem username>" to {_player}
+      stop
+    if validateSyncedSteemAccountAuths({_player}) is false:
+      message "%getChatPrefix()% The server has no authorisation to broadcast transactions for you." to {_player}
+      message "%getChatPrefix()% /steemconnect <steem username>" to {_player}
+      stop
+
+    set {_world} to {_player}'s world
+
+    #
+    # > Currently, the world size is hardcoded.
+    # > The world start at x|z -15 and ends at x|z 15.
+    set {_xstart} to -15
+    set {_zstart} to -15
+    set {_xend} to 15
+    set {_zend} to 15
+	
+    #
+    # > Loop through the coordinates and add all chunks of the world
+    # > to a list.
+    set {_x} to {_xstart}
+    while {_xdone} is not set:
+      delete {_zdone}
+      set {_z} to {_zstart}
+      while {_zdone} is not set:
+        add chunk at location {_x}, 0, {_z} in {_world} to {_chunks::*}
+        add 16 to {_z}
+        if {_z} > {_zend}:
+          set {_zdone} to true
+      add 16 to {_x}
+      if {_x} > {_xend}:
+        set {_xdone} to true
+
+    #
+    # > Tell the player that the process is working and how long it may take. 
+    # > It is estimated that every chunk takes at least 10 seconds to process.
+    message "%getChatPrefix()% Your world is now being saved. This will take at least %(size of {_chunks::*} * 10) + 70% seconds." to {_player}
+
+    #
+    # > Since getting the block number of a transaction is currenttly not working for me,
+    # > the start block number is saved here. This is used to query the history of the account
+    # > and check only transactions that have been broadcasted after this block number.
+    set {_startHeadBlockNumber} to getHeadBlockNumber()
+
+    #
+    # > All chunks are now looped. A schematic file is created and splitted
+    # > into usable parts and encoded with base64.
+    loop {_chunks::*}:
+      delete {_chunksplit::*}
+      add 1 to {_loopnumber}
+      set {_x1} to x-coord of loop-value.getBlock(0,0,0)
+      set {_x2} to x-coord of loop-value.getBlock(15,255,15)
+      set {_z1} to z-coord of loop-value.getBlock(0,0,0)
+      set {_z2} to z-coord of loop-value.getBlock(15,255,15)
+      #
+      # > The schematic files are stored in the "tmp" folder in the root folder of the
+      # > Minecraft server.
+      set {_file} to new File("tmp/steemworlds_%{_world}%_%loop-value.getX()%_%loop-value.getZ()%.schem")
+      set {_chunkx} to loop-value.getX()
+      set {_chunkz} to loop-value.getZ()
+      set {_b} to BlockVector3.at({_x1}, 0, {_z1})
+      set {_t} to BlockVector3.at({_x2}, 255, {_z2})
+      set {_bworld} to new BukkitWorld({_world})
+      set {_reg} to new CuboidRegion({_bworld}, {_b}, {_t})
+      set {_schem} to new Schematic({_reg})
+	  
+      #
+      # > Usually, ClipboardFormat.SPONGE_SCHEMATIC! schould be used,
+      # > but since this generates currently an error, a alternative
+      # > is used.
+      #set {_format} to ClipboardFormat.SPONGE_SCHEMATIC!
+      set {_format} to ClipboardFormats.findByAlias("schem")
+
+      {_schem}.save({_file},{_format})
+
+      set {_bytes} to Files.readAllBytes({_file}.toPath())
+
+      #
+      # > Currently, temprary created schematic files are not deleted,
+      # > but once they get deleted, it will be here. #todo
+      
+      #
+      # > The bytes of the schematic file now get converted to a base64 encoded string.
+      set {_base64} to BytesToBase64({_bytes})
+      #
+      # > Since a simple base64 encoded string could be compressed further, it will
+      # > be compressed with gzip and then again returned with base64.
+      # > Since schematic files hold some data, it will be always worth it.
+      set {_string} to compressBase64({_base64})
+	  
+      #
+      # > Here, the compressed base64 encoded string is split into multiple, usable strings.
+      while {_done} is not set:
+        if length of {_string} > {@customjsonlength}:
+          add the first {@customjsonlength} character of {_string} to {_chunksplit::*}
+          set {_string} to {_string}.replaceFirst(Pattern.quote(the first {@customjsonlength} character of {_string}), "")
+        else:
+          add {_string} to {_chunksplit::*}
+          set {_done} to true
+      delete {_done}
+      delete {_partid}
+      set {_shortworld} to "%{_world}%"
+
+      #
+      # > Only the short world name is necessary here.
+      replace "steemworlds-" with "" in {_shortworld}
+ 
+      #
+      # > Now, the splitted chunks are being looped through. Every splitted chunk
+      # > gets a custom json transaction, which is currently set by simply settings
+      # > a string.
+      loop {_chunksplit::*}:
+        add 1 to {_partid}
+        set {_txcontent} to "{""w"":""%{_shortworld}%"",""x"":%{_chunkx}%,""z"":%{_chunkz}%,""s"":%size of {_chunksplit::*}%,""i"":%{_partid}%,""data"":""%{_chunksplit::%{_partid}%}%""}"
+        #
+        # > Now, the custom json is broadcasted. The saving process will repeat the
+        # > process in case of any error.
+        while {_done} is not set:
+          set {_txuuid} to getRandomUUID()
+          customJsonOperation({_txuuid},{_steemname},"{@jsonidplots}",{_txcontent})
+          while getSteemResponse({_txuuid}) is "wait":
+            wait 1 tick
+          if getSteemResponse({_txuuid}) is "done":
+            set {_done} to true
+            message "%getChatPrefix()% %{_loopnumber}% of %size of {_chunks::*}% chunks done." to {_player}
+          #
+		  # > If there has been a error, wait 1 second and repeat.
+          else:
+            message "%getChatPrefix()% Error. Repeating." to {_player}
+            wait 1 second
+        delete {_done}
+        #
+        # > If there are still some splits to go, wait 3 seconds after one has been done.
+        if size of {_chunksplit::*} >= {_partid}:
+          wait 3 seconds
+
+    #
+    # > Tell the player that the world has been saved and that it needs to wait
+    # > until the transactions are consensus, since I currently can't get the block
+    # > number of the transaction directly.
+    message "%getChatPrefix()% Your world has been saved." to {_player}
+    message "%getChatPrefix()% Waiting for transactions to get consensus." to {_player}
+
+    #
+    # > A timer will count down until ready.
+    set {_timer} to 80
+    loop 80 times:
+      send action bar "&fWait &6&l%{_timer}%&f seconds" to {_player}
+      remove 1 from {_timer}
+      wait 1 second
+
+    #
+    # > Go through the last 1000 transactions of the user.
+    set {_history} to getAccountHistory({_steemname},-1,1000)
+    set {_objectMapper} to new ObjectMapper()
+    set {_arraynode} to {_objectMapper}.createArrayNode()
+
+    #
+    # > Loop the transactions and find transactions that
+    # > happened since beginning of this process and filter
+    # > the needed block numbers out.
+    loop ...{_history}.keySet():
+      set {_h} to {_history}.get(loop-value)
+      if {_h}.getBlock() >= {_startHeadBlockNumber}:
+        if try {_h}.getOp().getJson() is set:
+          set {_json} to "%{_h}.getOp().getJson()%"
+          if {_json} contains """w"":""%{_shortworld}%":
+            set {_objectMapper} to new ObjectMapper()
+            set {_jsonNode} to {_objectMapper}.readTree({_json})
+            set {_x} to {_jsonNode}.get("x")
+            set {_z} to {_jsonNode}.get("z")
+            set {_i} to {_jsonNode}.get("i")
+
+            #
+            # > Store the block numbers within the comment custom json.
+            set {_chunkpart} to {_objectMapper}.createObjectNode()
+            {_chunkpart}.put("x", {_x})
+            {_chunkpart}.put("z", {_z})
+            {_chunkpart}.put("i", {_i})
+            {_chunkpart}.put("b", "%{_h}.getBlock()%")
+            {_arraynode}.add({_chunkpart})
+
+    #
+    # > Once the chunk block numbers have been collected, 
+    # > add other custom json data to the json.
+    set {_finaljson} to {_objectMapper}.createObjectNode()
+    {_finaljson}.put("app", "{@commentapp}")
+    {_finaljson}.put("tags", {@commenttags})
+    {_finaljson}.put("format", "{@commentformat}")
+    {_finaljson}.put("world", {_arraynode})
+
+    set {_txid} to "%{_world}%"
+    set {_txuuid} to "%{_txid}.toLowerCase()%"
+    set {_comment} to "{@postprefix}"
+    set {_title} to {@commenttitle}
+    replace all "<world>" with "%{_world}%" in {_title}	
+
+    #
+    # > The createComment function is going to create a comment.
+    createComment({_txuuid},{_steemname},{_comment},"{@commentparentauthor}","{@commentparentpermlink}",{@commenttags},{_title},{_finaljson}.toString())
+
+    #
+    # > The comment is going to be created in a separate thread, to catch
+    # > if everything worked, we can wait here until the response is no longer
+    # > "wait".
+    while getSteemResponse({_txuuid}) is "wait":
+      wait 1 tick
+
+    if getSteemResponse({_txuuid}) is "done":
+      message "%getChatPrefix()% Your world has been saved sucessfully." to {_player}
+    else:
+      message "%getChatPrefix()% A error occured." to {_player}
+      message "%getChatPrefix()% %getSteemResponse({_txuuid})%" to {_player}
+
+#
+# > Function - loadSteemWorld:
+# > Loads the speficied world.
+# > Parameters:
+# > <text> The steem username of the account which should be loaded.
+# > <text> The permlink of the world which should be loaded.
+# > <player> The player who should get informed about status messages.
+function loadSteemWorld(steemname:text,permlink:text,player:player):
+  #
+  # > The function has been called with a global variable. Delete it here
+  # > to allow more calls of this function after it has been called.
+  delete {sc::accountload}
+  #
+  # > The steem name is needed, check if it is actually set.
+  if {_steemname} is set:
+    set {_steemname} to {_steemname}.toLowerCase()
+    #
+    # > Get the world parsed as a world.
+    set {_world} to "steemworlds-%{_steemname}%" parsed as world
+    set {_txid} to "%{_world}%"
+    set {_shortworld} to {_txid}
+    replace "steemworlds-" with "" in {_shortworld}
+
+    #
+    # > Tell the player that the world is now being loaded.
+    message "%getChatPrefix()% Loading %{_steemname}%'s world..." to {_player}
+    
+    #
+    # > Loading the content. There is no verification.
+    set {_c} to getSteemContent({_steemname},{_permlink})
+
+    #
+    # > Reading the json metadata of the content is done using ObjectMapper.
+    set {_objectMapper} to new ObjectMapper()
+    set {_jsonNode} to {_objectMapper}.readTree({_c}.getJsonMetadata())
+    set {_plot} to {_jsonNode}.get("world")
+
+    #
+    # > Get all the block numers to load the chunks.
+    loop {_plot}.size().longValue() times:
+      set {_plotpart} to {_plot}.get(loop-number - 1)
+      set {_x} to {_plotpart}.get("x")
+      set {_z} to {_plotpart}.get("z")
+      set {_i} to {_plotpart}.get("i")
+      set {_b} to {_plotpart}.get("b").textValue()
+
+      set {_plotparts::%{_x}%|%{_z}%|%{_i}%} to {_b} parsed as number
+      add 1 to {_plotpartamount::%{_x}%|%{_z}%}
+
+    #
+    # > Loop through the parts of the world and gather the needed
+    # > informations.
+    loop {_plotparts::*}:
+      set {_ops} to getOpsInBlock(loop-value,false)
+      loop {_ops}.size() times:
+        set {_tx} to loop-number - 1
+        #
+        # > Only go forward if the operation contains json.
+        if try {_ops}.get({_tx}).getOp().getJson() is set:
+          #
+          # > Only go forward of the required posting auths match with the requested steem username.
+          if "%{_ops}.get({_tx}).getOp().getRequiredPostingAuths().get(0)%" contains "name=%{_steemname}%":
+            #
+            # > Get the json Metadata as a string and check if the world matches with the
+            # > world which should be loaded.
+            set {_json} to "%{_ops}.get({_tx}).getOp().getJson()%"
+            if {_json} contains """w"":""%{_shortworld}%":
+              set {_objectMapper} to new ObjectMapper()
+              set {_jsonNode} to {_objectMapper}.readTree({_json})
+              set {_x} to {_jsonNode}.get("x")
+              set {_z} to {_jsonNode}.get("z")
+              set {_i} to {_jsonNode}.get("i")
+              set {_data} to {_jsonNode}.get("data").textValue()
+
+              set {_plotparts::%{_x}%|%{_z}%|%{_i}%} to {_data}
+
+    #
+    # > Set the chunk parts together to one big chunk.
+    loop {_plotpartamount::*}:
+      set {_data} to ""
+      loop loop-value times:
+        set {_data} to "%{_data}%%{_plotparts::%loop-index-1%|%loop-number%}%"
+	  
+      #
+      # > Decompress the big chunk data, save it to file and load it.
+      set {_chunkcoord::*} to loop-index-1 split at "|"
+
+      #
+      # > The chunk coordinates are needed to load the chunks at the right
+      # > place.
+      set {_x} to "%{_chunkcoord::1}%" parsed as integer
+      set {_z} to "%{_chunkcoord::2}%" parsed as integer
+	  
+      #
+      # > Decompress and save the data to a schematic file to allow other programs
+      # > to load and insert it into the world of the server.
+      set {_body} to decompressBase64({_data})
+      set {_newbytes} to Base64ToBytes({_body})
+      set {_file} to new File("tmp/%{_txid}%_%{_x}%_%{_z}%.schem")
+      FileUtils.writeByteArrayToFile({_file}, {_newbytes})
+
+      #
+      # > To place the chunk, a vector needs to be created, which has to be at the
+      # > 0-spot if the chunks. Get this point and create a usable vector.
+      set {_block} to {_world}.getChunkAt({_x},{_z}).getBlock(0,0,0)
+      set {_l} to location of {_block}
+      set {_x} to x-coord of {_l}
+      set {_z} to z-coord of {_l}
+      set {_vector} to BlockVector3.at({_x}, 0, {_z})
+
+      #
+      # > WorldEdit needs a BukkitWorld instead of a CraftWorld to work.
+      set {_bworld} to new BukkitWorld("steemworlds-%{_steemname}%" parsed as world)
+	  
+      #
+      # > Load the chunk into the clipboard.
+      set {_clipboard} to ClipboardFormats.findByFile({_file})
+
+      #
+      # > Load the chunk from the clipboard and create a schematic.
+      set {_schematic} to {_clipboard}.load({_file})
+
+      #
+      # > Paste the schematic with the chunk to the world at the speficied vector.
+      set {_session} to {_schematic}.paste({_bworld}, {_vector})
+
+    #
+    # > Tell the player that the loading process has been done successfully.
+    message "%getChatPrefix()% Successfully loaded %{_steemname}%'s world." to {_player}
+
+#
+# > Function - createSteemWorld
+# > Creates or loads a steemworld for the defined name.
+# > Parameters:
+# > <text>Steemworld name
+function createSteemWorld(name:text):
+  #
+  # > Sets the steemworlds metadata value to wait to allow other
+  # > commands and functions to wait until the world is ready.
+  set metadata value "steemworlds-%{_name}%" of getDummy() to "wait"
+
+  #
+  # > To create a new world, the WorldCreator is very useful,
+  # > it allows to set the world type, environment, and generator
+  # > settings before actually creating it.
+  set {_world} to new WorldCreator("steemworlds-%{_name}%")
+  {_world}.environment(Environment.NORMAL!)
+  {_world}.type(WorldType.FLAT!)
+
+  #
+  # > The world is created after all settings from the WorldCreator have
+  # > been done.
+  Bukkit.createWorld({_world})
+
+  #
+  # > The created world needs some changes to prevent resource intensive
+  # > entities and structures in the world.
+  set {_world} to "steemworlds-%{_name}%" parsed as world
+  {_world}.generateStructures(false)	
+  {_world}.setSpawnFlags(false,false)
+  {_world}.setMonsterSpawnLimit(0)
+  {_world}.setAnimalSpawnLimit(0)
+  {_world}.setKeepSpawnInMemory(false)
+  {_world}.setSpawnLocation(0, 4, 0)
+
+  #
+  # > The size of the world is limited to a fixed size for now.
+  # > This is needed to prevent players from creating too much
+  # > world. Only the world withinn the border is being saved
+  # > to the Steem Blockchain.
+  set {_wb} to {_world}.getWorldBorder()
+  {_wb}.setCenter(spawn of {_world})
+  {_wb}.setWarningDistance(0)
+  {_wb}.setSize(32)
+
+  #
+  # > Once the "wait" value from the steemworlds metadatahas been deleted,
+  # > other commands and functions can go forward as the world is now
+  # > successfully loaded.
+  delete metadata value "steemworlds-%{_name}%" of getDummy()
