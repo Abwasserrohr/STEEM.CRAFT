@@ -8,7 +8,7 @@ Server owners can create custom transactions with the Steem Blockchain and get d
 - [skript-mirror](https://github.com/btk5h/skript-mirror)
 - [SteemJ](https://github.com/muksihs/steem-java-api-wrapper)
 
-### Steemplots dependencies
+### Steemworlds dependencies
 - [FastAsyncWorldEdit](https://github.com/boy0001/FastAsyncWorldedit)
 
 ## Setup
