@@ -1,0 +1,19 @@
+#
+# ==============
+# getOpsInBlock.sk
+# ==============
+# getOpsInBlock.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  eu.bittrade.libs.steemj.SteemJ
+
+#
+# > Function - getOpsInBlock
+# > Returns all operations within the given block.
+# > Parameters:
+# > <number>block number
+# > <boolean>only virtual operations? false=not only virtual ones
+function getOpsInBlock(blocknumber:number,onlyvirtual:boolean=false) :: object:
+  set {_steemj} to new SteemJ()
+  return {_steemj}.getOpsInBlock({_blocknumber},{_onlyvirtual})
