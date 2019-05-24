@@ -9,7 +9,7 @@ Server owners can create custom transactions with the Steem Blockchain and get d
 - [SteemJ](https://github.com/muksihs/steem-java-api-wrapper)
 
 ### Steemworlds dependencies
-- [FastAsyncWorldEdit](https://github.com/boy0001/FastAsyncWorldedit) [[Compatible version](https://ci.athion.net/job/FastAsyncWorldEdit-1.13/147/)]
+- [FastAsyncWorldEdit](https://github.com/IntellectualSites/FastAsyncWorldEdit-1.13) [[Compatible version](https://ci.athion.net/job/FastAsyncWorldEdit-1.13/147/)]
 
 ## Setup
 1. Get a Spigot|PaperSpigot Server setup ready. [Here](https://papermc.io/), you can find ready to use files.
