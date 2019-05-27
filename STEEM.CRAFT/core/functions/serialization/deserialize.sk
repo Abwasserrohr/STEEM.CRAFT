@@ -1,0 +1,23 @@
+#
+# ==============
+# deserialize.sk
+# ==============
+# deserialize.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  java.io.ByteArrayInputStream
+  java.io.ObjectInputStream
+
+#
+# > Function - deserialize
+# > Parameters:
+# > <text> a serialized object which should get deserialized.
+# > Actions:
+# > De-serializes the string back to a object and returns it.
+function deserialize(object:text) :: object:
+  set {_bytes} to {_object}.getBytes("Cp1047")
+  set {_byteinputstream} to new ByteArrayInputStream({_bytes})
+  set {_objectinputstream} to new ObjectInputStream({_byteinputstream})
+  set {_returnobject} to {_objectinputstream}.readObject()
+  return {_returnobject}
