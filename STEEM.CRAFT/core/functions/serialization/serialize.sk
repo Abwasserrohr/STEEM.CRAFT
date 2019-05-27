@@ -1,0 +1,23 @@
+#
+# ==============
+# serialize.sk
+# ==============
+# serialize.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  java.io.ObjectOutputStream
+  java.io.ByteArrayOutputStream
+
+#
+# > Function - serialize
+# > Parameters:
+# > <object> the object which should get serialized.
+# > Actions:
+# > Serializes the object to a string and returns it.
+function serialize(object:object) :: text:
+  set {_byteOut} to new ByteArrayOutputStream()
+  set {_outStream} to new ObjectOutputStream({_byteOut})
+  {_outStream}.writeObject({_object})
+  {_outStream}.flush()
+  return {_byteOut}.toString("Cp1047")
