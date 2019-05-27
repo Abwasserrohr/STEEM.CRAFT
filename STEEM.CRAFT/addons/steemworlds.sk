@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.1
+# steemworlds.sk v0.0.2
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -346,7 +346,9 @@ function saveSteemWorld(player:player):
     {_finaljson}.put("app", "{@commentapp}")
     {_finaljson}.put("tags", {@commenttags})
     {_finaljson}.put("format", "{@commentformat}")
-    {_finaljson}.put("world", {_arraynode})
+	#
+	# > To shrink down the reference parts, this data is being compressed and encoded into base64.
+    {_finaljson}.put("world", compressBase64({_arraynode}.toString()))
 
     set {_txid} to "%{_world}%"
     set {_txuuid} to "%{_txid}.toLowerCase()%"
@@ -406,7 +408,16 @@ function loadSteemWorld(steemname:text,permlink:text,player:player):
     # > Reading the json metadata of the content is done using ObjectMapper.
     set {_objectMapper} to new ObjectMapper()
     set {_jsonNode} to {_objectMapper}.readTree({_c}.getJsonMetadata())
-    set {_plot} to {_jsonNode}.get("world")
+    #
+    # > Get the compressed and base64 encoded string.
+    set {_plot} to {_jsonNode}.get("world").textValue()
+    #
+    # > Decompress and decode the base64 string, this increases the size.
+    set {_plot} to decompressBase64({_plot})
+    #
+    # > Since we now have a string, it has to be loaded using jackson again,
+    # > to access it later.
+    set {_plot} to {_objectMapper}.readTree({_plot})
 
     #
     # > Get all the block numers to load the chunks.
