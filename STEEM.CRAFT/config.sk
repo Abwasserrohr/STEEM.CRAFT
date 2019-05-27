@@ -23,6 +23,9 @@ options:
   #
   # > Chat prefix that is shown in STEEM.CRAFT addons.
   chatprefix: "&7[&6&lSTEEM.CRAFT&7] &8&l>>&7"
+  #
+  # > Cache requested blocks from Steem?
+  cacheblocks: true
   
 #
 # > Please do not change these functions, since they are used to share the data between
@@ -84,3 +87,10 @@ function getStorageType() :: text:
 # > Returns the chat prefix.
 function getChatPrefix() :: text:
   return {@chatprefix}
+
+#
+# > Function - getBlockCached
+# > Actions:
+# > Returns if blocks should be cached or not. True = cache it.
+function getBlockCached() :: boolean:
+  return {@cacheblocks}
