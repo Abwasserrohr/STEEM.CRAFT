@@ -30,3 +30,25 @@ function saveyamluserdata(usage:text,player:offline player,key:text,data:object)
 function getyamluserdata(usage:text,player:offline player,key:text) :: object:
   set {_uuid} to uuid of {_player}
   return yaml value "%{_key}%" from "plugins/Skript/storage/%{_usage}%/%{_uuid}%.yml"
+
+#
+# > Function - saveyamldata
+# > Saves data for a specific usage type in a yaml file.
+# > Parameters:
+# > <text>usage identifier
+# > <text>data key
+# > <object>data value
+function saveyamldata(usage:text,key:text,data:object):
+  set yaml value "%{_key}%" from "plugins/Skript/storage/%{_usage}%/%{_key}%.yml" to {_data}
+
+#
+# > Function - getyamldata
+# > Returns the yaml data by parsing the file.
+# > Try to cache results, since this is not very fast.
+# > Parameters:
+# > <text>usage identifier
+# > <text>data key
+# > Returns:
+# > <object>data value
+function getyamldata(usage:text,key:text) :: object:
+  return yaml value "%{_key}%" from "plugins/Skript/storage/%{_usage}%/%{_key}%.yml"
