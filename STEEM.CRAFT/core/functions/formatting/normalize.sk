@@ -1,0 +1,24 @@
+#
+# ==============
+# normalize.sk
+# ==============
+# normalize.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  java.text.Normalizer
+  java.text.Normalizer$Form
+
+#
+# > Function - normalize
+# > This function normalizes a text and returns it.
+# > Parameters:
+# > <text>a text with special characters
+# > Return:
+# > <text>a text with only latin characters and numbers
+function normalize(text:text) :: text:
+  set {_form} to Form.NFD!
+  set {_text} to Normalizer.normalize({_text}, {_form})
+  set {_text} to {_text}.replaceAll("\\s+", "-")
+  set {_text} to {_text}.replaceAll("[^-a-zA-Z0-9]", "")
+  return {_text}
