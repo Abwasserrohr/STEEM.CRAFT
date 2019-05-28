@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.3
+# steemworlds.sk v0.0.4
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -124,11 +124,17 @@ command /steemworldload:
 command /visit [<text>] [<text=home>]:
   aliases: /steemworldvisit, /swvisit, /scvisit, /swv
   trigger:
+    #
+    # > Convert the Steem account name to a Steem supported format.
     set {_steemaccount} to arg-1
     set {_steemaccount} to {_steemaccount}.toLowerCase()
+
+    #
+    # Convert the world name to a Steem supported format.
     set {_worldname} to arg-2
     set {_worldname} to {_worldname}.toLowerCase()
     set {_worldname} to normalize({_worldname})
+
     #
     # > Only create a world, if the steem account exists.
     if getAccount({_steemaccount}) is set:
@@ -137,6 +143,7 @@ command /visit [<text>] [<text=home>]:
       set {_c} to getSteemContent({_steemaccount},{_worldname})
       set {_world} to "%{_steemaccount}%-%{_worldname}%"
       set {_author} to {_c}.getAuthor().getName().toString()
+
       #
       # > If the author is not set, this means that this world doesn't
       # > exist on Steem, if the player wants to visit his own, not existing
@@ -152,9 +159,9 @@ command /visit [<text>] [<text=home>]:
 
       #
       # > Only create and save general storage information, if the world is not loaded.
-      #if "%{_world}%" parsed as world is not set:
-      createSteemWorld("%{_world}%")
-      saveGeneralStorageData("steemworlds",{_world},"steemaccount",{_steemaccount})
+      if "%{_world}%" parsed as world is not set:
+        createSteemWorld("%{_world}%")
+        saveGeneralStorageData("steemworlds",{_world},"steemaccount",{_steemaccount})
 
       #
       # > The createsteemworld is currently not async. But the dependency
@@ -162,10 +169,10 @@ command /visit [<text>] [<text=home>]:
       # > remove any lag from visiting worlds.
       while metadata value "steemworlds-%{_world}%" of getDummy() is "wait":
         wait 1 tick
+
       #
       # > Teleport the player after the world has been created.
       teleport player to spawn of "steemworlds-%{_world}%" parsed as world
-
 
 #
 # > Function - saveSteemWorld:
@@ -241,6 +248,7 @@ function saveSteemWorld(player:player):
       set {_x2} to x-coord of loop-value.getBlock(15,255,15)
       set {_z1} to z-coord of loop-value.getBlock(0,0,0)
       set {_z2} to z-coord of loop-value.getBlock(15,255,15)
+
       #
       # > The schematic files are stored in the "tmp" folder in the root folder of the
       # > Minecraft server.
@@ -265,12 +273,14 @@ function saveSteemWorld(player:player):
       set {_bytes} to Files.readAllBytes({_file}.toPath())
 
       #
-      # > Currently, temprary created schematic files are not deleted,
-      # > but once they get deleted, it will be here. #todo
-      
+      # > Delete the temporary created file again, since it was only
+      # > needed to get the bytes from it.
+      {_file}.delete()
+
       #
       # > The bytes of the schematic file now get converted to a base64 encoded string.
       set {_base64} to BytesToBase64({_bytes})
+
       #
       # > Since a simple base64 encoded string could be compressed further, it will
       # > be compressed with gzip and then again returned with base64.
@@ -553,12 +563,16 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
       set {_bworld} to new BukkitWorld("%{_worldname}%" parsed as world)
 	  
       #
-      # > Load the chunk into the clipboard.
+      # > Load the chunk schematic into the clipboard.
       set {_clipboard} to ClipboardFormats.findByFile({_file})
 
       #
       # > Load the chunk from the clipboard and create a schematic.
       set {_schematic} to {_clipboard}.load({_file})
+
+      #
+      # > Delete the loaded schematic now, since it is no longer needed.
+      {_file}.delete()
 
       #
       # > Tell the player about the current pasting status.
