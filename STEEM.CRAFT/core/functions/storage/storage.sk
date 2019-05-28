@@ -44,15 +44,16 @@ function getStorageData(usage:text,player:offline player,key:text) :: object:
 # > Saves data for a specific usage type to the desired format.
 # > Parameters:
 # > <text>usage identifier
+# > <text>category
 # > <text>data key
 # > <object>data value
-function saveGeneralStorageData(usage:text,key:text,data:object):
+function saveGeneralStorageData(usage:text,category:text,key:text,data:object):
   #
   # > Get the storage type out of the configuration to allow the server
   # > operator multiple storage formats.
   set {_storageformat} to getStorageType()
   if {_storageformat} is "yaml":
-    saveyamldata({_usage},{_key},{_data})
+    saveyamldata({_usage},{_category},{_key},{_data})
 
 #
 # > Function - getGeneralStorageData
@@ -60,13 +61,14 @@ function saveGeneralStorageData(usage:text,key:text,data:object):
 # > Try to cache results, since this may not very fast.
 # > Parameters:
 # > <text>usage identifier
+# > <text>category
 # > <text>data key
 # > Returns:
 # > <object>data value
-function getGeneralStorageData(usage:text,key:text) :: object:
+function getGeneralStorageData(usage:text,category:text,key:text) :: object:
   #
   # > Get the storage type out of the configuration to allow the server
   # > operator multiple storage formats.
   set {_storageformat} to getStorageType()
   if {_storageformat} is "yaml":
-    return getyamldata({_usage},{_key})
+    return getyamldata({_usage},{_category},{_key})

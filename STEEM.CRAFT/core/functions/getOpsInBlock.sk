@@ -23,7 +23,7 @@ function getOpsInBlock(blocknumber:number,onlyvirtual:boolean=false) :: object:
   #
   # > If the block caching is not disabled.
   else:
-    set {_tmp} to getGeneralStorageData("steemblocks","%{_blocknumber}%-%{_onlyvirtual}%") 
+    set {_tmp} to getGeneralStorageData("steemblocks","%{_blocknumber}%-%{_onlyvirtual}%","b") 
     #
     # > If the block is cached, decompress the base64 string and deserialize it
     # > to make it a SteemJ object again.
@@ -35,5 +35,5 @@ function getOpsInBlock(blocknumber:number,onlyvirtual:boolean=false) :: object:
     else:
       set {_steemj} to new SteemJ()
       set {_block} to {_steemj}.getOpsInBlock({_blocknumber},{_onlyvirtual})
-      saveGeneralStorageData("steemblocks","%{_blocknumber}%-%{_onlyvirtual}%",compressBase64(serialize({_block})))
+      saveGeneralStorageData("steemblocks","%{_blocknumber}%-%{_onlyvirtual}%","b",compressBase64(serialize({_block})))
       return {_block}

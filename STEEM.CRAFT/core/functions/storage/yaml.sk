@@ -36,10 +36,11 @@ function getyamluserdata(usage:text,player:offline player,key:text) :: object:
 # > Saves data for a specific usage type in a yaml file.
 # > Parameters:
 # > <text>usage identifier
+# > <text>category
 # > <text>data key
 # > <object>data value
-function saveyamldata(usage:text,key:text,data:object):
-  set yaml value "%{_key}%" from "plugins/Skript/storage/%{_usage}%/%{_key}%.yml" to {_data}
+function saveyamldata(usage:text,category:text,key:text,data:object):
+  set yaml value "%{_key}%" from "plugins/Skript/storage/%{_usage}%/%{_category}%.yml" to {_data}
 
 #
 # > Function - getyamldata
@@ -47,8 +48,9 @@ function saveyamldata(usage:text,key:text,data:object):
 # > Try to cache results, since this is not very fast.
 # > Parameters:
 # > <text>usage identifier
+# > <text>category
 # > <text>data key
 # > Returns:
 # > <object>data value
-function getyamldata(usage:text,key:text) :: object:
-  return yaml value "%{_key}%" from "plugins/Skript/storage/%{_usage}%/%{_key}%.yml"
+function getyamldata(usage:text,category:text,key:text) :: object:
+  return yaml value "%{_key}%" from "plugins/Skript/storage/%{_usage}%/%{_category}%.yml"
