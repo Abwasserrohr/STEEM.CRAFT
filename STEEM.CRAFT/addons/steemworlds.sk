@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.4
+# steemworlds.sk v0.0.5
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -134,6 +134,12 @@ command /visit [<text>] [<text=home>]:
     set {_worldname} to arg-2
     set {_worldname} to {_worldname}.toLowerCase()
     set {_worldname} to normalize({_worldname})
+
+    #
+    # > To also support entering the ingame username, this part will
+    # > convert the ingame username to the steem account name.
+    if getAccount({_steemaccount}) is not set:
+      set {_steemaccount} to getSyncedAccount({_steemaccount} parsed as offline player)
 
     #
     # > Only create a world, if the steem account exists.
