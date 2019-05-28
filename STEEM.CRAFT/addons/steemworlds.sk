@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.2
+# steemworlds.sk v0.0.3
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -15,7 +15,7 @@
 # > methods may change which could break already stored worlds later on. Once steemworlds.sk
 # > reaches it's version to v1.0.0, the saving will either not be changed anymore or there will
 # > be backwards compatibility for versions after v1.0.0. Until then, use it with care and store
-# > backups on your side.
+# > backups on your side. Saving 4 chunks will cost at least 6 million rc.
 
 #
 # > Steemworld comments, which hold data which refers to the world
@@ -59,25 +59,26 @@ options:
   commentparentpermlink: steemcraft11052019065000
 
 import:
-	java.io.File
-	java.nio.file.Files
-	java.util.regex.Pattern
-	org.apache.commons.io.FileUtils
-	com.fasterxml.jackson.databind.ObjectMapper
-	com.fasterxml.jackson.databind.node.ArrayNode
-	com.fasterxml.jackson.databind.node.ObjectNode
-	org.bukkit.Bukkit
-	org.bukkit.WorldCreator
-	org.bukkit.World$Environment
-	org.bukkit.WorldType
-	com.boydti.fawe.object.schematic.Schematic
-	com.sk89q.worldedit.regions.CuboidRegion
-	com.sk89q.worldedit.bukkit.BukkitWorld
-	com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat
-	com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats
-	com.sk89q.worldedit.EditSession
-	com.sk89q.worldedit.world.World
-	com.sk89q.worldedit.math.BlockVector3
+  java.io.File
+  java.nio.file.Files
+  java.util.regex.Pattern
+  org.apache.commons.io.FileUtils
+  com.fasterxml.jackson.databind.ObjectMapper
+  com.fasterxml.jackson.databind.node.ArrayNode
+  com.fasterxml.jackson.databind.node.ObjectNode
+  org.bukkit.Bukkit
+  org.bukkit.WorldCreator
+  org.bukkit.World$Environment
+  org.bukkit.WorldType
+  org.bukkit.event.world.WorldInitEvent
+  com.boydti.fawe.object.schematic.Schematic
+  com.sk89q.worldedit.regions.CuboidRegion
+  com.sk89q.worldedit.bukkit.BukkitWorld
+  com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat
+  com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats
+  com.sk89q.worldedit.EditSession
+  com.sk89q.worldedit.world.World
+  com.sk89q.worldedit.math.BlockVector3
 
 #
 # > Command - /steemworldsave | /swsave, /scsave, /sws
@@ -86,7 +87,8 @@ import:
 command /steemworldsave:
   aliases: /swsave, /scsave, /sws
   trigger:
-    if "%player's world%" is not "steemworlds-%player%":
+    set {_steemaccount} to getSyncedAccount(player)
+    if "%player's world%" does not contain "steemworlds-%{_steemaccount}%":
       message "%getChatPrefix()% You can only save your own world."
       stop
     saveSteemWorld(player)
@@ -100,10 +102,11 @@ command /steemworldload:
   trigger:
     #
     # > To show off that saving and loading works, there is a single world per
-    # > user, which is hardcoded for now. It is always named "steemworlds-steemusername"
+    # > user, which is hardcoded for now. It is always named "steemworlds-steemusername-worldname"
     if "%player's world%" contains "steemworlds-":
-      set {_account} to "%player's world%"
-      replace all "steemworlds-" with "" in {_account}
+      set {_world} to "%player's world%"
+      replace all "steemworlds-" with "" in {_world}
+      set {_account} to getGeneralStorageData("steemworlds",{_world},"steemaccount")
       #
       # > The following process needs to be executed as a thread, a global variable
       # > is used to call the function.
@@ -111,31 +114,58 @@ command /steemworldload:
         wait 1 tick
       set {sc::accountload} to {_account}
       $ thread
-      loadSteemWorld({sc::accountload},"re-steemcraft-%player's world%",player)
+      loadSteemWorld({sc::accountload},"%player's world%",player)
 
 #
 # > Command - /visit | /steemworldvisit | /swvisit | /scvisit | /swv
 # > Actions:
 # > Visits a steem user and loads the world. Currently, there are no checks
 # > involved if there is actually a world saved. 
-command /visit [<text>]:
+command /visit [<text>] [<text=home>]:
   aliases: /steemworldvisit, /swvisit, /scvisit, /swv
   trigger:
     set {_steemaccount} to arg-1
     set {_steemaccount} to {_steemaccount}.toLowerCase()
+    set {_worldname} to arg-2
+    set {_worldname} to {_worldname}.toLowerCase()
+    set {_worldname} to normalize({_worldname})
     #
     # > Only create a world, if the steem account exists.
     if getAccount({_steemaccount}) is set:
-      createSteemWorld({_steemaccount})
-    #
-    # > The createsteemworld is currently not async. But the dependency
-    # > FastAsyncWorldEdit allows doing it. This will be added soon to
-    # > remove any lag from visiting worlds.
-    while metadata value "steemworlds-%{_steemaccount}%" of getDummy() is "wait":
-      wait 1 tick
-    #
-    # > Teleport the player after the world has been created.
-    teleport player to spawn of "steemworlds-%{_steemaccount}%" parsed as world
+      #
+      # > Check if the world exists on Steem.
+      set {_c} to getSteemContent({_steemaccount},{_worldname})
+      set {_world} to "%{_steemaccount}%-%{_worldname}%"
+      set {_author} to {_c}.getAuthor().getName().toString()
+      #
+      # > If the author is not set, this means that this world doesn't
+      # > exist on Steem, if the player wants to visit his own, not existing
+      # > world, then create it, others will get a error.
+      if {_author} is "":
+        if getSyncedAccount(player) is not {_steemaccount}:
+          if getGeneralStorageData("steemworlds",{_world},"created") is not true:
+            message "%getChatPrefix()% %{_worldname}% by %{_steemaccount}% does not exist."
+            stop
+        else:
+          if getGeneralStorageData("steemworlds",{_world},"created") is not true:
+            message "%getChatPrefix()% Creating %{_worldname}% now..."
+
+      #
+      # > Only create and save general storage information, if the world is not loaded.
+      #if "%{_world}%" parsed as world is not set:
+      createSteemWorld("%{_world}%")
+      saveGeneralStorageData("steemworlds",{_world},"steemaccount",{_steemaccount})
+
+      #
+      # > The createsteemworld is currently not async. But the dependency
+      # > FastAsyncWorldEdit allows doing it. This will be added soon to
+      # > remove any lag from visiting worlds.
+      while metadata value "steemworlds-%{_world}%" of getDummy() is "wait":
+        wait 1 tick
+      #
+      # > Teleport the player after the world has been created.
+      teleport player to spawn of "steemworlds-%{_world}%" parsed as world
+
 
 #
 # > Function - saveSteemWorld:
@@ -380,25 +410,31 @@ function saveSteemWorld(player:player):
 # > <text> The steem username of the account which should be loaded.
 # > <text> The permlink of the world which should be loaded.
 # > <player> The player who should get informed about status messages.
-function loadSteemWorld(steemname:text,permlink:text,player:player):
+function loadSteemWorld(steemname:text,worldname:text,player:player):
   #
   # > The function has been called with a global variable. Delete it here
   # > to allow more calls of this function after it has been called.
   delete {sc::accountload}
+  
   #
   # > The steem name is needed, check if it is actually set.
   if {_steemname} is set:
     set {_steemname} to {_steemname}.toLowerCase()
     #
     # > Get the world parsed as a world.
-    set {_world} to "steemworlds-%{_steemname}%" parsed as world
+    set {_world} to "%{_worldname}%" parsed as world
     set {_txid} to "%{_world}%"
     set {_shortworld} to {_txid}
     replace "steemworlds-" with "" in {_shortworld}
+	
+    #
+	# > Set the permlink to allow getting the comment content.
+    set {_permlink} to "re-steemcraft-%{_worldname}%"
 
     #
     # > Tell the player that the world is now being loaded.
     message "%getChatPrefix()% Loading %{_steemname}%'s world..." to {_player}
+    send action bar "&lLoading world..." to {_player}
     
     #
     # > Loading the content. There is no verification.
@@ -411,9 +447,11 @@ function loadSteemWorld(steemname:text,permlink:text,player:player):
     #
     # > Get the compressed and base64 encoded string.
     set {_plot} to {_jsonNode}.get("world").textValue()
+
     #
     # > Decompress and decode the base64 string, this increases the size.
     set {_plot} to decompressBase64({_plot})
+
     #
     # > Since we now have a string, it has to be loaded using jackson again,
     # > to access it later.
@@ -432,9 +470,15 @@ function loadSteemWorld(steemname:text,permlink:text,player:player):
       add 1 to {_plotpartamount::%{_x}%|%{_z}%}
 
     #
+    # > Get the size of the plotparts to give the player a loading bar.
+    set {_plotsize} to size of {_plotparts::*}
+    set {_pdone} to 100 / {_plotsize}
+
+    #
     # > Loop through the parts of the world and gather the needed
     # > informations.
     loop {_plotparts::*}:
+      add 1 to {_partnumber}
       set {_ops} to getOpsInBlock(loop-value,false)
       loop {_ops}.size() times:
         set {_tx} to loop-number - 1
@@ -444,6 +488,9 @@ function loadSteemWorld(steemname:text,permlink:text,player:player):
           #
           # > Only go forward of the required posting auths match with the requested steem username.
           if "%{_ops}.get({_tx}).getOp().getRequiredPostingAuths().get(0)%" contains "name=%{_steemname}%":
+            #
+            # > Tell the player how the loading process is doing.
+            send action bar "&lLoading... [%{_partnumber} * {_pdone}%%%]" to {_player}
             #
             # > Get the json Metadata as a string and check if the world matches with the
             # > world which should be loaded.
@@ -457,6 +504,15 @@ function loadSteemWorld(steemname:text,permlink:text,player:player):
               set {_data} to {_jsonNode}.get("data").textValue()
 
               set {_plotparts::%{_x}%|%{_z}%|%{_i}%} to {_data}
+    #
+    # > Tell the player about the current status.
+    send action bar "&lDecompressing world..." to {_player}
+
+    #
+    # > Set some variables to calculate the percentage of a loaded world.
+    set {_partnumber} to 0
+    set {_plotsize} to size of {_plotpartamount::*}
+    set {_pdone} to 100 / {_plotsize}
 
     #
     # > Set the chunk parts together to one big chunk.
@@ -494,7 +550,7 @@ function loadSteemWorld(steemname:text,permlink:text,player:player):
 
       #
       # > WorldEdit needs a BukkitWorld instead of a CraftWorld to work.
-      set {_bworld} to new BukkitWorld("steemworlds-%{_steemname}%" parsed as world)
+      set {_bworld} to new BukkitWorld("%{_worldname}%" parsed as world)
 	  
       #
       # > Load the chunk into the clipboard.
@@ -505,12 +561,18 @@ function loadSteemWorld(steemname:text,permlink:text,player:player):
       set {_schematic} to {_clipboard}.load({_file})
 
       #
+      # > Tell the player about the current pasting status.
+      add 1 to {_partnumber}
+      send action bar "&lPasting chunks... [%{_pdone} * {_partnumber}%%%]" to {_player}
+
+      #
       # > Paste the schematic with the chunk to the world at the speficied vector.
       set {_session} to {_schematic}.paste({_bworld}, {_vector})
 
     #
     # > Tell the player that the loading process has been done successfully.
     message "%getChatPrefix()% Successfully loaded %{_steemname}%'s world." to {_player}
+    send action bar "&lLoad successful." to {_player}
 
 #
 # > Function - createSteemWorld
@@ -522,6 +584,7 @@ function createSteemWorld(name:text):
   # > Sets the steemworlds metadata value to wait to allow other
   # > commands and functions to wait until the world is ready.
   set metadata value "steemworlds-%{_name}%" of getDummy() to "wait"
+  saveGeneralStorageData("steemworlds",{_name},"created",true)
 
   #
   # > To create a new world, the WorldCreator is very useful,
@@ -532,25 +595,29 @@ function createSteemWorld(name:text):
   {_world}.type(WorldType.FLAT!)
 
   #
-  # > The world is created after all settings from the WorldCreator have
-  # > been done.
-  Bukkit.createWorld({_world})
+  # > Disable any villages from spawning in.
+  {_world}.generateStructures(false)
 
   #
-  # > The created world needs some changes to prevent resource intensive
-  # > entities and structures in the world.
-  set {_world} to "steemworlds-%{_name}%" parsed as world
-  {_world}.generateStructures(false)	
+  # > Remove any not necessary block layers from the world to reduce size.
+  {_world}.generatorSettings("{""biome"":""minecraft:plains"",""layers"":[{""block"":""minecraft:grass_block"",""height"":1}],structures:{""village"":{}}}")
+
+  #
+  # > The world is created after all settings from the WorldCreator have
+  # > been done.
+  set {_world} to Bukkit.createWorld({_world})
+
+  #
+  # > The created world needs some changes to prevent resource intensive.
   {_world}.setSpawnFlags(false,false)
   {_world}.setMonsterSpawnLimit(0)
   {_world}.setAnimalSpawnLimit(0)
-  {_world}.setKeepSpawnInMemory(false)
   {_world}.setSpawnLocation(0, 4, 0)
 
   #
   # > The size of the world is limited to a fixed size for now.
   # > This is needed to prevent players from creating too much
-  # > world. Only the world withinn the border is being saved
+  # > world. Only the world within the border is being saved
   # > to the Steem Blockchain.
   set {_wb} to {_world}.getWorldBorder()
   {_wb}.setCenter(spawn of {_world})
@@ -562,3 +629,13 @@ function createSteemWorld(name:text):
   # > other commands and functions can go forward as the world is now
   # > successfully loaded.
   delete metadata value "steemworlds-%{_name}%" of getDummy()
+
+#
+# > Event - on WorldInitEvent
+# > Triggered once a world is initialized
+# > Actions:
+# > This event will set the KeepSpawnInMemory value of
+# > all initialized worlds to false to prevent lagspikes.
+on WorldInitEvent with priority HIGHEST:
+  if "%event.getWorld()%" contains "steemworlds-":
+    event.getWorld().setKeepSpawnInMemory(false)
