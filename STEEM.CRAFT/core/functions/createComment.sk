@@ -36,10 +36,10 @@ import:
 # > <ArrayList>the tags of the comment
 # > [<text>]the title of the comment
 # > [<text>]custom json metadata of the comment
-# > [<integer>]percent Steem Dollar (10000 is 50% SBD)
+# > [<integer>]percent Steem Dollar (10000 is 50% SBD, 50% Steem/SP)
 # > [<text>]beneficary account
 # > [<text>]beneficary weight
-function createComment(txuuid:text,account:text,body:text,parentauthor:text,parentpermlink:text,tags:object,title:text="-",customjson:text="none",percentSteemDollars:int=10000,BeneficiaryAccount:text="",BeneficiaryWeight:number=101):
+function createComment(txuuid:text,account:text,body:text,parentauthor:text,parentpermlink:text,tags:object,title:text="-",customjson:text="none",percentSteemDollars:int=10000,BeneficiaryAccount:text="",BeneficiaryWeight:number=10001):
   #
   # > Allow addons to know if a transaction has been processed or not.
   set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "wait"
@@ -111,7 +111,7 @@ function asyncCreateComment(tx:object):
   set {_config} to SteemJConfig.getInstance()
   if {_BeneficiaryAccount} is "":
     set {_BeneficiaryAccount} to getDefaultBeneficiaryAccount()
-  if {_BeneficiaryWeight} > 100:
+  if {_BeneficiaryWeight} > 10000:
     set {_BeneficiaryWeight} to getDefaultBeneficiaryWeight()
   
   #
@@ -169,7 +169,8 @@ function asyncCreateComment(tx:object):
   # > Set the private key of the server wallet to the account which should
   # > broadcast the transaction.
   set {_privatekeys} to new ArrayList()
-  {_privatekeys}.add(new ImmutablePair(PrivateKeyType.POSTING!, getPrivatePostingKey()))
+  set {_postingkey} to getPrivatePostingKey()
+  {_privatekeys}.add(new ImmutablePair(PrivateKeyType.POSTING!, {_postingkey}))
   {_config}.getPrivateKeyStorage().addAccount({_account},{_privatekeys})
   delete {_privatekeys}
 
@@ -194,12 +195,13 @@ function asyncCreateComment(tx:object):
 
   #
   # > If the beneficary for this is above 0, add beneficaries.
-  if {_config}.getSteemJWeight() > 0:
+  if {_BeneficiaryWeight} > 0:
     #
     # > Each comment could have mutliple beneficary route types. 
 	# > Currently, only one beneficary is used.
-    set {_beneficiaryRouteType} to new BeneficiaryRouteType({_config}.getBeneficiaryAccount(),{_config}.getSteemJWeight())
-
+    
+    set {_beneficiaryRouteType} to new BeneficiaryRouteType(new AccountName({_BeneficiaryAccount}),{_BeneficiaryWeight})
+	
     #
     # > Since there could be multiple beneficaries, we need a ArrayList.
     set {_beneficiaryRouteTypes} to new ArrayList()
@@ -211,20 +213,27 @@ function asyncCreateComment(tx:object):
     #
     # > The beneficary routes now have to be set to the CommentPayoutBeneficiaries.
     set {_commentPayoutBeneficiaries} to new CommentPayoutBeneficiaries()
+
     {_commentPayoutBeneficiaries}.setBeneficiaries({_beneficiaryRouteTypes})
-	
+
     #
     # > The beneficaries are a part of the comment option extensions, which are a
     # > handled as a ArrayList.
     set {_commentOptionsExtensions} to new ArrayList()
     {_commentOptionsExtensions}.add({_commentPayoutBeneficiaries})
-	
+
     #
-    # > The commentoptionsoperation will create or update a comment.
-    set {_commentOptionsOperation} to new CommentOptionsOperation({_account}, {_permlink},{_maxAcceptedPayout}, {_percentSteemDollars}, {_allowVotes}, {_allowCurationRewards},{_commentOptionsExtensions})
+    # > The CommentOptionsOperation will set additional settings for the comment.
+    set {_commentOptionsOperation} to new CommentOptionsOperation({_account}, {_permlink}, {_commentOptionsExtensions})
+    {_commentOptionsOperation}.setPercentSteemDollars({_percentSteemDollars})
+    {_commentOptionsOperation}.setAllowVotes({_allowVotes})
+    {_commentOptionsOperation}.setAllowCurationRewards({_allowCurationRewards})
+
+  #
+  # > If no beneficaries are set or set to 0, call CommentOptionsOperation with other parameters.
   else:
-    set {_commentOptionsOperation} to new CommentOptionsOperation({_account}, {_permlink},{_maxAcceptedPayout}, {_percentSteemDollars}, {_allowVotes}, {_allowCurationRewards}, null)
-    
+    set {_commentOptionsOperation} to new CommentOptionsOperation({_account}, {_permlink}, {_percentSteemDollars})
+
   #
   # > Multiple operations could be added to one transaction. This is why
   # > we have to add our operation to a ArrayList.
@@ -243,7 +252,7 @@ function asyncCreateComment(tx:object):
   # > To prevent this from being logged into the console,
   # > it has the prefix "try".
   try {_steemj}.broadcastTransaction({_signedTx})
-  
+
   #
   # > If there has been a error in the last broadcast transaction,
   # > set the error to the response metadata to allow addons to
