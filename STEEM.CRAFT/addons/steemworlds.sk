@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.5
+# steemworlds.sk v0.0.6
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -317,6 +317,7 @@ function saveSteemWorld(player:player):
       loop {_chunksplit::*}:
         add 1 to {_partid}
         set {_txcontent} to "{""w"":""%{_shortworld}%"",""x"":%{_chunkx}%,""z"":%{_chunkz}%,""s"":%size of {_chunksplit::*}%,""i"":%{_partid}%,""data"":""%{_chunksplit::%{_partid}%}%""}"
+
         #
         # > Now, the custom json is broadcasted. The saving process will repeat the
         # > process in case of any error.
@@ -328,12 +329,14 @@ function saveSteemWorld(player:player):
           if getSteemResponse({_txuuid}) is "done":
             set {_done} to true
             message "%getChatPrefix()% %{_loopnumber}% of %size of {_chunks::*}% chunks done." to {_player}
+
           #
 		  # > If there has been a error, wait 1 second and repeat.
           else:
             message "%getChatPrefix()% Error. Repeating." to {_player}
             wait 1 second
         delete {_done}
+
         #
         # > If there are still some splits to go, wait 3 seconds after one has been done.
         if size of {_chunksplit::*} >= {_partid}:
@@ -392,6 +395,7 @@ function saveSteemWorld(player:player):
     {_finaljson}.put("app", "{@commentapp}")
     {_finaljson}.put("tags", {@commenttags})
     {_finaljson}.put("format", "{@commentformat}")
+
 	#
 	# > To shrink down the reference parts, this data is being compressed and encoded into base64.
     {_finaljson}.put("world", compressBase64({_arraynode}.toString()))
@@ -450,8 +454,15 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
     #
     # > Tell the player that the world is now being loaded.
     message "%getChatPrefix()% Loading %{_steemname}%'s world..." to {_player}
-    send action bar "&lLoading world..." to {_player}
-    
+
+    #
+    # > The bossbar is perfect to represent a loading bar, use it here.
+    set {_bossbar} to createBossBar("&lLoading world...","yellow","10")
+    set {_progress} to 0.0
+    {_bossbar}.setProgress({_progress})
+    {_bossbar}.addPlayer({_player})
+    {_bossbar}.setVisible(true)
+
     #
     # > Loading the content. There is no verification.
     set {_c} to getSteemContent({_steemname},{_permlink})
@@ -506,7 +517,9 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
           if "%{_ops}.get({_tx}).getOp().getRequiredPostingAuths().get(0)%" contains "name=%{_steemname}%":
             #
             # > Tell the player how the loading process is doing.
-            send action bar "&lLoading... [%{_partnumber} * {_pdone}%%%]" to {_player}
+            {_bossbar}.setTitle("&lLoading... [%{_partnumber} * {_pdone}%%%]")
+            set {_progress} to (({_partnumber} * {_pdone})/100)/1.5
+            {_bossbar}.setProgress({_progress})
             #
             # > Get the json Metadata as a string and check if the world matches with the
             # > world which should be loaded.
@@ -522,7 +535,9 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
               set {_plotparts::%{_x}%|%{_z}%|%{_i}%} to {_data}
     #
     # > Tell the player about the current status.
-    send action bar "&lDecompressing world..." to {_player}
+    {_bossbar}.setTitle("&lDecompressing world...")
+    set {_progress} to 0.5
+    {_bossbar}.setProgress({_progress})
 
     #
     # > Set some variables to calculate the percentage of a loaded world.
@@ -583,7 +598,9 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
       #
       # > Tell the player about the current pasting status.
       add 1 to {_partnumber}
-      send action bar "&lPasting chunks... [%{_pdone} * {_partnumber}%%%]" to {_player}
+      {_bossbar}.setTitle("&lPasting chunks... [%{_pdone} * {_partnumber}%%%]")
+      set {_progress} to 0.75+(({_partnumber} * {_pdone})/100)/4
+      {_bossbar}.setProgress({_progress})
 
       #
       # > Paste the schematic with the chunk to the world at the speficied vector.
@@ -592,7 +609,17 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
     #
     # > Tell the player that the loading process has been done successfully.
     message "%getChatPrefix()% Successfully loaded %{_steemname}%'s world." to {_player}
-    send action bar "&lLoad successful." to {_player}
+    {_bossbar}.setTitle("&lLoad successful.")
+
+    #
+    # > Remove the bossbar after one second.
+    wait 1 second
+
+	#
+    # > Remove all players from the bossbar to no longer display it
+    # > to the players, only deleting it is not enough.
+    {_bossbar}.removeAll()
+    delete {_bossbar}
 
 #
 # > Function - createSteemWorld
