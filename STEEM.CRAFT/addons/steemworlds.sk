@@ -239,11 +239,24 @@ function saveSteemWorld(player:player):
     message "%getChatPrefix()% Your world is now being saved. This will take at least %(size of {_chunks::*} * 10) + 70% seconds." to {_player}
 
     #
+    # > The bossbar is perfect to represent a loading bar, use it here.
+    set {_bossbar} to createBossBar("&lSaving world...","yellow","10")
+    set {_progress} to 0.0
+    {_bossbar}.setProgress({_progress})
+    {_bossbar}.addPlayer({_player})
+    {_bossbar}.setVisible(true)
+
+    #
     # > Since getting the block number of a transaction is currenttly not working for me,
     # > the start block number is saved here. This is used to query the history of the account
     # > and check only transactions that have been broadcasted after this block number.
     set {_startHeadBlockNumber} to getHeadBlockNumber()
 
+    #
+    # > Set the plot size to allow the progress percentage later.
+    set {_plotsize} to size of {_chunks::*}
+    set {_pdone} to 100 / {_plotsize}
+	
     #
     # > All chunks are now looped. A schematic file is created and splitted
     # > into usable parts and encoded with base64.
@@ -309,7 +322,7 @@ function saveSteemWorld(player:player):
       #
       # > Only the short world name is necessary here.
       replace "steemworlds-" with "" in {_shortworld}
- 
+
       #
       # > Now, the splitted chunks are being looped through. Every splitted chunk
       # > gets a custom json transaction, which is currently set by simply settings
@@ -328,13 +341,19 @@ function saveSteemWorld(player:player):
             wait 1 tick
           if getSteemResponse({_txuuid}) is "done":
             set {_done} to true
-            message "%getChatPrefix()% %{_loopnumber}% of %size of {_chunks::*}% chunks done." to {_player}
+
+            #
+            # > Tell the player about the current status of the world broadcasting.
+            {_bossbar}.setTitle("&lBroadcasting chunks...")
+            set {_progress} to (({_loopnumber} * {_pdone})/100)/2
+            {_bossbar}.setProgress({_progress})
 
           #
 		  # > If there has been a error, wait 1 second and repeat.
           else:
             message "%getChatPrefix()% Error. Repeating." to {_player}
             wait 1 second
+
         delete {_done}
 
         #
@@ -346,16 +365,17 @@ function saveSteemWorld(player:player):
     # > Tell the player that the world has been saved and that it needs to wait
     # > until the transactions are consensus, since I currently can't get the block
     # > number of the transaction directly.
-    message "%getChatPrefix()% Your world has been saved." to {_player}
-    message "%getChatPrefix()% Waiting for transactions to get consensus." to {_player}
-
-    #
-    # > A timer will count down until ready.
     set {_timer} to 80
     loop 80 times:
-      send action bar "&fWait &6&l%{_timer}%&f seconds" to {_player}
+      add 0.005 to {_progress}
+      {_bossbar}.setTitle("&lWait &6&l%{_timer}%&f&l seconds...")
+      {_bossbar}.setProgress({_progress})
       remove 1 from {_timer}
       wait 1 second
+
+    #
+    # > Tell the player that the world is now being broadcasted.
+    {_bossbar}.setTitle("&lBroadcasting world...")
 
     #
     # > Go through the last 1000 transactions of the user.
@@ -419,9 +439,24 @@ function saveSteemWorld(player:player):
 
     if getSteemResponse({_txuuid}) is "done":
       message "%getChatPrefix()% Your world has been saved sucessfully." to {_player}
+      #
+      # > Set the loading bossbar to 100% and the title to a success message
+      # > to tell the player that everything worked.
+      {_bossbar}.setTitle("&lWorld sucessfully saved.")
+      {_bossbar}.setProgress(1.0)
     else:
       message "%getChatPrefix()% A error occured." to {_player}
       message "%getChatPrefix()% %getSteemResponse({_txuuid})%" to {_player}
+
+    #
+    # > Remove the bossbar after one second.
+    wait 1 second
+
+    #
+    # > Remove all players from the bossbar to no longer display it
+    # > to the players, only deleting it is not enough.
+    {_bossbar}.removeAll()
+    delete {_bossbar}
 
 #
 # > Function - loadSteemWorld:
