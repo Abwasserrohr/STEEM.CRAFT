@@ -235,9 +235,16 @@ function asyncCreateComment(tx:object):
     set {_commentOptionsOperation} to new CommentOptionsOperation({_account}, {_permlink}, {_percentSteemDollars})
 
   #
-  # > Multiple operations could be added to one transaction. This is why
-  # > we have to add our operation to a ArrayList.
-  {_operations}.add({_commentOptionsOperation})
+  # > Get the Steem content to geht the maybe already existing beneficaries.
+  set {_content} to getSteemContent({_account}.getName().toString(),{_permlink}.getLink().toString())
+
+  #
+  # > Only do add CommentOptions if there is no comment for this author and permlink yet.
+  if {_content}.getAuthor().getName() is "":
+    #
+    # > Adding the CommentOptionsOperation to the operations, which already
+    # > contains the CommentOperation.
+    {_operations}.add({_commentOptionsOperation})
 
   #
   # > The head block id is needed to sign the transaction.
