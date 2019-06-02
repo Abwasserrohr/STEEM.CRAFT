@@ -379,7 +379,7 @@ function saveSteemWorld(player:player):
               set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "error"
 
             wait 1 tick
-          send action bar "done %{_waittime}%" to {_player}
+
           if getSteemResponse({_txuuid}) is "done":
             set {_done} to true
 
