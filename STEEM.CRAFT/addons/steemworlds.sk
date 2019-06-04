@@ -358,8 +358,14 @@ function saveSteemWorld(player:player):
       set {_file} to new File("tmp/steemworlds_%{_world}%_%loop-value.getX()%_%loop-value.getZ()%.schem")
       set {_chunkx} to loop-value.getX()
       set {_chunkz} to loop-value.getZ()
-      set {_b} to BlockVector3.at({_x1}, 0, {_z1})
-      set {_t} to BlockVector3.at({_x2}, 255, {_z2})
+
+      #
+      # > WorldEdit is maybe unsure how it should place the blocks if it is
+      # > exactly on 0.5, that's why 0.5 is deducted on x- and z-coords.
+      # > This is also done in the loading process to match this.
+      set {_b} to BlockVector3.at({_x1}-0.5, 0, {_z1}-0.5)
+      set {_t} to BlockVector3.at({_x2}-0.5, 255, {_z2}-0.5)
+
       set {_bworld} to new BukkitWorld({_world})
       set {_reg} to new CuboidRegion({_bworld}, {_b}, {_t})
       set {_schem} to new Schematic({_reg})
