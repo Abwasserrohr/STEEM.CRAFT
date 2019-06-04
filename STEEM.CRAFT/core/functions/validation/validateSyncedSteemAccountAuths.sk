@@ -17,7 +17,6 @@
 function validateSyncedSteemAccountAuths(player:offline player, account:object) :: boolean:
   #
   # > Check if the given steem account authorized the server Steem account.
-  set {_accountdata} to getAccount({_account})
   if {_account} is set:
     set {_neededauth} to getServerAccountName()
     loop ...{_account}.getPosting().getAccountAuths().keySet():
