@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.8
+# steemworlds.sk v0.0.9
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -38,7 +38,7 @@ options:
   commentformat: markdown
   #
   # > The tags can be used to query specific contents from the blockchain.
-  commenttags: ["steemsk","steemcraft"]
+  commenttags: ["steemcraft","steemworlds"]
   #
   # > The title is used on almost all Steem based blog apps to see what
   # > the comment is about.
@@ -519,9 +519,18 @@ function saveSteemWorld(player:player):
     # > add other custom json data to the json.
     set {_finaljson} to {_objectMapper}.createObjectNode()
     {_finaljson}.put("app", "{@commentapp}")
-    {_finaljson}.put("tags", {@commenttags})
-    {_finaljson}.put("format", "{@commentformat}")
 
+    #
+    # > Apply tags by converting the array to a list and
+    # > adding each entry into the ArrayNode.
+    set {_tags} to {_objectMapper}.createArrayNode()
+    set {_tags::*} to ...{@commenttags}
+    loop {_tags::*}:
+      {_tags}.add(loop-value)
+
+    {_finaljson}.put("tags", {_tags})
+    {_finaljson}.put("format", "{@commentformat}")
+    
     #
     # > The world size is important to set the world size correctly on load.
     {_finaljson}.put("wsize", {_size})
