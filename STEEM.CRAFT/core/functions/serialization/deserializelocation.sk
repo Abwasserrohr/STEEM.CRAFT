@@ -1,0 +1,20 @@
+#
+# ==============
+# deserializelocation.sk
+# ==============
+# deserializelocation.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+#
+# > Function - deserializelocation
+# > Parameters:
+# > <text> the serialized location which should get deserialized.
+# > <world> the world to which this location should be bound to.
+# > Actions:
+# > Deserializes the text to a location and returns it.
+function deserializelocation(l:text,world:world) :: location:
+  set {_l::*} to {_l} split at "_"
+  set {_l} to location at {_l::1} parsed as number, {_l::2} parsed as number, {_l::3} parsed as number in {_world}
+  set {_l}'s yaw to {_l::4} parsed as number
+  set {_l}'s pitch to {_l::5} parsed as number
+  return {_l}

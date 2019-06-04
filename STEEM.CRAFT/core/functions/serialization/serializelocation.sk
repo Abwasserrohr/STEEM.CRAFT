@@ -1,0 +1,15 @@
+#
+# ==============
+# serializelocation.sk
+# ==============
+# serializelocation.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+#
+# > Function - serializelocation
+# > Parameters:
+# > <location> the location which should get serialized.
+# > Actions:
+# > Serializes the location to a string and returns it.
+function serializelocation(l:location) :: text:
+  return "%x-coord of {_l}%_%y-coord of {_l}%_%z-coord of {_l}%_%yaw of {_l}%_%pitch of {_l}%"

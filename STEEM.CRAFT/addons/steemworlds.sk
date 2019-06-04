@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.9
+# steemworlds.sk v0.0.10
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -116,6 +116,22 @@ command /steemworldsize [<text>]:
     setSteemWorldSize(player's world,round({_size}))
 
 #
+# > Command - /steemworldsize | /swsize, /scsize
+# > Actions:
+# > Sets the size of the steem world for the player, if it is 
+# > owned by the player.
+command /steemspawn:
+  aliases: /swspawn, /scspawn
+  trigger:
+    set {_steemaccount} to getSyncedAccount(player)
+    if "%player's world%" does not contain "steemworlds-%{_steemaccount}%":
+      message "%getChatPrefix()% You can only change the spawn of your worlds."
+      stop
+
+    setSteemWorldSpawn(player's world,player's location)
+    message "%getChatPrefix()% The spawn of this world has been changed."
+
+#
 # > Command - /steemworldsave | /swsave, /scsave, /sws
 # > Actions:
 # > Saves the world of the player, if it is a steemworld of the player.
@@ -165,83 +181,97 @@ command /visit [<text>] [<text=home>]:
     set {_steemaccount} to {_steemaccount}.toLowerCase()
 
     #
-    # Convert the world name to a Steem supported format.
+    # > Convert the world name to a Steem supported format.
     set {_worldname} to arg-2
     set {_worldname} to {_worldname}.toLowerCase()
     set {_worldname} to normalize({_worldname})
-
-    #
-    # > Check if the account exists.
-    getAccount({_steemaccount})
-
-    #
-    # > Wait for a response which happens in a thread.
-    while getAccountResponse({_steemaccount}) is "wait":
-      wait 1 tick
-
-    #
-    # > To also support entering the ingame username, this part will
-    # > convert the ingame username to the steem account name.
-    if getAccountResponse({_steemaccount}) is not set:
-      set {_steemaccount} to getSyncedAccount({_steemaccount} parsed as offline player)
-      #
-      # > Check this again for existance.
-      getAccount({_steemaccount})
 	
+    #
+    # > Maybe, the server aleady loaded this world once, this allows to bypass
+    # > any checks for existing worlds.
+    set {_created} to getGeneralStorageData("steemworlds","%{_steemaccount}%-%{_worldname}%","created")
+    
+    if {_created} is true:
+      set {_world} to "%{_steemaccount}%-%{_worldname}%"
+
+    else:
       #
-      # > Wait again for the response.
+      # > Check if the account exists.
+      getAccount({_steemaccount})
+
+      #
+      # > Wait for a response which happens in a thread.
       while getAccountResponse({_steemaccount}) is "wait":
         wait 1 tick
 
+      #
+      # > To also support entering the ingame username, this part will
+      # > convert the ingame username to the steem account name.
+      if getAccountResponse({_steemaccount}) is not set:
+        set {_steemaccount} to getSyncedAccount({_steemaccount} parsed as offline player)
+        #
+        # > Check this again for existance.
+        getAccount({_steemaccount})
+	
+        #
+        # > Wait again for the response.
+        while getAccountResponse({_steemaccount}) is "wait":
+          wait 1 tick
+
+      #
+      # > Only create a world, if the steem account exists.
+      if getAccountResponse({_steemaccount}) is set:
+
+        #
+        # > Check if the world exists on Steem.
+        getSteemContent({_steemaccount},{_permlink})
+
+        #
+        # > Wait until the Steem content response is no longer "wait".
+        while getSteemContentResponse({_steemaccount},{_permlink}) is "wait":
+          wait 1 tick
+
+        #
+        # > Get the Steem content response.
+        set {_c} to getSteemContentResponse({_steemaccount},{_permlink})
+
+        set {_world} to "%{_steemaccount}%-%{_worldname}%"
+        set {_author} to {_c}.getAuthor().getName().toString()
+
+        #
+        # > If the author is not set, this means that this world doesn't
+        # > exist on Steem, if the player wants to visit his own, not existing
+        # > world, then create it, others will get a error.
+        if {_author} is "":
+          if getSyncedAccount(player) is not {_steemaccount}:
+            if getGeneralStorageData("steemworlds",{_world},"created") is not true:
+              message "%getChatPrefix()% %{_worldname}% by %{_steemaccount}% does not exist."
+              stop
+          else:
+            if getGeneralStorageData("steemworlds",{_world},"created") is not true:
+              message "%getChatPrefix()% Creating %{_worldname}% now..."
+
     #
-    # > Only create a world, if the steem account exists.
-    if getAccountResponse({_steemaccount}) is set:
+    # > Only create and save general storage information, if the world is not loaded.
+    if "steemworlds-%{_world}%" parsed as world is not set:
+      createSteemWorld("%{_world}%")
+      saveGeneralStorageData("steemworlds",{_world},"steemaccount",{_steemaccount})
 
-      #
-      # > Check if the world exists on Steem.
-      getSteemContent({_steemaccount},{_permlink})
+    #
+    # > The createsteemworld is currently not async. But the dependency
+    # > FastAsyncWorldEdit allows doing it. This will be added soon to
+    # > remove any lag from visiting worlds.
+    while metadata value "steemworlds-%{_world}%" of getDummy() is "wait":
+      wait 1 tick
 
-      #
-      # > Wait until the Steem content response is no longer "wait".
-      while getSteemContentResponse({_steemaccount},{_permlink}) is "wait":
-        wait 1 tick
-
-      #
-      # > Get the Steem content response.
-      set {_c} to getSteemContentResponse({_steemaccount},{_permlink})
-
-      set {_world} to "%{_steemaccount}%-%{_worldname}%"
-      set {_author} to {_c}.getAuthor().getName().toString()
-
-      #
-      # > If the author is not set, this means that this world doesn't
-      # > exist on Steem, if the player wants to visit his own, not existing
-      # > world, then create it, others will get a error.
-      if {_author} is "":
-        if getSyncedAccount(player) is not {_steemaccount}:
-          if getGeneralStorageData("steemworlds",{_world},"created") is not true:
-            message "%getChatPrefix()% %{_worldname}% by %{_steemaccount}% does not exist."
-            stop
-        else:
-          if getGeneralStorageData("steemworlds",{_world},"created") is not true:
-            message "%getChatPrefix()% Creating %{_worldname}% now..."
-
-      #
-      # > Only create and save general storage information, if the world is not loaded.
-      if "%{_world}%" parsed as world is not set:
-        createSteemWorld("%{_world}%")
-        saveGeneralStorageData("steemworlds",{_world},"steemaccount",{_steemaccount})
-
-      #
-      # > The createsteemworld is currently not async. But the dependency
-      # > FastAsyncWorldEdit allows doing it. This will be added soon to
-      # > remove any lag from visiting worlds.
-      while metadata value "steemworlds-%{_world}%" of getDummy() is "wait":
-        wait 1 tick
-
-      #
-      # > Teleport the player after the world has been created.
-      teleport player to spawn of "steemworlds-%{_world}%" parsed as world
+    #
+    # > Teleport the player after the world has been created.
+    set {_world} to "steemworlds-%{_world}%" parsed as world
+    set {_location} to getSteemWorldSpawn({_world})
+    if {_location} is set:
+      teleport player to {_location}
+    else:
+      teleport player to spawn of {_world}
 
 #
 # > Function - saveSteemWorld:
@@ -530,13 +560,19 @@ function saveSteemWorld(player:player):
 
     {_finaljson}.put("tags", {_tags})
     {_finaljson}.put("format", "{@commentformat}")
-    
+
     #
     # > The world size is important to set the world size correctly on load.
     {_finaljson}.put("wsize", {_size})
 
-	#
-	# > To shrink down the reference parts, this data is being compressed and encoded into base64.
+    #
+    # > Set the spawn location to the string from the local storage.
+    set {_spawn} to getGeneralStorageData("steemworlds",{_shortworld},"spawn")
+    if {_spawn} is set:
+      {_finaljson}.put("spawn", {_spawn})
+
+    #
+    # > To shrink down the reference parts, this data is being compressed and encoded into base64.
     {_finaljson}.put("world", compressBase64({_arraynode}.toString()))
 
     set {_txid} to "%{_world}%"
@@ -633,10 +669,16 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
     # > Reading the json metadata of the content is done using ObjectMapper.
     set {_objectMapper} to new ObjectMapper()
     set {_jsonNode} to {_objectMapper}.readTree({_c}.getJsonMetadata())
+
     #
     # > Get the compressed and base64 encoded string.
     set {_plot} to {_jsonNode}.get("world").textValue()
-	
+
+    #
+    # > Get the serialized location and save it to the storage.
+    set {_spawn} to {_jsonNode}.get("spawn").textValue()
+    saveGeneralStorageData("steemworlds",{_shortworld},"spawn",{_spawn})
+
     #
     # > Set the world size to the defined size in the Steem comment.
     set {_size} to {_jsonNode}.get("wsize").doubleValue()
@@ -867,6 +909,30 @@ function setSteemWorldSize(world:world,size:number):
   {_wb}.setCenter(spawn of {_world})
   {_wb}.setWarningDistance(0)
   {_wb}.setSize({_size}*32)
+
+#
+# > Function - setSteemWorldSpawn
+# > Sets a new spawn for the defined steemworld.
+# > Parameters:
+# > <world>the steem world which should be changed
+# > <location>the new spawn location of the world
+function setSteemWorldSpawn(world:world,l:location):
+  set {_world} to "%{_world}%"
+  replace all "steemworlds-" with "" in {_world}
+  set {_l} to serializelocation({_l})
+  saveGeneralStorageData("steemworlds",{_world},"spawn",{_l})
+
+#
+# > Function - getSteemWorldSpawn
+# > Gets the spawn for the defined steemworld from storage.
+# > Parameters:
+# > <world>the steem world which should be changed
+function getSteemWorldSpawn(world:world) :: location:
+  set {_worldstring} to "%{_world}%"
+  replace all "steemworlds-" with "" in {_worldstring}
+  set {_l} to getGeneralStorageData("steemworlds",{_worldstring},"spawn")
+  set {_l} to deserializelocation({_l},{_world})
+  return {_l}
 
 #
 # > Event - on WorldInitEvent
