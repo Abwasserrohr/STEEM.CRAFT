@@ -12,10 +12,48 @@ import:
 
 #
 # > Function - getSteemContent:
-# > Returns the content of the specified author and permlink.
+# > Calls the getSteemContentAsync function in a thread.
 # > Parameters:
 # > <text>author
 # > <text>permlink
-function getSteemContent(author:text,permlink:text) :: object:
+function getSteemContent(author:text,permlink:text):
+  set metadata value "SteemContent-%{_author}%-%{_permlink}%" of getDummy() to "wait"
+  #
+  # > Only create one steem content request at a time, wait until the prevous
+  # > one is done, this may take some milliseconds.
+  while metadata value "SteemContentRequest" of getDummy() is set:
+    wait 1 tick
+  set metadata value "SteemContentRequest" of getDummy() to [{_author},{_permlink}]
+  #
+  # > Run the task in a thread, since it will halt the server.
+  $ thread
+  getSteemContentAsync(metadata value "SteemContentRequest" of getDummy())
+
+#
+# > Function - getSteemContentAsync:
+# > Sets the content of the specified author and permlink as metadata value.
+# > Parameters:
+# > <Array>[author,permlink]
+function getSteemContentAsync(array:object):
+  delete metadata value "SteemContentRequest" of getDummy()
+  #
+  # > Convert the array to a Skript list.
+  set {_array::*} to ...{_array}
   set {_steemj} to new SteemJ()
-  return {_steemj}.getContent(new AccountName({_author}),new Permlink({_permlink}))
+  #
+  # > Get the content, the strings have to be converted to AccountName and Permlink.
+  set {_result} to {_steemj}.getContent(new AccountName({_array::1}),new Permlink({_array::2}))
+  set metadata value "SteemContent-%{_array::1}%-%{_array::2}%" of getDummy() to {_result}
+  #
+  # > After 5 seconds, delete the response to keep the server clean.
+  wait 5 seconds
+  delete metadata value "SteemContent-%{_array::1}%-%{_array::2}%" of getDummy()
+
+#
+# > Function - getSteemContentResponse:
+# > Returns the current response avaiable for a previous content call.
+# > Parameters:
+# > <text>author
+# > <text>permlink
+function getSteemContentResponse(author:text,permlink:text) :: object:
+  return metadata value "SteemContent-%{_author}%-%{_permlink}%" of getDummy()
