@@ -59,7 +59,7 @@ options:
   #
   # > The commennt parent permlink works the same way the parent author works.
   # > If this is changed, you can't load worlds from other comment parent permlinks.
-  commentparentpermlink: steemcraft11052019065000
+  commentparentpermlink: w
 
 import:
   java.io.File
@@ -569,13 +569,12 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
     {_bossbar}.setVisible(true)
 
     #
-    # > Load the content.
-    getSteemContent({_steemname},{_permlink})
-
-    #
-    # > Wait until the Steem content response is no longer "wait".
-    while getSteemContentResponse({_steemname},{_permlink}) is "wait":
+    # > Load the content using getSteemContentAsync without thread,
+    # > since we're already in a thread.
+    while metadata value "SteemContentRequest" of getDummy() is set:
       wait 1 tick
+    set metadata value "SteemContentRequest" of getDummy() to [{_steemname},{_permlink}]
+    getSteemContentAsync(metadata value "SteemContentRequest" of getDummy())
 
     #
     # > Get the Steem content response.
@@ -628,7 +627,11 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
     # > informations.
     loop {_plotparts::*}:
       add 1 to {_partnumber}
+
+      #
+      # > Get the operations of a block.
       set {_ops} to getOpsInBlock(loop-value,false)
+
       loop {_ops}.size() times:
         set {_tx} to loop-number - 1
         #
