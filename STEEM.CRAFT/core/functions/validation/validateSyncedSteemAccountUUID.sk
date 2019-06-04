@@ -14,7 +14,7 @@ import:
 # > false is returned.
 # > Parameters:
 # > <offline player>the player which should be checked for being synced
-# > <SteeJ account>a SteemJ account object
+# > <SteemJ account>a SteemJ account object
 # > Returns:
 # > <boolean>true=synced | false=not synced
 function validateSyncedSteemAccountUUID(player:offline player, account:object) :: boolean:
