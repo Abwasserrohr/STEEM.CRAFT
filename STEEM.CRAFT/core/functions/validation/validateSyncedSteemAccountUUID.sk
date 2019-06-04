@@ -14,27 +14,14 @@ import:
 # > false is returned.
 # > Parameters:
 # > <offline player>the player which should be checked for being synced
-# > <text>the steem account which should be checked for being synced
+# > <SteeJ account>a SteemJ account object
 # > Returns:
 # > <boolean>true=synced | false=not synced
-function validateSyncedSteemAccountUUID(player:offline player, account:text="checkstorage") :: boolean:
+function validateSyncedSteemAccountUUID(player:offline player, account:object) :: boolean:
   #
-  # > If there has been no account defined, use already synced one to
-  # > validate.
-  if {_account} is "checkstorage":
-    set {_account} to getSyncedAccount({_player})
-    #
-    # > If there is no account defined in the parameters and not stored
-    # > on the server, return false.
-    if {_account} is false:
-      return false
-
-  #
-  # > Since there is an account stored, get the account from the
-  # > Steem Blockchain to check if the saved uuid matches with the player.
-  set {_accountdata} to getAccount({_account})
-  if {_accountdata} is set:
-    set {_json} to {_accountdata}.getJsonMetadata()
+  # > Check if the given steem account matches up with the given minecraft user.
+  if {_account} is set:
+    set {_json} to {_account}.getJsonMetadata()
     set {_objectMapper} to new ObjectMapper()
     set {_jsonNode} to {_objectMapper}.readTree({_json})
 
