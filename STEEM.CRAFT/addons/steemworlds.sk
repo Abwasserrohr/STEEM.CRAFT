@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.7
+# steemworlds.sk v0.0.8
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -181,7 +181,17 @@ command /visit [<text>] [<text=home>]:
     if getAccount({_steemaccount}) is set:
       #
       # > Check if the world exists on Steem.
-      set {_c} to getSteemContent({_steemaccount},{_worldname})
+      getSteemContent({_steemaccount},{_permlink})
+
+      #
+      # > Wait until the Steem content response is no longer "wait".
+      while getSteemContentResponse({_steemaccount},{_permlink}) is "wait":
+        wait 1 tick
+
+      #
+      # > Get the Steem content response.
+      set {_c} to getSteemContentResponse({_steemaccount},{_permlink})
+
       set {_world} to "%{_steemaccount}%-%{_worldname}%"
       set {_author} to {_c}.getAuthor().getName().toString()
 
@@ -559,8 +569,17 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
     {_bossbar}.setVisible(true)
 
     #
-    # > Loading the content. There is no verification.
-    set {_c} to getSteemContent({_steemname},{_permlink})
+    # > Load the content.
+    getSteemContent({_steemname},{_permlink})
+
+    #
+    # > Wait until the Steem content response is no longer "wait".
+    while getSteemContentResponse({_steemname},{_permlink}) is "wait":
+      wait 1 tick
+
+    #
+    # > Get the Steem content response.
+    set {_c} to getSteemContentResponse({_steemname},{_permlink})
 
     #
     # > Reading the json metadata of the content is done using ObjectMapper.
