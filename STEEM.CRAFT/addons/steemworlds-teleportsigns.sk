@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds-teleportsigns.sk v0.0.2
+# steemworlds-teleportsigns.sk v0.0.3
 # ==============
 # steemworlds-teleportsigns.sk is part of the STEEM.CRAFT addons (addon to steemworlds.sk).
 # ==============
@@ -40,7 +40,19 @@ on sign change:
     #
     # > If the given username is not set, tell the that the 2nd
     # > line needs a steem username. Also break the sign again.
-    if getAccount({_name}) is not set:
+    # > Load the world comment.
+    getAccount({_name})
+
+    #
+    # > Wait until the Steem account response is no longer "wait".
+    while getAccountResponse({_name}) is "wait":
+      wait 1 tick
+
+    #
+    # > Get the Steem account response.
+    set {_account} to getAccountResponse({_name})
+
+    if {_account} is not set:
       message "%getChatPrefix()% Set a valid Steem name on the 2nd line."
       event-block.breakNaturally()
       stop
