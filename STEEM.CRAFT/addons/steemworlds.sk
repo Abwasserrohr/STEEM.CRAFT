@@ -171,14 +171,32 @@ command /visit [<text>] [<text=home>]:
     set {_worldname} to normalize({_worldname})
 
     #
+    # > Check if the account exists.
+    getAccount({_steemaccount})
+
+    #
+    # > Wait for a response which happens in a thread.
+    while getAccountResponse({_steemaccount}) is "wait":
+      wait 1 tick
+
+    #
     # > To also support entering the ingame username, this part will
     # > convert the ingame username to the steem account name.
-    if getAccount({_steemaccount}) is not set:
+    if getAccountResponse({_steemaccount}) is not set:
       set {_steemaccount} to getSyncedAccount({_steemaccount} parsed as offline player)
+      #
+      # > Check this again for existance.
+      getAccount({_steemaccount})
+	
+      #
+      # > Wait again for the response.
+      while getAccountResponse({_steemaccount}) is "wait":
+        wait 1 tick
 
     #
     # > Only create a world, if the steem account exists.
-    if getAccount({_steemaccount}) is set:
+    if getAccountResponse({_steemaccount}) is set:
+
       #
       # > Check if the world exists on Steem.
       getSteemContent({_steemaccount},{_permlink})
