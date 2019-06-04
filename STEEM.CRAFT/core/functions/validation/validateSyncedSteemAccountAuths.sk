@@ -11,28 +11,16 @@
 # > false is returned.
 # > Parameters:
 # > <offline player>the player which should be checked for being synced
-# > <text>the steem account which should be checked for being synced
+# > <SteemJ account>a SteemJ account object
 # > Returns:
 # > <boolean>true=synced | false=not synced
-function validateSyncedSteemAccountAuths(player:offline player, account:text="checkstorage") :: boolean:
+function validateSyncedSteemAccountAuths(player:offline player, account:object) :: boolean:
   #
-  # > If there has been no account defined, use already synced one to
-  # > validate.
-  if {_account} is "checkstorage":
-    set {_account} to getSyncedAccount({_player})
-    #
-    # > If there is no account defined in the parameters and not stored
-    # > on the server, return false.
-    if {_account} is false:
-      return false
-
-  #
-  # > Since there is an account stored, get the account from the
-  # > Steem Blockchain to check if the server has the needed auths.
+  # > Check if the given steem account authorized the server Steem account.
   set {_accountdata} to getAccount({_account})
-  if {_accountdata} is set:
+  if {_account} is set:
     set {_neededauth} to getServerAccountName()
-    loop ...{_accountdata}.getPosting().getAccountAuths().keySet():
+    loop ...{_account}.getPosting().getAccountAuths().keySet():
       if "%loop-value%" is {_neededauth}:
         return true
     return false
