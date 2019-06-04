@@ -84,7 +84,10 @@ import:
   com.sk89q.worldedit.math.BlockVector3
 
 #
-# 
+# > Command - /steemworldsize | /swsize, /scsize
+# > Actions:
+# > Sets the size of the steem world for the player, if it is 
+# > owned by the player.
 command /steemworldsize [<text>]:
   aliases: /swsize, /scsize
   trigger:
@@ -92,12 +95,24 @@ command /steemworldsize [<text>]:
     if "%player's world%" does not contain "steemworlds-%{_steemaccount}%":
       message "%getChatPrefix()% You can only change the size of your worlds."
       stop
+
+    #
+    # > Use a text as a argument to allow custom feedback messages
+    # > instead of the predefined ones by Skript.
     set {_size} to arg-1 parsed as number
+
+    #
+    # > If the input was no text, send a custom message which
+    # > sends how the command should be used.
     if {_size} is not a number:
       message "%getChatPrefix()% /swsize <number>"
       stop
+
+    #
+    # > Don't allow a size smaller than 1.
     if {_size} < 1:
       stop
+
     setSteemWorldSize(player's world,round({_size}))
 
 #
@@ -515,7 +530,7 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
   # > The function has been called with a global variable. Delete it here
   # > to allow more calls of this function after it has been called.
   delete {sc::accountload}
-  
+
   #
   # > The steem name is needed, check if it is actually set.
   if {_steemname} is set:
@@ -526,7 +541,7 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
     set {_txid} to "%{_world}%"
     set {_shortworld} to {_txid}
     replace "steemworlds-" with "" in {_shortworld}
-	
+
     #
 	# > Set the permlink to allow getting the comment content.
     set {_permlink} to "re-steemcraft-%{_worldname}%"
@@ -766,7 +781,12 @@ function createSteemWorld(name:text):
   delete metadata value "steemworlds-%{_name}%" of getDummy()
 
 #
-#
+# > Function - setSteemWorldSize
+# > Sets the world border of the world to the defined size.
+# > The size is multiplied by 32.
+# > Parameters:
+# > <world>the steem world which should be changed
+# > <number>the new size of the world, 1 = 32x32 size.
 function setSteemWorldSize(world:world,size:number):
   set {_wb} to {_world}.getWorldBorder()
   {_wb}.setCenter(spawn of {_world})
