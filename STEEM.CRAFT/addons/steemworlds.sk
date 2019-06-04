@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.6
+# steemworlds.sk v0.0.7
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -49,6 +49,9 @@ options:
   # > set at 1800 to prevent any problems by too long custom json.
   customjsonlength: 1800
   #
+  # > The time until a transaction is timed out and repeated in ticks.
+  timeoutticks: 800
+  #
   # > The comment parent author is the author of the comments which hold
   # > all the worlds. If this is changed, all already saved worlds can't
   # > be loaded anymore.
@@ -79,6 +82,38 @@ import:
   com.sk89q.worldedit.EditSession
   com.sk89q.worldedit.world.World
   com.sk89q.worldedit.math.BlockVector3
+
+#
+# > Command - /steemworldsize | /swsize, /scsize
+# > Actions:
+# > Sets the size of the steem world for the player, if it is 
+# > owned by the player.
+command /steemworldsize [<text>]:
+  aliases: /swsize, /scsize
+  trigger:
+    set {_steemaccount} to getSyncedAccount(player)
+    if "%player's world%" does not contain "steemworlds-%{_steemaccount}%":
+      message "%getChatPrefix()% You can only change the size of your worlds."
+      stop
+
+    #
+    # > Use a text as a argument to allow custom feedback messages
+    # > instead of the predefined ones by Skript.
+    set {_size} to arg-1 parsed as number
+
+    #
+    # > If the input was no text, send a custom message which
+    # > sends how the command should be used.
+    if {_size} is not a number:
+      message "%getChatPrefix()% /swsize <number>"
+      stop
+
+    #
+    # > Don't allow a size smaller than 1.
+    if {_size} < 1:
+      stop
+
+    setSteemWorldSize(player's world,round({_size}))
 
 #
 # > Command - /steemworldsave | /swsave, /scsave, /sws
@@ -191,7 +226,7 @@ function saveSteemWorld(player:player):
   if {_player} is online:
     #
     # > Get the steem account of the player. Since the server
-    # > 	will broadcast transactions, the steem account needs 
+    # > will broadcast transactions, the steem account needs 
     # > to be synced with the server.
     set {_steemname} to getSyncedAccount({_player})
     if {_steemname} is false:
@@ -210,12 +245,16 @@ function saveSteemWorld(player:player):
     set {_world} to {_player}'s world
 
     #
-    # > Currently, the world size is hardcoded.
-    # > The world start at x|z -15 and ends at x|z 15.
-    set {_xstart} to -15
-    set {_zstart} to -15
-    set {_xend} to 15
-    set {_zend} to 15
+    # > Get the size of the world to set the correct world coordinates.
+    set {_wb} to {_world}.getWorldBorder()
+    set {_size} to {_wb}.getSize() / 32
+	
+    #
+    # > Calculate both x- and z-start and endcoordinates of the world.
+    set {_xstart} to (0 - ({_size} * 16)) + 1
+    set {_zstart} to (0 - ({_size} * 16)) + 1
+    set {_xend} to ({_size} * 16) - 1
+    set {_zend} to ({_size} * 16) - 1
 	
     #
     # > Loop through the coordinates and add all chunks of the world
@@ -263,6 +302,7 @@ function saveSteemWorld(player:player):
     loop {_chunks::*}:
       delete {_chunksplit::*}
       add 1 to {_loopnumber}
+
       set {_x1} to x-coord of loop-value.getBlock(0,0,0)
       set {_x2} to x-coord of loop-value.getBlock(15,255,15)
       set {_z1} to z-coord of loop-value.getBlock(0,0,0)
@@ -288,6 +328,9 @@ function saveSteemWorld(player:player):
       set {_format} to ClipboardFormats.findByAlias("schem")
 
       {_schem}.save({_file},{_format})
+
+      while {_file}.exists() is false:
+        wait 1 tick
 
       set {_bytes} to Files.readAllBytes({_file}.toPath())
 
@@ -337,8 +380,21 @@ function saveSteemWorld(player:player):
         while {_done} is not set:
           set {_txuuid} to getRandomUUID()
           customJsonOperation({_txuuid},{_steemname},"{@jsonidplots}",{_txcontent})
+		  
+          #
+          # > Reset the timeout timer.
+          delete {_waittime}
+
           while getSteemResponse({_txuuid}) is "wait":
+            #
+            # > Add 1 to the timeout timer, if it goes above 800, set the
+            # > repsonse to an error to repeat.
+            add 1 to {_waittime}
+            if {_waittime} > {@timeoutticks}:
+              set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "error"
+
             wait 1 tick
+
           if getSteemResponse({_txuuid}) is "done":
             set {_done} to true
 
@@ -416,6 +472,10 @@ function saveSteemWorld(player:player):
     {_finaljson}.put("tags", {@commenttags})
     {_finaljson}.put("format", "{@commentformat}")
 
+    #
+    # > The world size is important to set the world size correctly on load.
+    {_finaljson}.put("wsize", {_size})
+
 	#
 	# > To shrink down the reference parts, this data is being compressed and encoded into base64.
     {_finaljson}.put("world", compressBase64({_arraynode}.toString()))
@@ -470,7 +530,7 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
   # > The function has been called with a global variable. Delete it here
   # > to allow more calls of this function after it has been called.
   delete {sc::accountload}
-  
+
   #
   # > The steem name is needed, check if it is actually set.
   if {_steemname} is set:
@@ -481,7 +541,7 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
     set {_txid} to "%{_world}%"
     set {_shortworld} to {_txid}
     replace "steemworlds-" with "" in {_shortworld}
-	
+
     #
 	# > Set the permlink to allow getting the comment content.
     set {_permlink} to "re-steemcraft-%{_worldname}%"
@@ -509,6 +569,14 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
     #
     # > Get the compressed and base64 encoded string.
     set {_plot} to {_jsonNode}.get("world").textValue()
+	
+    #
+    # > Set the world size to the defined size in the Steem comment.
+    set {_size} to {_jsonNode}.get("wsize").doubleValue()
+    set {_size} to {_size}*32
+    set {_wb} to {_world}.getWorldBorder()
+    {_wb}.setWarningDistance(0)
+    {_wb}.setSize({_size})
 
     #
     # > Decompress and decode the base64 string, this increases the size.
@@ -711,6 +779,19 @@ function createSteemWorld(name:text):
   # > other commands and functions can go forward as the world is now
   # > successfully loaded.
   delete metadata value "steemworlds-%{_name}%" of getDummy()
+
+#
+# > Function - setSteemWorldSize
+# > Sets the world border of the world to the defined size.
+# > The size is multiplied by 32.
+# > Parameters:
+# > <world>the steem world which should be changed
+# > <number>the new size of the world, 1 = 32x32 size.
+function setSteemWorldSize(world:world,size:number):
+  set {_wb} to {_world}.getWorldBorder()
+  {_wb}.setCenter(spawn of {_world})
+  {_wb}.setWarningDistance(0)
+  {_wb}.setSize({_size}*32)
 
 #
 # > Event - on WorldInitEvent
