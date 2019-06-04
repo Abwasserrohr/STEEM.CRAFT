@@ -12,13 +12,64 @@ import:
 
 #
 # > Function - getAccount
-# > Returns a steem wallet account
+# > Calls getAccountAsync in a thread.
 # > Parameters:
 # > <text>a steem wallet account name
-function getAccount(account:text) :: object:
-  set {_steemj} to new SteemJ()
+function getAccount(account:text):
+  set metadata value "Account-%{_account}%" of getDummy() to "wait"
+
+  #
+  # > Convert the username to a valid format to prevent errors.
   set {_account} to {_account}.toLowerCase()
   set {_account} to new AccountName({_account})
+  
+  #
+  # > The account is needed to be passed within a ArrayList, sice it supports
+  # > getting multiple accounts. Because we only need one, only add one account.
   set {_accountrequest} to new ArrayList()
   {_accountrequest}.add({_account})
-  return {_steemj}.getAccounts({_accountrequest}).get(0)
+
+  #
+  # > Only create one account request at a time.
+  while metadata value "AccountRequest" of getDummy() is set:
+    wait 1 tick
+  set metadata value "AccountRequest" of getDummy() to {_accountrequest}
+
+  #
+  # > Call the getAccountAsync function in a thread to prevent slowing down
+  # > the server.
+  $ thread
+  getAccountAsync(metadata value "AccountRequest" of getDummy())
+
+#
+# > Function - getAccountAsync
+# > Tries to get the requested account and set it as metadata for 5 seconds.
+# > Parameters:
+# > <ArrayList>a arraylist containing the requested AccountName.
+function getAccountAsync(accountrequest:object):
+  #
+  # > Delete the AccountRequest metadata value instantly to allow
+  # > more of these calls to happen.
+  delete metadata value "AccountRequest" of getDummy()
+
+  set {_steemj} to new SteemJ()
+  
+  #
+  # > Save the result as a metadata value for 5 seconds to allow functions
+  # > which are waiting for it to access it.
+  set {_result} to {_steemj}.getAccounts({_accountrequest}).get(0)
+  set metadata value "Account-%{_accountrequest}.get(0).getName()%" of getDummy() to {_result}
+
+  #
+  # > Delete the saved account again, to keep the storage clean.
+  wait 5 seconds
+  delete metadata value "Account-%{_accountrequest}.get(0).getName()%" of getDummy()
+
+#
+# > Function - getAccountResponse
+# > Returns the last response from getAccount.
+# > Parameters:
+# > <text>a steem wallet account name
+function getAccountResponse(account:text) :: object:
+  set {_account} to {_account}.toLowerCase()
+  return metadata value "Account-%{_account}%" of getDummy()

@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.7
+# steemworlds.sk v0.0.8
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -59,7 +59,7 @@ options:
   #
   # > The commennt parent permlink works the same way the parent author works.
   # > If this is changed, you can't load worlds from other comment parent permlinks.
-  commentparentpermlink: steemcraft11052019065000
+  commentparentpermlink: w
 
 import:
   java.io.File
@@ -171,17 +171,45 @@ command /visit [<text>] [<text=home>]:
     set {_worldname} to normalize({_worldname})
 
     #
+    # > Check if the account exists.
+    getAccount({_steemaccount})
+
+    #
+    # > Wait for a response which happens in a thread.
+    while getAccountResponse({_steemaccount}) is "wait":
+      wait 1 tick
+
+    #
     # > To also support entering the ingame username, this part will
     # > convert the ingame username to the steem account name.
-    if getAccount({_steemaccount}) is not set:
+    if getAccountResponse({_steemaccount}) is not set:
       set {_steemaccount} to getSyncedAccount({_steemaccount} parsed as offline player)
+      #
+      # > Check this again for existance.
+      getAccount({_steemaccount})
+	
+      #
+      # > Wait again for the response.
+      while getAccountResponse({_steemaccount}) is "wait":
+        wait 1 tick
 
     #
     # > Only create a world, if the steem account exists.
-    if getAccount({_steemaccount}) is set:
+    if getAccountResponse({_steemaccount}) is set:
+
       #
       # > Check if the world exists on Steem.
-      set {_c} to getSteemContent({_steemaccount},{_worldname})
+      getSteemContent({_steemaccount},{_permlink})
+
+      #
+      # > Wait until the Steem content response is no longer "wait".
+      while getSteemContentResponse({_steemaccount},{_permlink}) is "wait":
+        wait 1 tick
+
+      #
+      # > Get the Steem content response.
+      set {_c} to getSteemContentResponse({_steemaccount},{_permlink})
+
       set {_world} to "%{_steemaccount}%-%{_worldname}%"
       set {_author} to {_c}.getAuthor().getName().toString()
 
@@ -233,11 +261,27 @@ function saveSteemWorld(player:player):
       message "%getChatPrefix()% You have to sync your account first:" to {_player}
       message "%getChatPrefix()% /steemconnect <steem username>" to {_player}
       stop
-    if validateSyncedSteemAccountUUID({_player}) is false:
+    
+    #
+    # > Get the account in a thread to validate.
+    getAccount("%{_steemname}%")
+	
+    #
+    # > Wait until the response is ready.
+    while getAccountResponse("%{_steemname}%") is "wait":
+      wait 1 tick
+
+    #
+    # > Set the response to a local usable variable.
+    set {_account} to getAccountResponse("%{_steemname}%")
+
+    #
+    # > Check if the account is valid and usable for broadcasting.
+    if validateSyncedSteemAccountUUID({_player},{_account}) is false:
       message "%getChatPrefix()% Your Steem account UUID doesn't match with yours." to {_player}
       message "%getChatPrefix()% /steemconnect <steem username>" to {_player}
       stop
-    if validateSyncedSteemAccountAuths({_player}) is false:
+    if validateSyncedSteemAccountAuths({_player},{_account}) is false:
       message "%getChatPrefix()% The server has no authorisation to broadcast transactions for you." to {_player}
       message "%getChatPrefix()% /steemconnect <steem username>" to {_player}
       stop
@@ -314,8 +358,14 @@ function saveSteemWorld(player:player):
       set {_file} to new File("tmp/steemworlds_%{_world}%_%loop-value.getX()%_%loop-value.getZ()%.schem")
       set {_chunkx} to loop-value.getX()
       set {_chunkz} to loop-value.getZ()
-      set {_b} to BlockVector3.at({_x1}, 0, {_z1})
-      set {_t} to BlockVector3.at({_x2}, 255, {_z2})
+
+      #
+      # > WorldEdit is maybe unsure how it should place the blocks if it is
+      # > exactly on 0.5, that's why 0.5 is deducted on x- and z-coords.
+      # > This is also done in the loading process to match this.
+      set {_b} to BlockVector3.at({_x1}-0.5, 0, {_z1}-0.5)
+      set {_t} to BlockVector3.at({_x2}-0.5, 255, {_z2}-0.5)
+
       set {_bworld} to new BukkitWorld({_world})
       set {_reg} to new CuboidRegion({_bworld}, {_b}, {_t})
       set {_schem} to new Schematic({_reg})
@@ -559,8 +609,16 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
     {_bossbar}.setVisible(true)
 
     #
-    # > Loading the content. There is no verification.
-    set {_c} to getSteemContent({_steemname},{_permlink})
+    # > Load the content using getSteemContentAsync without thread,
+    # > since we're already in a thread.
+    while metadata value "SteemContentRequest" of getDummy() is set:
+      wait 1 tick
+    set metadata value "SteemContentRequest" of getDummy() to [{_steemname},{_permlink}]
+    getSteemContentAsync(metadata value "SteemContentRequest" of getDummy())
+
+    #
+    # > Get the Steem content response.
+    set {_c} to getSteemContentResponse({_steemname},{_permlink})
 
     #
     # > Reading the json metadata of the content is done using ObjectMapper.
@@ -609,7 +667,11 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
     # > informations.
     loop {_plotparts::*}:
       add 1 to {_partnumber}
+
+      #
+      # > Get the operations of a block.
       set {_ops} to getOpsInBlock(loop-value,false)
+
       loop {_ops}.size() times:
         set {_tx} to loop-number - 1
         #
@@ -680,7 +742,11 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
       set {_l} to location of {_block}
       set {_x} to x-coord of {_l}
       set {_z} to z-coord of {_l}
-      set {_vector} to BlockVector3.at({_x}, 0, {_z})
+
+      #
+      # > Deduct 0.5 from each vector to prevent incorrect rounding within
+      # > WorldEdit which can corrupt worlds.
+      set {_vector} to BlockVector3.at({_x}-0.5, 0, {_z}-0.5)
 
       #
       # > WorldEdit needs a BukkitWorld instead of a CraftWorld to work.

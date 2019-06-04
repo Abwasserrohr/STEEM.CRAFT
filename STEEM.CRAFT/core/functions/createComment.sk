@@ -236,7 +236,20 @@ function asyncCreateComment(tx:object):
 
   #
   # > Get the Steem content to geht the maybe already existing beneficaries.
-  set {_content} to getSteemContent({_account}.getName().toString(),{_permlink}.getLink().toString())
+  set {_accountname} to {_account}.getName().toString()
+  set {_perlinkstring} to {_permlink}.getLink().toString()
+
+  #
+  # > Load the content using getSteemContentAsync without thread,
+  # > since we're already in a thread.
+  while metadata value "SteemContentRequest" of getDummy() is set:
+    wait 1 tick
+  set metadata value "SteemContentRequest" of getDummy() to [{_accountname},{_perlinkstring}]
+  getSteemContentAsync(metadata value "SteemContentRequest" of getDummy())
+
+  #
+  # > Get the Steem content response.
+  set {_content} to getSteemContentResponse({_accountname},{_perlinkstring})
 
   #
   # > Only do add CommentOptions if there is no comment for this author and permlink yet.
