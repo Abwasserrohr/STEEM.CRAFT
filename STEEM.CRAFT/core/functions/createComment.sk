@@ -238,12 +238,14 @@ function asyncCreateComment(tx:object):
   # > Get the Steem content to geht the maybe already existing beneficaries.
   set {_accountname} to {_account}.getName().toString()
   set {_perlinkstring} to {_permlink}.getLink().toString()
-  getSteemContent({_accountname},{_perlinkstring})
 
   #
-  # > Wait until the Steem content response is no longer "wait".
-  while getSteemContentResponse({_accountname},{_perlinkstring}) is "wait":
+  # > Load the content using getSteemContentAsync without thread,
+  # > since we're already in a thread.
+  while metadata value "SteemContentRequest" of getDummy() is set:
     wait 1 tick
+  set metadata value "SteemContentRequest" of getDummy() to [{_accountname},{_perlinkstring}]
+  getSteemContentAsync(metadata value "SteemContentRequest" of getDummy())
 
   #
   # > Get the Steem content response.
