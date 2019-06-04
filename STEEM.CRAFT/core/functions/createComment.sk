@@ -180,7 +180,7 @@ function asyncCreateComment(tx:object):
 
   #
   # > The comment operation is created through SteemJ and added to the operations.
-  set {_commentOperation} to new CommentOperation({_parent},{_parentPermlink_permlink},{_account},{_permlink}," ",{_body},{_jsonMetadata})
+  set {_commentOperation} to new CommentOperation({_parent},{_parentPermlink_permlink},{_account},{_permlink},{_title},{_body},{_jsonMetadata})
   {_operations}.add({_commentOperation})
 
   #
