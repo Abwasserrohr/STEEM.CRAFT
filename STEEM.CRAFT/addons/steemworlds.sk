@@ -261,11 +261,27 @@ function saveSteemWorld(player:player):
       message "%getChatPrefix()% You have to sync your account first:" to {_player}
       message "%getChatPrefix()% /steemconnect <steem username>" to {_player}
       stop
-    if validateSyncedSteemAccountUUID({_player}) is false:
+    
+    #
+    # > Get the account in a thread to validate.
+    getAccount("%{_steemname}%")
+	
+    #
+    # > Wait until the response is ready.
+    while getAccountResponse("%{_steemname}%") is "wait":
+      wait 1 tick
+
+    #
+    # > Set the response to a local usable variable.
+    set {_account} to getAccountResponse("%{_steemname}%")
+
+    #
+    # > Check if the account is valid and usable for broadcasting.
+    if validateSyncedSteemAccountUUID({_player},{_account}) is false:
       message "%getChatPrefix()% Your Steem account UUID doesn't match with yours." to {_player}
       message "%getChatPrefix()% /steemconnect <steem username>" to {_player}
       stop
-    if validateSyncedSteemAccountAuths({_player}) is false:
+    if validateSyncedSteemAccountAuths({_player},{_account}) is false:
       message "%getChatPrefix()% The server has no authorisation to broadcast transactions for you." to {_player}
       message "%getChatPrefix()% /steemconnect <steem username>" to {_player}
       stop
@@ -720,7 +736,11 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
       set {_l} to location of {_block}
       set {_x} to x-coord of {_l}
       set {_z} to z-coord of {_l}
-      set {_vector} to BlockVector3.at({_x}, 0, {_z})
+
+      #
+      # > Deduct 0.5 from each vector to prevent incorrect rounding within
+      # > WorldEdit which can corrupt worlds.
+      set {_vector} to BlockVector3.at({_x}-0.5, 0, {_z}-0.5)
 
       #
       # > WorldEdit needs a BukkitWorld instead of a CraftWorld to work.
