@@ -15,7 +15,8 @@ import:
 # > Calls getAccountAsync in a thread.
 # > Parameters:
 # > <text>a steem wallet account name
-function getAccount(account:text):
+# > [<boolean>]should the function request in a thread (true) or not (false)?
+function getAccount(account:text,thread:boolean=true):
   set metadata value "Account-%{_account}%" of getDummy() to "wait"
 
   #
@@ -38,8 +39,11 @@ function getAccount(account:text):
   #
   # > Call the getAccountAsync function in a thread to prevent slowing down
   # > the server.
-  $ thread
-  getAccountAsync(metadata value "AccountRequest" of getDummy())
+  if {_thread} is true:
+    $ thread
+    getAccountAsync(metadata value "AccountRequest" of getDummy())
+  else:
+    getAccountAsync(metadata value "AccountRequest" of getDummy())
 
 #
 # > Function - getAccountAsync

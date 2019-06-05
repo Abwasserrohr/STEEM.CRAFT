@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.12
+# steemworlds.sk v0.0.13
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -144,6 +144,7 @@ command /steemworldsave:
     if "%player's world%" does not contain "steemworlds-%{_steemaccount}%":
       message "%getChatPrefix()% You can only save your own world."
       stop
+    $ thread
     saveSteemWorld(player)
 
 #
@@ -293,15 +294,10 @@ function saveSteemWorld(player:player):
       message "%getChatPrefix()% You have to sync your account first:" to {_player}
       message "%getChatPrefix()% /steemconnect <steem username>" to {_player}
       stop
-    
+
     #
     # > Get the account in a thread to validate.
-    getAccount("%{_steemname}%")
-	
-    #
-    # > Wait until the response is ready.
-    while getAccountResponse("%{_steemname}%") is "wait":
-      wait 1 tick
+    getAccount("%{_steemname}%",false)
 
     #
     # > Set the response to a local usable variable.
@@ -371,6 +367,23 @@ function saveSteemWorld(player:player):
     # > Set the plot size to allow the progress percentage later.
     set {_plotsize} to size of {_chunks::*}
     set {_pdone} to 100 / {_plotsize}
+
+    # 
+    # > Load the world data using loadSteemWorldData.
+    set {_map} to loadSteemWorldData({_steemname},"%{_world}%",null)
+
+    #
+    # > The returned HashMap contains the response and the world. We need the
+    # > world to check if there is a chunk that is already stored on the
+    # > Steem blockchain, which we do not need to broadcast again.
+    set {_worlddata} to {_map}.get("world")
+    set {_response} to {_map}.get("response")
+
+    #
+    # > Create a new ArrayNode which is used to add all necessary blocks of
+    # > the world to the final world comment.
+    set {_objectMapper} to new ObjectMapper()
+    set {_arraynode} to {_objectMapper}.createArrayNode()
 	
     #
     # > All chunks are now looped. A schematic file is created and splitted
@@ -426,78 +439,115 @@ function saveSteemWorld(player:player):
       set {_base64} to BytesToBase64({_bytes})
 
       #
-      # > Since a simple base64 encoded string could be compressed further, it will
-      # > be compressed with gzip and then again returned with base64.
+      # > Since a simple base64 encoded string could be compressed further, it
+      # > will be compressed with gzip and then again returned with base64.
       # > Since schematic files hold some data, it will be always worth it.
       set {_string} to compressBase64({_base64})
-	  
-      #
-      # > Here, the compressed base64 encoded string is split into multiple, usable strings.
-      while {_done} is not set:
-        if length of {_string} > {@customjsonlength}:
-          add the first {@customjsonlength} character of {_string} to {_chunksplit::*}
-          set {_string} to {_string}.replaceFirst(Pattern.quote(the first {@customjsonlength} character of {_string}), "")
-        else:
-          add {_string} to {_chunksplit::*}
-          set {_done} to true
-      delete {_done}
-      delete {_partid}
-      set {_shortworld} to "%{_world}%"
 
       #
-      # > Only the short world name is necessary here.
-      replace "steemworlds-" with "" in {_shortworld}
-
-      #
-      # > Now, the splitted chunks are being looped through. Every splitted chunk
-      # > gets a custom json transaction, which is currently set by simply settings
-      # > a string.
-      loop {_chunksplit::*}:
-        add 1 to {_partid}
-        set {_txcontent} to "{""w"":""%{_shortworld}%"",""x"":%{_chunkx}%,""z"":%{_chunkz}%,""s"":%size of {_chunksplit::*}%,""i"":%{_partid}%,""data"":""%{_chunksplit::%{_partid}%}%""}"
+      # > If the base64 encoded string matches with the already stored one, skip
+      # > broadcasting new transactions for this chunk and broadcast the already
+      # > stored block to the new comment.
+      if {_string} is {_worlddata}.get("%{_chunkx}%|%{_chunkz}%"):
+		
+        #
+        # > Reading the json metadata of the content is done using ObjectMapper.
+        set {_jsonNode} to {_objectMapper}.readTree({_response}.getJsonMetadata())
 
         #
-        # > Now, the custom json is broadcasted. The saving process will repeat the
-        # > process in case of any error.
+        # > Get the compressed and base64 encoded string of the duplicate chunk.
+        set {_plot} to {_jsonNode}.get("world").textValue()
+
+        #
+        # > Decompress and decode the base64 string.
+        set {_plot} to decompressBase64({_plot})
+
+        #
+        # > Since we now have a string, it can be loaded using jackson.
+        set {_plot} to {_objectMapper}.readTree({_plot})
+
+        #
+        # > Get all the block numbers for the duplicate chunk.
+        loop {_plot}.size().longValue() times:
+          set {_plotpart} to {_plot}.get(loop-number - 1)
+          #
+          # > Store the block numbers of the duplicate chunk.
+          set {_chunkpart} to {_objectMapper}.createObjectNode()
+          {_chunkpart}.put("x", {_plotpart}.get("x"))
+          {_chunkpart}.put("z", {_plotpart}.get("z"))
+          {_chunkpart}.put("i", {_plotpart}.get("i"))
+          {_chunkpart}.put("b", {_plotpart}.get("b").textValue())
+          {_arraynode}.add({_chunkpart})
+
+      #
+      # > If the chunk is not exactly the same, broadcast it again.
+      else:
+        #
+        # > Here, the compressed base64 encoded string is split into multiple, usable strings.
         while {_done} is not set:
-          set {_txuuid} to getRandomUUID()
-          customJsonOperation({_txuuid},{_steemname},"{@jsonidplots}",{_txcontent})
-		  
-          #
-          # > Reset the timeout timer.
-          delete {_waittime}
-
-          while getSteemResponse({_txuuid}) is "wait":
-            #
-            # > Add 1 to the timeout timer, if it goes above 800, set the
-            # > repsonse to an error to repeat.
-            add 1 to {_waittime}
-            if {_waittime} > {@timeoutticks}:
-              set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "error"
-
-            wait 1 tick
-
-          if getSteemResponse({_txuuid}) is "done":
-            set {_done} to true
-
-            #
-            # > Tell the player about the current status of the world broadcasting.
-            {_bossbar}.setTitle("&lBroadcasting chunks...")
-            set {_progress} to (({_loopnumber} * {_pdone})/100)/2
-            {_bossbar}.setProgress({_progress})
-
-          #
-		  # > If there has been a error, wait 1 second and repeat.
+          if length of {_string} > {@customjsonlength}:
+            add the first {@customjsonlength} character of {_string} to {_chunksplit::*}
+            set {_string} to {_string}.replaceFirst(Pattern.quote(the first {@customjsonlength} character of {_string}), "")
           else:
-            message "%getChatPrefix()% Error. Repeating." to {_player}
-            wait 1 second
-
+            add {_string} to {_chunksplit::*}
+            set {_done} to true
         delete {_done}
+        delete {_partid}
+        set {_shortworld} to "%{_world}%"
 
         #
-        # > If there are still some splits to go, wait 3 seconds after one has been done.
-        if size of {_chunksplit::*} >= {_partid}:
-          wait 3 seconds
+        # > Only the short world name is necessary here.
+        replace "steemworlds-" with "" in {_shortworld}
+
+        #
+        # > Now, the splitted chunks are being looped through. Every splitted chunk
+        # > gets a custom json transaction, which is currently set by simply settings
+        # > a string.
+        loop {_chunksplit::*}:
+          add 1 to {_partid}
+          set {_txcontent} to "{""w"":""%{_shortworld}%"",""x"":%{_chunkx}%,""z"":%{_chunkz}%,""s"":%size of {_chunksplit::*}%,""i"":%{_partid}%,""data"":""%{_chunksplit::%{_partid}%}%""}"
+
+          #
+          # > Now, the custom json is broadcasted. The saving process will repeat the
+          # > process in case of any error.
+          while {_done} is not set:
+            set {_txuuid} to getRandomUUID()
+            customJsonOperation({_txuuid},{_steemname},"{@jsonidplots}",{_txcontent})
+		  
+            #
+            # > Reset the timeout timer.
+            delete {_waittime}
+
+            while getSteemResponse({_txuuid}) is "wait":
+              #
+              # > Add 1 to the timeout timer, if it goes above 800, set the
+              # > repsonse to an error to repeat.
+              add 1 to {_waittime}
+              if {_waittime} > {@timeoutticks}:
+                set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "error"
+
+              wait 1 tick
+
+            if getSteemResponse({_txuuid}) is "done":
+              set {_done} to true
+
+            #
+		    # > If there has been a error, wait 1 second and repeat.
+            else:
+              message "%getChatPrefix()% Error. Repeating." to {_player}
+              wait 1 second
+
+          delete {_done}
+
+          #
+          # > If there are still some splits to go, wait 3 seconds after one has been done.
+          if size of {_chunksplit::*} >= {_partid}:
+            wait 3 seconds
+      #
+      # > Tell the player about the current status of the world broadcasting.
+      {_bossbar}.setTitle("&lBroadcasting chunks...")
+      set {_progress} to (({_loopnumber} * {_pdone})/100)/2
+      {_bossbar}.setProgress({_progress})
 
     #
     # > Tell the player that the world has been saved and that it needs to wait
@@ -518,8 +568,6 @@ function saveSteemWorld(player:player):
     #
     # > Go through the last 1000 transactions of the user.
     set {_history} to getAccountHistory({_steemname},-1,1000)
-    set {_objectMapper} to new ObjectMapper()
-    set {_arraynode} to {_objectMapper}.createArrayNode()
 
     #
     # > Loop the transactions and find transactions that
@@ -752,7 +800,7 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
 # > [<BossBar>] a Bukkit bossbar to update the current progress
 # > Returns:
 # > <Hashmap>["response",SteemJ response],["world",<HashMap>["chunkid","base64 string"]]
-function loadSteemWorldData(steemname:text,worldname:text,bossbar:object=null) :: object:
+function loadSteemWorldData(steemname:text,worldname:text,bossbar:object) :: object:
   #
   # > Set the permlink to allow getting the comment content.
   set {_permlink} to "re-steemcraft-%{_worldname}%"
