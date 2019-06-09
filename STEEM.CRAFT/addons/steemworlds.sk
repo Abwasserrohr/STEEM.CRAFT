@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.13
+# steemworlds.sk v0.0.14
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -178,6 +178,8 @@ command /steemworldload:
 command /visit [<text>] [<text=home>]:
   aliases: /steemworldvisit, /swvisit, /scvisit, /swv
   trigger:
+    delete {_created}
+    delete {_world}
     #
     # > Convert the Steem account name to a Steem supported format.
     set {_steemaccount} to arg-1
@@ -188,7 +190,7 @@ command /visit [<text>] [<text=home>]:
     set {_worldname} to arg-2
     set {_worldname} to {_worldname}.toLowerCase()
     set {_worldname} to normalize({_worldname})
-	
+
     #
     # > Maybe, the server aleady loaded this world once, this allows to bypass
     # > any checks for existing worlds.
@@ -298,6 +300,8 @@ function saveSteemWorld(player:player):
     #
     # > Get the account in a thread to validate.
     getAccount("%{_steemname}%",false)
+    
+    wait 1 tick
 
     #
     # > Set the response to a local usable variable.
