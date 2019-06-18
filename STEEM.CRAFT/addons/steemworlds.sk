@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.14
+# steemworlds.sk v0.0.15
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -60,6 +60,9 @@ options:
   # > The commennt parent permlink works the same way the parent author works.
   # > If this is changed, you can't load worlds from other comment parent permlinks.
   commentparentpermlink: w
+  
+on load:
+  delete {sc::accountload}
 
 import:
   java.io.File
@@ -84,11 +87,17 @@ import:
   com.sk89q.worldedit.math.BlockVector3
   java.util.HashMap
   java.util.ArrayList
+  java.lang.Integer
+  eu.bittrade.libs.steemj.base.models.operations.CustomJsonOperation
+  eu.bittrade.libs.steemj.base.models.AccountName
+  eu.bittrade.libs.steemj.SteemJ
+  eu.bittrade.libs.steemj.base.models.Permlink
+  eu.bittrade.libs.steemj.base.models.operations.CommentOperation
 
 #
 # > Command - /steemworldsize | /swsize, /scsize
 # > Actions:
-# > Sets the size of the steem world for the player, if it is 
+# > Sets the size of the steem world for the player, if it is
 # > owned by the player.
 command /steemworldsize [<text>]:
   aliases: /swsize, /scsize
@@ -151,7 +160,7 @@ command /steemworldsave:
 # > Command - /steemworldload | /swload, /scload, /swl
 # > Actions:
 # > Loads the world of the player, if it is a steemworld of the player.
-command /steemworldload:
+command /steemworldload [<number=0>]:
   aliases: /swload, /scload, /swl
   trigger:
     #
@@ -165,10 +174,10 @@ command /steemworldload:
       # > The following process needs to be executed as a thread, a global variable
       # > is used to call the function.
       while {sc::accountload} is set:
-        wait 1 tick
+        wait 2 ticks
       set {sc::accountload} to {_account}
       $ thread
-      loadSteemWorld({sc::accountload},"%player's world%",player)
+      loadSteemWorld({sc::accountload},"%player's world%",player,arg-1)
 
 #
 # > Command - /visit | /steemworldvisit | /swvisit | /scvisit | /swv
@@ -374,7 +383,7 @@ function saveSteemWorld(player:player):
 
     # 
     # > Load the world data using loadSteemWorldData.
-    set {_map} to loadSteemWorldData({_steemname},"%{_world}%",null)
+    set {_map} to loadSteemWorldData({_steemname},"%{_world}%",null,0)
 
     #
     # > The returned HashMap contains the response and the world. We need the
@@ -674,7 +683,7 @@ function saveSteemWorld(player:player):
 # > <text> The steem username of the account which should be loaded.
 # > <text> The permlink of the world which should be loaded.
 # > <player> The player who should get informed about status messages.
-function loadSteemWorld(steemname:text,worldname:text,player:player):
+function loadSteemWorld(steemname:text,worldname:text,player:player,blockid:number=0):
   #
   # > The function has been called with a global variable. Delete it here
   # > to allow more calls of this function after it has been called.
@@ -706,7 +715,7 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
     # 
     # > Load the world data using loadSteemWorldData. By adding the bossbar
     # > variable, the player gets informed about the loading progress.
-    set {_map} to loadSteemWorldData({_steemname},{_worldname},{_bossbar})
+    set {_map} to loadSteemWorldData({_steemname},{_worldname},{_bossbar},{_blockid})
 
     #
     # > The returned HashMap contains the response and the world. We need the
@@ -804,30 +813,29 @@ function loadSteemWorld(steemname:text,worldname:text,player:player):
 # > [<BossBar>] a Bukkit bossbar to update the current progress
 # > Returns:
 # > <Hashmap>["response",SteemJ response],["world",<HashMap>["chunkid","base64 string"]]
-function loadSteemWorldData(steemname:text,worldname:text,bossbar:object) :: object:
+function loadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid:number=0) :: object:
   #
   # > Set the permlink to allow getting the comment content.
   set {_permlink} to "re-steemcraft-%{_worldname}%"
 
   #
-  # > Load the content using getSteemContentAsync without thread,
+  # > Load the content using getSteemContent without thread,
   # > since we're already in a thread.
-  set metadata value "SteemContentRequest" of getDummy() to [{_steemname},{_permlink}]
-
-  getSteemContentAsync(metadata value "SteemContentRequest" of getDummy())
-
+  getSteemContent({_steemname},{_permlink},false,{_blockid})
+	
   #
   # > Create a HashMap which stores all the data.
   set {_map} to new HashMap()
 
   #
   # > Get the Steem content response.
-  set {_c} to getSteemContentResponse({_steemname},{_permlink})
+  while {_c} is not set:
+    set {_c} to getSteemContentResponse({_steemname},{_permlink})
   {_map}.put("response",{_c})
 
   #
   # > Reading the json metadata of the content is done using ObjectMapper.
-  set {_objectMapper} to new ObjectMapper()
+  set {_objectMapper} to new ObjectMapper()    
   set {_jsonNode} to {_objectMapper}.readTree({_c}.getJsonMetadata())
 
   #
@@ -879,6 +887,10 @@ function loadSteemWorldData(steemname:text,worldname:text,bossbar:object) :: obj
   set {_pdone} to 100 / {_plotsize}
 
   #
+  # > A empty ArrayList is needed for comparaisons later.
+  set {_emptylist} to new ArrayList()
+
+  #
   # > Loop through the parts of the world and gather the needed
   # > informations.
   loop {_plotparts::*}:
@@ -892,29 +904,31 @@ function loadSteemWorldData(steemname:text,worldname:text,bossbar:object) :: obj
       set {_tx} to loop-number - 1
       #
       # > Only go forward if the operation contains json.
-      if try {_ops}.get({_tx}).getOp().getJson() is set:
+      if {_ops}.get({_tx}).getOp() is instance of CustomJsonOperation:
         #
         # > Only go forward of the required posting auths match with the requested steem username.
-        if "%{_ops}.get({_tx}).getOp().getRequiredPostingAuths().get(0)%" contains "name=%{_steemname}%":
-          if {_bossbar} is not null:
+        set {_auths} to try {_ops}.get({_tx}).getOp().getRequiredPostingAuths()
+        if {_auths} is not {_emptylist}:
+          if {_ops}.get({_tx}).getOp().getRequiredPostingAuths().get(0).getName() is {_steemname}:
+            if {_bossbar} is not null:
+              #
+              # > Tell the player how the loading process is doing.
+              {_bossbar}.setTitle("&lLoading... [%{_partnumber} * {_pdone}%%%]")
+              set {_progress} to (({_partnumber} * {_pdone})/100)/1.5
+              {_bossbar}.setProgress({_progress})
             #
-            # > Tell the player how the loading process is doing.
-            {_bossbar}.setTitle("&lLoading... [%{_partnumber} * {_pdone}%%%]")
-            set {_progress} to (({_partnumber} * {_pdone})/100)/1.5
-            {_bossbar}.setProgress({_progress})
-          #
-          # > Get the json Metadata as a string and check if the world matches with the
-          # > world which should be loaded.
-          set {_json} to "%{_ops}.get({_tx}).getOp().getJson()%"
-          if {_json} contains """w"":""%{_shortworld}%":
-            set {_objectMapper} to new ObjectMapper()
-            set {_jsonNode} to {_objectMapper}.readTree({_json})
-            set {_x} to {_jsonNode}.get("x")
-            set {_z} to {_jsonNode}.get("z")
-            set {_i} to {_jsonNode}.get("i")
-            set {_data} to {_jsonNode}.get("data").textValue()
+            # > Get the json Metadata as a string and check if the world matches with the
+            # > world which should be loaded.
+            set {_json} to "%{_ops}.get({_tx}).getOp().getJson()%"
+            if {_json} contains """w"":""%{_shortworld}%":
+              set {_objectMapper} to new ObjectMapper()
+              set {_jsonNode} to {_objectMapper}.readTree({_json})
+              set {_x} to {_jsonNode}.get("x")
+              set {_z} to {_jsonNode}.get("z")
+              set {_i} to {_jsonNode}.get("i")
+              set {_data} to {_jsonNode}.get("data").textValue()
 
-            set {_plotparts::%{_x}%|%{_z}%|%{_i}%} to {_data}
+              set {_plotparts::%{_x}%|%{_z}%|%{_i}%} to {_data}
 
   if {_bossbar} is not null:
     #
@@ -944,8 +958,100 @@ function loadSteemWorldData(steemname:text,worldname:text,bossbar:object) :: obj
   {_map}.put("world",{_finalparts})
 
   delete {_finalparts}
-
   return {_map}
+
+#
+# > Function - getSteemWorldRevisions
+# > Gets all revisions for the defined steem username and world name.
+# > Parameters:
+# > <text>steem username
+# > <text>Steemworld name
+# > Retuns:
+# > <HashMap>[blockid,json metadata]
+function getSteemWorldRevisions(steemname:text,worldname:text) :: object:
+  set {_account} to new AccountName({_steemname})
+  set {_SteemJ} to new SteemJ()
+
+  #
+  # > Create a permlink and get the world which should be stored there.
+  set {_searchedpermlink} to "re-steemcraft-%{_worldname}%"
+  set {_result} to {_steemj}.getContent({_account},new Permlink({_searchedpermlink}))
+
+  #
+  # > Get the creation date of the comment to stop searching for more
+  # > revisions once the creation date has been reached.
+  set {_creationdate} to {_result}.getCreated().getDateTimeAsInt()
+
+  set {_start} to -1
+  
+  #
+  # > This HashMap will hold all reversions of the world.
+  set {_revisions} to new HashMap()
+  
+  #
+  # > We can get a maximum of 1000 transactions at a time.
+  set {_limit} to 1000
+  
+  #
+  # > Loop until the first creation post has been found.
+  while {_done} is not set:
+    #
+    # > Get the history of the account from Steem.
+    set {_history} to {_SteemJ}.getAccountHistory({_account},{_start},{_limit})
+	
+    #
+    # > Get the keys of the HashMap and convert them into a Skript list to loop.	
+    loop ...{_history}.keySet():
+
+      #
+      # > The steem based worlds are stored in comments, look out for CommentOperation.
+      if {_history}.get(loop-value).getOp() is a instance of CommentOperation:
+
+        #
+        # > Not any comment that has been made is interesting for us, just go further if
+        # > the permlink matches with the seachred one.
+        if try {_history}.get(loop-value).getOp().getPermlink().getLink() is {_searchedpermlink}:
+
+          #
+          # > Add the block number and metadata of this world to the revisions HashMap.
+          {_revisions}.put({_history}.get(loop-value).getBlock().intValue(),{_history}.get(loop-value).getOp().getJsonMetadata())
+
+          #
+          # > If this transaction has reached or somehow even exceeded the creation date of the
+          # > first world save, stop here, since there will be no more revisions before the 
+          # > first creation (save) of the world.
+          if {_creationdate} >= {_history}.get(loop-value).getTimestamp().getDateTimeAsInt():
+            set {_done} to true
+            stop loop
+
+      #
+      # > Warning: This is an explaination of how getAccountHistory can be used to
+      # > loop through all transactions from an account, if you know it already,
+      # > there is no reason to read it.
+      # > If we get the account history, every transaction will have an number which
+      # > will increase each time a new trasnsaction is made by the account, to search
+      # > through the account, we first started with -1, which gives us the latest
+      # > 1000 transactions of the account. To get the next 1000, we have to get the last
+      # > transaction number, here loop-value and decrease it by our limit, here 1000.
+      # > Since SteemJ wants Integers and Skript is not always trustworthy 
+      # > for the creation of new integers, Integer.valueOf() is used.
+      # > -------------------------------------------------------------------------------
+      # > Example: I have 20000 transactions in my account.
+      # > {_SteemJ}.getAccountHistory(new AccountName("Exampleuser"),-1,1000)
+      # > This will show the latest 1000 transactions by Exampleuser.
+      # > The returned HashMap has keys according to the transaction number of the user:
+      # > [20000,19999,19998,19997] and so on.
+      # > After Skript is done with looping, just take the last used value, 20000 in
+      # > our case and remove 1000 from it. If we remove 1000 from 20000, we have 19000.
+      # > Then, we can repeat the process until we have everything we searched for.
+      # > {_SteemJ}.getAccountHistory(new AccountName("Exampleuser"),19000,1000)
+      # > You see, we just take the last used key of the loop, remove 1000 (limit) and
+      # > call it again. Be sure to use integers in getAccountHistory.
+      # > -------------------------------------------------------------------------------
+      set {_start} to "%loop-value%" parsed as number - {_limit}
+      set {_start} to Integer.valueOf({_start})
+
+  return {_revisions}
 
 #
 # > Function - createSteemWorld

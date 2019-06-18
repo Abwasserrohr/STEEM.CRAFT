@@ -9,6 +9,8 @@ import:
   eu.bittrade.libs.steemj.SteemJ
   eu.bittrade.libs.steemj.base.models.AccountName
   eu.bittrade.libs.steemj.base.models.Permlink
+  eu.bittrade.libs.steemj.base.models.operations.CommentOperation
+  java.lang.Integer
 
 #
 # > Function - getSteemContent:
@@ -16,7 +18,9 @@ import:
 # > Parameters:
 # > <text>author
 # > <text>permlink
-function getSteemContent(author:text,permlink:text):
+# > [<boolean>]threaded = true, no extra thread = false
+# > [<Integer>]a block in which a older version of the content is stored
+function getSteemContent(author:text,permlink:text,threaded:boolean=true,blockid:number=0):
   set metadata value "SteemContent-%{_author}%-%{_permlink}%" of getDummy() to "wait"
 
   #
@@ -24,18 +28,24 @@ function getSteemContent(author:text,permlink:text):
   # > one is done, this may take some milliseconds.
   while metadata value "SteemContentRequest" of getDummy() is set:
     wait 1 tick
-  set metadata value "SteemContentRequest" of getDummy() to [{_author},{_permlink}]
+
+  set metadata value "SteemContentRequest" of getDummy() to [{_author},{_permlink},Integer.valueOf({_blockid})]
 
   #
-  # > Run the task in a thread, since it will halt the server.
-  $ thread
-  getSteemContentAsync(metadata value "SteemContentRequest" of getDummy())
+  # > Run the task in a thread, since it will halt the server, in some cases, this function
+  # > already has been called within a thread. In such cases, it will not run it in another
+  # > thread.
+  if {_threaded} is true:
+    $ thread
+    getSteemContentAsync(metadata value "SteemContentRequest" of getDummy())
+  else:
+    getSteemContentAsync(metadata value "SteemContentRequest" of getDummy())
 
 #
 # > Function - getSteemContentAsync:
 # > Sets the content of the specified author and permlink as metadata value.
 # > Parameters:
-# > <Array>[author,permlink]
+# > <Array>[author,permlink,blockid]
 function getSteemContentAsync(array:object):
   delete metadata value "SteemContentRequest" of getDummy()
 
@@ -43,10 +53,22 @@ function getSteemContentAsync(array:object):
   # > Convert the array to a Skript list.
   set {_array::*} to ...{_array}
   set {_steemj} to new SteemJ()
+  
+  if {_array::3} is 0:
+    #
+    # > Get the content, the strings have to be converted to AccountName and Permlink.
+    set {_result} to {_steemj}.getContent(new AccountName({_array::1}),new Permlink({_array::2}))
+  else:
+    set {_ops} to {_steemj}.getOpsInBlock(Integer.valueOf({_array::3}),false)
+    loop {_ops}.size() times:
+      set {_tx} to loop-number - 1
 
-  #
-  # > Get the content, the strings have to be converted to AccountName and Permlink.
-  set {_result} to {_steemj}.getContent(new AccountName({_array::1}),new Permlink({_array::2}))
+      #
+      # > Only check for the permlink of the operation if it is a CommentOperation.
+      if {_ops}.get({_tx}).getOp() is a instance of CommentOperation:
+        if try {_ops}.get({_tx}).getOp().getPermlink().getLink() is {_array::2}:
+          set {_result} to {_ops}.get({_tx}).getOp()
+
   set metadata value "SteemContent-%{_array::1}%-%{_array::2}%" of getDummy() to {_result}
 
   #
