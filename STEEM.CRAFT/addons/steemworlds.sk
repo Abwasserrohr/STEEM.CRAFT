@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.16
+# steemworlds.sk v0.0.17
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -1000,11 +1000,10 @@ function getSteemWorldRevisions(steemname:text,worldname:text) :: object:
     #
     # > Get the history of the account from Steem.
     set {_history} to {_SteemJ}.getAccountHistory({_account},{_start},{_limit})
-	
+
     #
     # > Get the keys of the HashMap and convert them into a Skript list to loop.	
     loop ...{_history}.keySet():
-
       #
       # > The steem based worlds are stored in comments, look out for CommentOperation.
       if {_history}.get(loop-value).getOp() is a instance of CommentOperation:
@@ -1024,7 +1023,6 @@ function getSteemWorldRevisions(steemname:text,worldname:text) :: object:
           # > first creation (save) of the world.
           if {_creationdate} >= {_history}.get(loop-value).getTimestamp().getDateTimeAsInt():
             set {_done} to true
-            stop loop
 
       #
       # > Warning: This is an explaination of how getAccountHistory can be used to
