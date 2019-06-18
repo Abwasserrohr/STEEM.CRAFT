@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.15
+# steemworlds.sk v0.0.16
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -204,7 +204,7 @@ command /visit [<text>] [<text=home>]:
     # > Maybe, the server aleady loaded this world once, this allows to bypass
     # > any checks for existing worlds.
     set {_created} to getGeneralStorageData("steemworlds","%{_steemaccount}%-%{_worldname}%","created")
-    
+
     if {_created} is true:
       set {_world} to "%{_steemaccount}%-%{_worldname}%"
 
@@ -235,6 +235,8 @@ command /visit [<text>] [<text=home>]:
       #
       # > Only create a world, if the steem account exists.
       if getAccountResponse({_steemaccount}) is set:
+
+        set {_permlink} to "re-steemcraft-steemworlds-%{_steemaccount}%-%{_worldname}%"
 
         #
         # > Check if the world exists on Steem.
