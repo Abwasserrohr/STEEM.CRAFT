@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.17
+# steemworlds.sk v0.0.18
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -93,6 +93,21 @@ import:
   eu.bittrade.libs.steemj.SteemJ
   eu.bittrade.libs.steemj.base.models.Permlink
   eu.bittrade.libs.steemj.base.models.operations.CommentOperation
+  org.bukkit.block.Biome
+
+#
+# > Command - /steemworldbiome | /swbiome, /scbiome
+# > Actions:
+# > Sets the biome of the steem world for the player, if it is
+# > owned by the player.
+command /steemworldbiome [<text="PLAINS">]:
+  aliases: /swbiome, /scbiome
+  trigger:
+    set {_steemaccount} to getSyncedAccount(player)
+    if "%player's world%" does not contain "steemworlds-%{_steemaccount}%":
+      message "%getChatPrefix()% You can only change the size of your worlds."
+      stop
+    setSteemWorldBiome(player's world, arg-1)
 
 #
 # > Command - /steemworldsize | /swsize, /scsize
@@ -1145,6 +1160,72 @@ function getSteemWorldSpawn(world:world) :: location:
   set {_l} to getGeneralStorageData("steemworlds",{_worldstring},"spawn")
   set {_l} to deserializelocation({_l},{_world})
   return {_l}
+
+#
+# > Function - setSteemWorldBiome
+# > Sets the biome of the defined steem world to the
+# > biome name.
+# > Parameters:
+# > <world>the steem world which should be changed
+# > <text>the name of the biome to which the world should be changed
+function setSteemWorldBiome(world:world,biome:text):
+  #
+  # > Convert our string to a biome.
+  set {_biome} to Biome.valueOf({_biome}.toUpperCase())
+
+  #
+  # > If the result of the convert is a biome, go forward.
+  if {_biome} is instance of a Biome:
+  
+    #
+    # > Only the world within the world border has to be changed, get
+    # > the worldborder to know what has to be changed.
+    set {_wb} to {_world}.getWorldBorder()
+
+    #
+    # > Add 4 extra blocks to prevent transitions within the border.
+    set {_size} to "%{_wb}.getSize()+4%" parsed as number
+
+    #
+    # > Start from the lowest point and loop through until all
+    # > world parts have been changed to the new biome type.
+    set {_xstart} to (0 - {_size}) / 2
+    set {_zstart} to (0 - {_size}) / 2
+    loop {_size} times:
+      set {_z} to {_zstart}
+      loop {_size} times:
+        {_world}.setBiome(Integer.valueOf({_xstart}), Integer.valueOf({_z}), {_biome}) 
+        add 1 to {_z}
+
+        #
+        # > Take a short break after each 50 changes.
+        add 1 to {_i}
+        if {_i} > 50:
+          wait 1 tick
+          delete {_i}
+      add 1 to {_xstart}
+
+    #
+    # > Once done, teleport all the players of the world away
+    # > then back to update the biome by resending the chunks.
+    set {_worlds::*} to worlds
+    loop all players in {_world}:
+      set {_loc::%loop-player%} to location of loop-player
+      add 500 * {_size} to z-coord of {_loc::%loop-player%}
+      teleport loop-player to {_loc::%loop-player%}
+
+    #
+    # > Wait a short amount of time to allow the client to register
+    # > the teleport.
+    wait 5 ticks
+
+    #
+    # > Teleport all the previously teleported players back.
+    loop {_loc::*}:
+      set {_loc} to loop-value
+      remove 500 * {_size} from z-coord of {_loc}
+      set {_player} to loop-index parsed as player
+      teleport {_player} to {_loc}
 
 #
 # > Event - on WorldInitEvent
