@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.19
+# steemworlds.sk v0.0.21
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -652,6 +652,12 @@ function saveSteemWorld(player:player):
       {_finaljson}.put("spawn", {_spawn})
 
     #
+    # > Get the biome from the local storage and add it to the json.
+    set {_biome} to getGeneralStorageData("steemworlds",{_shortworld},"biome")
+    if {_biome} is set:
+      {_finaljson}.put("biome", {_biome})
+
+    #
     # > To shrink down the reference parts, this data is being compressed and encoded into base64.
     {_finaljson}.put("world", compressBase64({_arraynode}.toString()))
 
@@ -820,6 +826,10 @@ function loadSteemWorld(steemname:text,worldname:text,player:player,blockid:numb
     # > to the players, only deleting it is not enough.
     {_bossbar}.removeAll()
     delete {_bossbar}
+	
+
+    set {_biome} to getGeneralStorageData("steemworlds",{_shortworld},"biome")
+    setSteemWorldBiome({_world},{_biome})
 
 #
 # > Function - loadSteemWorldData
@@ -868,6 +878,11 @@ function loadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
   # > Get the serialized location and save it to the storage.
   set {_spawn} to {_jsonNode}.get("spawn").textValue()
   saveGeneralStorageData("steemworlds",{_shortworld},"spawn",{_spawn})
+
+  #
+  # > Get the biome and store it.
+  set {_biome} to {_jsonNode}.get("biome").textValue()
+  saveGeneralStorageData("steemworlds",{_shortworld},"biome",{_biome})
 
   #
   # > Set the world size to the defined size in the Steem comment.
@@ -1176,7 +1191,13 @@ function setSteemWorldBiome(world:world,biome:text):
   #
   # > If the result of the convert is a biome, go forward.
   if {_biome} is instance of a Biome:
-  
+
+    #
+    # > Save the changed biome to the storage.
+    set {_name} to "%{_world}%"
+    replace all "steemworlds-" with "" in {_name}
+    saveGeneralStorageData("steemworlds",{_name},"biome", "%{_biome}%")
+
     #
     # > Only the world within the world border has to be changed, get
     # > the worldborder to know what has to be changed.
