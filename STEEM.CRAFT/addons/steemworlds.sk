@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.21
+# steemworlds.sk v0.0.22
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -826,10 +826,13 @@ function loadSteemWorld(steemname:text,worldname:text,player:player,blockid:numb
     # > to the players, only deleting it is not enough.
     {_bossbar}.removeAll()
     delete {_bossbar}
-	
 
+    #
+    # > Apply world settings to the loaded world.
     set {_biome} to getGeneralStorageData("steemworlds",{_shortworld},"biome")
+    set {_size} to getGeneralStorageData("steemworlds",{_shortworld},"size")
     setSteemWorldBiome({_world},{_biome})
+    setSteemWorldSize({_world},round({_size}))
 
 #
 # > Function - loadSteemWorldData
@@ -887,6 +890,8 @@ function loadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
   #
   # > Set the world size to the defined size in the Steem comment.
   set {_size} to {_jsonNode}.get("wsize").doubleValue()
+  saveGeneralStorageData("steemworlds",{_shortworld},"size",{_size})
+
   set {_size} to {_size}*32
   set {_wb} to {_world}.getWorldBorder()
   {_wb}.setWarningDistance(0)
