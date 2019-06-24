@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.22
+# steemworlds.sk v0.0.23
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -77,6 +77,7 @@ import:
   org.bukkit.World$Environment
   org.bukkit.WorldType
   org.bukkit.event.world.WorldInitEvent
+  org.bukkit.GameRule
   com.boydti.fawe.object.schematic.Schematic
   com.sk89q.worldedit.regions.CuboidRegion
   com.sk89q.worldedit.bukkit.BukkitWorld
@@ -1243,6 +1244,16 @@ function setSteemWorldBiome(world:world,biome:text):
     loop {_chunks::*}:
       {_craftworld}.refreshChunk(loop-value.getX(), loop-value.getZ())
 
+#
+# > Function - setSteemWorldGamerule
+# > Changes the gamerule of the world to the specified setting.
+# > Parameters:
+# > <world>the world
+# > <text>the vanilla gamerule name which should be changed
+# > <setting>the value to which the gamerule should be changed
+function setSteemWorldGamerule(world:world,gamerule:text,setting:object):
+  set {_gamerule} to GameRule.getByName({_gamerule})
+  {_world}.setGameRule({_gamerule},{_setting})
 
 #
 # > Event - on WorldInitEvent
