@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.24
+# steemworlds.sk v0.0.25
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -1230,12 +1230,6 @@ function setSteemWorldBiome(world:world,biome:text):
           wait 1 tick
           delete {_i}
       add 1 to {_xstart}
-    set {_xstart} to (0 - {_size}) / 2
-    set {_zstart} to (0 - {_size}) / 2
-    loop {_size} times:
-      set {_z} to {_zstart}
-      loop {_size} times:
-        add 1 to {_z}
 
     #
     # > Refresh all loaded chunks from this world to display the new biomes.
