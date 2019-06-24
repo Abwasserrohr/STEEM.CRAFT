@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.23
+# steemworlds.sk v0.0.24
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -1254,6 +1254,16 @@ function setSteemWorldBiome(world:world,biome:text):
 function setSteemWorldGamerule(world:world,gamerule:text,setting:object):
   set {_gamerule} to GameRule.getByName({_gamerule})
   {_world}.setGameRule({_gamerule},{_setting})
+
+#
+# > Function - getSteemWorldGamerule
+# > Returns the gamerule value of the world.
+# > Parameters:
+# > <world>the world
+# > <text>the vanilla gamerule name of which the set value should be returned
+function getSteemWorldGamerule(world:world,gamerule:text) :: object:
+  set {_gamerule} to GameRule.getByName({_gamerule})
+  return {_world}.getGameRuleValue({_gamerule})
 
 #
 # > Event - on WorldInitEvent
