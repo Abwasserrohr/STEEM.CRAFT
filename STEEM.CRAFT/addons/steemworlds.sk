@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.25
+# steemworlds.sk v0.0.26
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -1013,6 +1013,7 @@ function getSteemWorldRevisions(steemname:text,worldname:text) :: object:
   #
   # > Create a permlink and get the world which should be stored there.
   set {_searchedpermlink} to "re-steemcraft-%{_worldname}%"
+
   set {_result} to {_steemj}.getContent({_account},new Permlink({_searchedpermlink}))
 
   #
@@ -1043,12 +1044,10 @@ function getSteemWorldRevisions(steemname:text,worldname:text) :: object:
       #
       # > The steem based worlds are stored in comments, look out for CommentOperation.
       if {_history}.get(loop-value).getOp() is a instance of CommentOperation:
-
         #
         # > Not any comment that has been made is interesting for us, just go further if
         # > the permlink matches with the seachred one.
-        if try {_history}.get(loop-value).getOp().getPermlink().getLink() is {_searchedpermlink}:
-
+        if {_history}.get(loop-value).getOp().getPermlink().getLink() is {_searchedpermlink}:
           #
           # > Add the block number and metadata of this world to the revisions HashMap.
           {_revisions}.put({_history}.get(loop-value).getBlock().intValue(),{_history}.get(loop-value).getOp().getJsonMetadata())
@@ -1084,9 +1083,12 @@ function getSteemWorldRevisions(steemname:text,worldname:text) :: object:
       # > You see, we just take the last used key of the loop, remove 1000 (limit) and
       # > call it again. Be sure to use integers in getAccountHistory.
       # > -------------------------------------------------------------------------------
-      set {_start} to "%loop-value%" parsed as number - {_limit}
-      set {_start} to Integer.valueOf({_start})
+      if {_lowestkey} is not set:
+        set {_lowestkey} to "%loop-value%" parsed as integer
+      else if "%loop-value%" parsed as integer is smaller than {_lowestkey}:
+        set {_lowestkey} to "%loop-value%" parsed as integer
 
+    set {_start} to Integer.valueOf({_lowestkey})	  
   return {_revisions}
 
 #
