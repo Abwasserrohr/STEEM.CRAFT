@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.28
+# steemworlds.sk v0.0.29
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -1184,6 +1184,11 @@ function getSteemWorldHistoryAsync(request:object):
 
     set {_start} to Integer.valueOf({_lowestkey})	  
   set metadata value "SteemWorldHistory-%{_worldname}%" of getDummy() to {_revisions}
+
+  #
+  # > Delete the history again after 5 seconds to not fill up the memory.
+  wait 5 seconds
+  delete metadata value "SteemWorldHistory-%{_worldname}%" of getDummy()
 
 #
 # > Function - createSteemWorld
