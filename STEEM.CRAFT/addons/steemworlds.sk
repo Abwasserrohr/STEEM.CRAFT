@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.27
+# steemworlds.sk v0.0.28
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -1068,14 +1068,39 @@ function loadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
   return {_map}
 
 #
-# > Function - getSteemWorldRevisions
-# > Gets all revisions for the defined steem username and world name.
+# > Function - getSteemWorldHistoryResult
+# > Gets the result of a edit history request.
 # > Parameters:
 # > <text>steem username
 # > <text>Steemworld name
-# > Retuns:
-# > <HashMap>[blockid,json metadata]
-function getSteemWorldRevisions(steemname:text,worldname:text) :: object:
+function getSteemWorldHistoryResult(steemname:text,worldname:text) :: object:
+  return metadata value "SteemWorldHistory-%{_worldname}%" of getDummy()
+
+#
+# > Function - getSteemWorldHistory
+# > Gets the edit history for the defined steem username and world name.
+# > Parameters:
+# > <text>steem username
+# > <text>Steemworld name
+function getSteemWorldHistory(steemname:text,worldname:text):
+  set metadata value "SteemWorldHistory-%{_worldname}%" of getDummy() to "wait"
+  while {getSteemWorldHistoryRequest} is set:
+    wait 1 tick
+  set {getSteemWorldHistoryRequest} to [{_steemname},{_worldname}]
+  $ thread
+  getSteemWorldHistoryAsync({getSteemWorldHistoryRequest})
+
+#
+# > Function - getSteemWorldHistoryAsync
+# > Should be called in a thread to get the edit history of a world.
+# > Parameters:
+# > <ArrayList>[<text>steemname,<text>worldname]
+function getSteemWorldHistoryAsync(request:object):
+  delete {getSteemWorldHistoryRequest}
+  set {_request::*} to ...{_request}
+  set {_steemname} to {_request::1}
+  set {_worldname} to {_request::2}
+
   set {_account} to new AccountName({_steemname})
   set {_SteemJ} to new SteemJ()
 
@@ -1158,7 +1183,7 @@ function getSteemWorldRevisions(steemname:text,worldname:text) :: object:
         set {_lowestkey} to "%loop-value%" parsed as integer
 
     set {_start} to Integer.valueOf({_lowestkey})	  
-  return {_revisions}
+  set metadata value "SteemWorldHistory-%{_worldname}%" of getDummy() to {_revisions}
 
 #
 # > Function - createSteemWorld
