@@ -1,0 +1,351 @@
+#
+# ==============
+# steemworlds-gui.sk v0.0.1
+# ==============
+# steemworlds-gui.sk is part of the STEEM.CRAFT addons (addon to steemworlds.sk).
+# ==============
+# > steemworlds-gui allows players to open a menu which can execute
+# > steemworlds functions through it in an easy way.
+# ==============
+
+#
+# > Options
+# > These settings can be changed to fit your needs.
+options:
+  #
+  # > The background item is used as background in inventory menues.
+  backgrounditem: black stained glass pane
+  #
+  # > The loading item is used in the loading bar inventory menu.
+  loadingitem: yellow stained glass pane
+  #
+  # > The settings item is the item which moves the player to the settings menu if clicked.
+  settingsitem: getcustomhead("Settings","eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTViZTIyYjVkNGE4NzVkNzdkZjNmNzcxMGZmNDU3OGVmMjc5MzlhOTY4NGNiZGIzZDMxZDk3M2YxNjY4NDkifX19","80272ba4-e5b6-48a7-8bfb-59212b25e1dd")
+  #
+  # > The history item will move the player to the world save history menu.
+  historyitem: clock
+  #
+  # > The vote item will move the player to the world vote menu.
+  votesitem: enchanted book
+  #
+  # > The comment item will move the player to the world comment menu.
+  commentsitem: book and quill
+  #
+  # > The disabled item shows that something is switched off.
+  disableditem: red stained glass pane
+  #
+  # > The enabled item shows that something is switched on.
+  enableditem: green stained glass pane
+  #
+  # > The back item will move the player back to the previous menu.
+  backitem: redstone
+
+#
+# > Command - /steemworlds [ /sw, /sc ]
+# > Opens the steem world main menue for the current world of the player.
+command /steemworlds:
+  aliases: /sw, /sc
+  trigger:
+    if "%player's world%" contains "steemworlds-":
+      openSteemWorldMainMenu(player's world, player)
+
+#
+# > Function - openSteemWorldMainMenu
+# > Opens a menu in which the player can get to other sub-menues.
+# > Parameters:
+# > <world>the menu has world specific content, select the right world
+# > <player>the player who wants too view the menu
+function openSteemWorldMainMenu(world:world,player:player):
+  
+  #
+  # > The current menu is just 27 slots big, as there are not that much things to display yet.
+  opengui({_player},27,"&lSteemworlds")
+
+  #
+  # > Cover all slots to prevent item loss, since players could put items into empty slots.
+  loop 27 times:
+    setguiitem({_player},loop-number - 1, {@backgrounditem},1, " ","")
+
+  #
+  # > Add inventory menu content.
+  set {_votesitem} to {@votesitem}
+  setguiitem({_player},10, {_votesitem},1, "&rVotes","&7This feature is going to be\n&7added in a upcoming version.","")
+
+  set {_commentitem} to {@commentsitem}
+  setguiitem({_player},11, {_commentitem},1, "&rComments","&7This feature is going to be\n&7added in a upcoming version.","")
+
+  set {_historyitem} to {@historyitem}
+  setguiitem({_player},12, {_historyitem},1, "&rWorld history","&7This feature is going to be\n&7added in a upcoming version.","")
+
+  setguiitem({_player},16, {@settingsitem},1, "&rSettings","&7Click here to open the\n&7settings for this world.","openSteemWorldSettingsMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
+
+#
+# > Function - openSteemWorldSettingsMenu
+# > Opens a menu in which the world settings can be changed.
+# > Parameters:
+# > <world>the world which should be affected by the setting changes
+# > <player>the player who wants to change the settings
+function openSteemWorldSettingsMenu(world:world,player:player):
+  #
+  # > Just call our main settings menu "Settings".
+  opengui({_player},27,"&lSettings")
+  
+  #
+  # > Cover all inventory menu slots with a background item
+  # > to prevent item loss for players.
+  loop 27 times:
+    setguiitem({_player},loop-number - 1, {@backgrounditem},1, " ","")
+
+  #
+  # > Menu part - randomTickSpeed
+  # > This part of the menu is going to allow the player to change
+  # > the randomTickSpeed gamerule of his world.
+  
+  #
+  # > Get the current randomTickSpeed parsed as a number.
+  set {_randomtickspeed} to "%getSteemWorldGamerule({_world},""randomTickSpeed"")%" parsed as number
+
+  #
+  # > If the number is equal or higher than 3, the next randomTickSpeed hasStorm
+  # > to be 0, since we're not allowing a higher number, since it could lag the
+  # > server.
+  if {_randomtickspeed} >= 3:
+    set {_nextrandomtickspeed} to 0
+
+  #
+  # > If the value is smaller than 3, the next randomTickSpeed will be 1 higher
+  # > than the current randomTickSpeed value.
+  else:
+    set {_nextrandomtickspeed} to {_randomtickspeed} + 1
+
+  #
+  # > If the randomTickSpeed is 0, it is disabled. Use the disabled item in that case.
+  set {_item} to {@enableditem}
+  if {_randomtickspeed} is 0:
+    set {_item} to {@disableditem}
+
+  #
+  # > Set the subtext of the item (also called lore) for that item.
+  set {_randomtickspeedlore} to "&7Currently: &6%{_randomtickspeed}%\n&7Click here to change it to &6%{_nextrandomtickspeed}%&7."
+  
+  setguiitem({_player},10, {_item},1, "&rRandom tick speed",{_randomtickspeedlore},"changeSteemWorldGameruleInMenu(""%{_world}%"" parsed as world, ""randomTickSpeed"",%{_nextrandomtickspeed}%, ""%{_player}%"" parsed as player)")
+
+  #
+  # > Menu part - Time
+  # > This part of the menu will open another sub menu to
+  # > set the time of the world.
+  
+  #
+  # > Set the lore and add the current time to it.
+  set {_lore} to "&7Currently: &6%time in {_world}%\n&7Click here to change the time."
+
+  setguiitem({_player},11, {@enableditem},1, "&rTime ",{_lore},"openSteemWorldTimeMenu(""%{_world}%"" parsed as world,""%{_player}%"" parsed as player)")
+
+  #
+  # > Menu part - Daylight cycle
+  # > This part of the menu allows the player to change if
+  # > a daylight cycle should happen or not.
+
+  #
+  # > Get the current setting for the doDaylightCycle gamerule.
+  set {_doDaylightCycle} to getSteemWorldGamerule({_world},"doDaylightCycle")
+  
+  #
+  # > If the daylight cycle is currently on (true), set the next setting to off (false),
+  # > set the menu item to a enabled item and the subtext of the item (lore).
+  if {_doDaylightCycle} is true:
+    set {_nextsetting} to false
+    set {_item} to {@enableditem}
+    set {_randomtickspeedlore} to "&7Currently: &6Enabled\n&7Click here to change it to &6disable&7."
+  else:
+    set {_nextsetting} to true
+    set {_item} to {@disableditem}
+    set {_randomtickspeedlore} to "&7Currently: &6Disabled\n&7Click here to change it to &6enable&7."
+  
+  setguiitem({_player},12, {_item},1, "&rDaylight cycle",{_randomtickspeedlore},"changeSteemWorldGameruleInMenu(""%{_world}%"" parsed as world, ""doDaylightCycle"",%{_nextsetting}%, ""%{_player}%"" parsed as player)")
+
+  #
+  # > Change weather setting
+  if {_world}.hasStorm() is true:
+    if {_world}.isThundering() is false:
+      set {_weather} to "Rain"
+      set {_nextweather} to "Thunder"
+    else:
+      set {_weather} to "Thunder"
+      set {_nextweather} to "Clear"
+  else:
+    set {_weather} to "Clear"
+    set {_nextweather} to "Rain"
+
+  set {_item} to {@enableditem}
+  set {_randomtickspeedlore} to "&7Currently: &6%{_weather}%\n&7Click here to change it to &6%{_nextweather}%&7."
+  
+  setguiitem({_player},13, {_item},1, "&rWeather",{_randomtickspeedlore},"changeSteemWorldSettingInMenu(""%{_world}%"" parsed as world, ""weather"",""%{_nextweather}%"", ""%{_player}%"" parsed as player)")
+
+  #
+  # > Weather cycle boolean setting
+  set {_doDaylightCycle} to getSteemWorldGamerule({_world},"doWeatherCycle")
+  if {_doDaylightCycle} is true:
+    set {_nextrandomtickspeed} to false
+    set {_item} to {@enableditem}
+    set {_randomtickspeedlore} to "&7Currently: &6Enabled\n&7Click here to change it to &6disable&7."
+  else:
+    set {_nextrandomtickspeed} to true
+    set {_item} to {@disableditem}
+    set {_randomtickspeedlore} to "&7Currently: &6Disabled\n&7Click here to change it to &6enable&7."
+  
+  setguiitem({_player},14, {_item},1, "&rWeather cycle",{_randomtickspeedlore},"changeSteemWorldGameruleInMenu(""%{_world}%"" parsed as world, ""doWeatherCycle"",%{_nextrandomtickspeed}%, ""%{_player}%"" parsed as player)")
+
+
+  setguiitem({_player},18, {@backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldMainMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
+
+#
+# > Function - openSteemWorldTimeMenu
+# > Opens a menu in which the world time can be set.
+# > Parameters:
+# > <world>the world which should be affected by the time change
+# > <player>the player who wants to change the time
+function openSteemWorldTimeMenu(world:world,player:player):
+  #
+  # > Opens a big menu named settings.
+  opengui({_player},54,"&lSettings")
+  #
+  # > Create a background item for every slot to prevent the player
+  # > from putting items into there.
+  loop 54 times:
+    setguiitem({_player},loop-number - 1, {@backgrounditem},1, " ","")
+
+  #
+  # > Create a menu which allows to select every hour of the day.
+  # > Could also simply create 24 times the setguiitem function,
+  # > but this is with just 16 lines smaller and faster to load.
+  set {_slot} to 10
+  set {_time} to 0
+  set {_item} to {@enableditem}
+  loop 24 times:
+    add 1 to {_slot}
+    add 1 to {_slotskip}
+
+    #
+    # > To make the menu look better, skip 3 slots every 7 slots.
+    if {_slotskip} is 7:
+      add 3 to {_slot}
+      set {_slotskip} to 1
+
+    #
+    # > If the time is lower than 10, add a 0 in front of it.
+    if {_time} < 10:
+      set {_nextsetting} to "0%{_time}%:00"
+    else:
+      set {_nextsetting} to "%{_time}%:00"
+
+    set {_lore} to "&7Click here to change \n&7the time to &6%{_nextsetting}%&7."
+
+    setguiitem({_player},{_slot}, {_item},1, "&r%{_nextsetting}%",{_lore},"changeSteemWorldSettingInMenu(""%{_world}%"" parsed as world, ""time"",%{_nextsetting}%, ""%{_player}%"" parsed as player)")
+
+    add 1 to {_time}
+
+    setguiitem({_player},45, {@backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldSettingsMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
+
+#
+# > Function - waitSteemWorldmenu
+# > Opens a menu with a loading bar.
+# > Parameters:
+# > <player>the player who should see the loading bar
+# > <boolean>start loading bar = true, stop loading bar = false
+function waitSteemWorldmenu(player:player,start:boolean=true):
+  #
+  # > If the {_start} value is false, the wait menu stops.
+  if {_start} is false:
+    delete metadata value "waitSteemWorldmenu" of {_player}
+    stop
+
+  #
+  # > If the loading bar menu is not running, start it.
+  if metadata value "waitSteemWorldmenu" of {_player} is not true:
+
+    #
+    # > Open the gui and name it 'Please wait' to let the player know
+    # > that this is a loading process.
+    opengui({_player},27,"&lPlease wait...")
+    set metadata value "waitSteemWorldmenu" of {_player} to true
+
+    #
+    # > Create a background which prevents players from putting items into the menu.
+    loop 27 times:
+      setguiitem({_player},loop-number - 1, {@backgrounditem},1, " ","")
+
+    #
+    # > To make it look better, the loading bar loop starts in the gui slot 10.
+    set {_startslot} to 10
+
+    #
+    # > For the loading bar loop, the previous slot is needed, create it here.
+    set {_currentslot} to {_startslot}
+    set {_previousslot} to {_currentslot} - 1
+
+    #
+    # > Run this loading bar loop as long as the metadata value
+    # > 'waitSteemWorldmenu' is true.
+    while metadata value "waitSteemWorldmenu" of {_player} is true:
+      #
+      # > This created a loading bar which is going to loop forever
+      # > until it is stopped or closed.
+      if {_previousslot} < {_startslot}:
+        set {_previousslot} to {_startslot} + 6
+      setguiitem({_player},{_previousslot}, {@backgrounditem},1, " ","")
+      setguiitem({_player},{_currentslot}, {@loadingitem},1, " ","")
+      set {_previousslot} to {_currentslot}
+      add 1 to {_currentslot}
+      if {_currentslot} > {_startslot}+6:
+        set {_currentslot} to {_startslot}
+      wait 5 ticks
+
+#
+# > Function - changeSteemWorldSettingInMenu
+# > Changes settings like weather or time and is used in menues.
+# > Parameters:
+# > <world>the world which should be affected by the change
+# > <text>setting name which should be changed
+# > <any object>the value to which the setting should be set
+# > <player> the player who requested the change
+function changeSteemWorldSettingInMenu(world:world,setting:text,value:object,player:player):
+  #
+  # > Check if the player has the permission to execute this change.
+  if getWorldPermission({_world},{_player},"settings") is true:
+    
+    #
+    # > To store the now changed setting, we need the short name
+    # > of the world, which is the world name without 'steemworlds-'.
+    set {_name} to "%{_world}%"
+    replace all "steemworlds-" with "" in {_name}
+
+    if {_setting} is "time":
+      set the time in {_world} to {_value}
+      if getGeneralStorageData("steemworlds",{_name},"doDaylightCycle") is "false":
+        saveGeneralStorageData("steemworlds",{_name},"time", "%{_value}%")
+
+    if {_setting} is "weather":
+      setSteemWorldWeather({_world},{_value})
+      close {_player}'s inventory
+      if getGeneralStorageData("steemworlds",{_name},"doWeatherCycle") is "false":
+        saveGeneralStorageData("steemworlds",{_name},"weather", {_value})
+
+#
+# > Function - changeSteemWorldGameruleInMenu
+# > Changes a gamerule of the specified world.
+# > Parameters:
+# > <world>the world which should be affected by the change
+# > <text>gamerule name which should be changed
+# > <any object>the value to which the setting should be set
+# > <player> the player who requested the change
+function changeSteemWorldGameruleInMenu(world:world,gamerule:text,value:object,player:player):
+
+  #
+  # > Check if the player has the permission to execute this change.
+  if getWorldPermission({_world},{_player},"settings") is true:
+
+    #
+    # > Change the settings and then re-open the menu for settings.
+    setSteemWorldGamerule({_world},{_gamerule},{_value})
+    openSteemWorldSettingsMenu({_world},{_player})
