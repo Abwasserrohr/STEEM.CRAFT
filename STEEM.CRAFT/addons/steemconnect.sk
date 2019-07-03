@@ -1,6 +1,6 @@
 #
 # ==============
-# steemconnect.sk v0.0.1
+# steemconnect.sk v0.0.2
 # ==============
 # steemconnect.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -41,11 +41,24 @@ command /steemconnect [<text>]:
     # > Some players might not use only lowercase letters. Convert the
     # > text to lower case only to prevent such mistakes.
     set {_steemaccount} to arg-1.toLowerCase()
+    
+    #
+    # > Get the account of the player in a thread.
+    getAccount("%{_steemaccount}%")
+	
+    #
+    # > Wait for the response.
+    while getAccountResponse("%{_steemaccount}%") is "wait":
+      wait 1 tick
+
+    #
+    # > Set the response to the account variable to be used later.
+    set {_account} to getAccountResponse("%{_steemaccount}%")
 
     #
     # > If the account name doesn't exist, tell the player
     # > about this and add a usage for support.
-    if getAccount({_steemaccount}) is not set:
+    if {_account} is not set:
       message "%getChatPrefix()% Steem account %{_steemaccount}% not found."
       message "%getChatPrefix()% Usage: /steemconnect <steem account>"
       stop
@@ -53,7 +66,7 @@ command /steemconnect [<text>]:
     #
     # > If the account doesn't have the uuid saved in the profile, send a link
     # > which sets the player's uuid to the profile of the steem account.
-    if validateSyncedSteemAccountUUID(player,{_steemaccount}) is false:
+    if validateSyncedSteemAccountUUID(player,{_account}) is false:
 
       #
       # > Create a new ComponentBuilder to make clickable and hoverable text.
@@ -78,7 +91,7 @@ command /steemconnect [<text>]:
     #
     # > If the account doesn't have the server account authorized, send a link
     # > which authorizes the server account.
-    if validateSyncedSteemAccountAuths(player,{_steemaccount}) is false:
+    if validateSyncedSteemAccountAuths(player,{_account}) is false:
 
       #
       # > Create a new ComponentBuilder to make clickable and hoverable text.

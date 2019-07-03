@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.26
+# steemworlds.sk v0.0.29
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -644,7 +644,7 @@ function saveSteemWorld(player:player):
 
     #
     # > The world size is important to set the world size correctly on load.
-    {_finaljson}.put("wsize", {_size})
+    {_finaljson}.put("size", {_size})
 
     #
     # > Set the spawn location to the string from the local storage.
@@ -659,7 +659,38 @@ function saveSteemWorld(player:player):
       {_finaljson}.put("biome", {_biome})
 
     #
-    # > To shrink down the reference parts, this data is being compressed and encoded into base64.
+    # > Get the doWeatherCycle gamerule from the local storage and add it to the json.
+    set {_weathercycle} to getGeneralStorageData("steemworlds",{_shortworld},"doWeatherCycle")
+    if {_weathercycle} is set:
+      {_finaljson}.put("doWeatherCycle", {_weathercycle})
+	  
+    #
+    # > Get the doDaylightCycle gamerule from the local storage and add it to the json.
+    set {_weathercycle} to getGeneralStorageData("steemworlds",{_shortworld},"doDaylightCycle")
+    if {_weathercycle} is set:
+      {_finaljson}.put("doDaylightCycle", {_weathercycle})
+
+    #
+    # > Get the randomTickSpeed gamerule from the local storage and add it to the json.
+    set {_weathercycle} to getGeneralStorageData("steemworlds",{_shortworld},"randomTickSpeed")
+    if {_weathercycle} is set:
+      {_finaljson}.put("randomTickSpeed", {_weathercycle})
+
+    #
+    # > Get the weather from the local storage and add it to the json.
+    set {_weather} to getGeneralStorageData("steemworlds",{_shortworld},"weather")
+    if {_weather} is set:
+      {_finaljson}.put("weather", {_weather})
+
+    #
+    # > Get the time from the local storage and add it to the json.
+    set {_weather} to getGeneralStorageData("steemworlds",{_shortworld},"time")
+    if {_weather} is set:
+      {_finaljson}.put("time", {_weather})
+
+    #
+    # > To shrink down the chunk reference parts, this data is being
+    # > compressed and encoded into base64.
     {_finaljson}.put("world", compressBase64({_arraynode}.toString()))
 
     set {_txid} to "%{_world}%"
@@ -701,7 +732,7 @@ function saveSteemWorld(player:player):
     delete {_bossbar}
 
 #
-# > Function - loadSteemWorld:
+# > Function - loadSteemWorld
 # > Loads the speficied world.
 # > Parameters:
 # > <text> The steem username of the account which should be loaded.
@@ -833,7 +864,7 @@ function loadSteemWorld(steemname:text,worldname:text,player:player,blockid:numb
     set {_biome} to getGeneralStorageData("steemworlds",{_shortworld},"biome")
     set {_size} to getGeneralStorageData("steemworlds",{_shortworld},"size")
     setSteemWorldBiome({_world},{_biome})
-    setSteemWorldSize({_world},round({_size}))
+    applySteemWorldSettings({_world})
 
 #
 # > Function - loadSteemWorldData
@@ -879,24 +910,62 @@ function loadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
   replace "steemworlds-" with "" in {_shortworld}
 
   #
-  # > Get the serialized location and save it to the storage.
-  set {_spawn} to {_jsonNode}.get("spawn").textValue()
-  saveGeneralStorageData("steemworlds",{_shortworld},"spawn",{_spawn})
+  # > Store new world data only if it is a world loading process with
+  # > a bossbar that is not null to prevent overwriting data while
+  # > saving the world to the blockchain.
+  if {_bossbar} is not null:
+    #
+    # > Get the serialized location and save it to the storage.
+    set {_spawn} to {_jsonNode}.get("spawn").textValue()
+    if {_spawn} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"spawn",{_spawn})
 
-  #
-  # > Get the biome and store it.
-  set {_biome} to {_jsonNode}.get("biome").textValue()
-  saveGeneralStorageData("steemworlds",{_shortworld},"biome",{_biome})
+    #
+    # > Get the biome and store it.
+    set {_biome} to {_jsonNode}.get("biome").textValue()
+    if {_biome} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"biome",{_biome})
+  
+    #
+    # > Get the doWeatherCycle gamerule and store it.
+    set {_weatherCycle} to {_jsonNode}.get("doWeatherCycle").textValue()
+    if {_weatherCycle} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"doWeatherCycle",{_weatherCycle})
 
-  #
-  # > Set the world size to the defined size in the Steem comment.
-  set {_size} to {_jsonNode}.get("wsize").doubleValue()
-  saveGeneralStorageData("steemworlds",{_shortworld},"size",{_size})
+    #
+    # > Get the randomTickSpeed gamerule and store it.
+    set {_randomTickSpeed} to {_jsonNode}.get("randomTickSpeed").textValue()
+    if {_randomTickSpeed} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"randomTickSpeed",{_randomTickSpeed})
 
-  set {_size} to {_size}*32
-  set {_wb} to {_world}.getWorldBorder()
-  {_wb}.setWarningDistance(0)
-  {_wb}.setSize({_size})
+    #
+    # > Get the weather and store it.
+    set {_weather} to {_jsonNode}.get("weather").textValue()
+    if {_weather} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"weather",{_weather})
+
+    #
+    # > Get the doDaylightCycle gamerule and store it.
+    set {_doDaylightCycle} to {_jsonNode}.get("doDaylightCycle").textValue()
+    if {_doDaylightCycle} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"doDaylightCycle",{_doDaylightCycle})
+
+    #
+    # > Get the time and store it.
+    set {_time} to {_jsonNode}.get("time").textValue()
+    if {_time} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"time",{_time})
+
+    #
+    # > Set the world size to the defined size in the Steem comment.
+    set {_size} to {_jsonNode}.get("size").doubleValue()
+    if {_size} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"size",{_size})
+
+    set {_size} to {_size}*32
+    set {_wb} to {_world}.getWorldBorder()
+    {_wb}.setWarningDistance(0)
+    {_wb}.setSize({_size})
 
   #
   # > Decompress and decode the base64 string, this increases the size.
@@ -999,14 +1068,39 @@ function loadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
   return {_map}
 
 #
-# > Function - getSteemWorldRevisions
-# > Gets all revisions for the defined steem username and world name.
+# > Function - getSteemWorldHistoryResult
+# > Gets the result of a edit history request.
 # > Parameters:
 # > <text>steem username
 # > <text>Steemworld name
-# > Retuns:
-# > <HashMap>[blockid,json metadata]
-function getSteemWorldRevisions(steemname:text,worldname:text) :: object:
+function getSteemWorldHistoryResult(steemname:text,worldname:text) :: object:
+  return metadata value "SteemWorldHistory-%{_worldname}%" of getDummy()
+
+#
+# > Function - getSteemWorldHistory
+# > Gets the edit history for the defined steem username and world name.
+# > Parameters:
+# > <text>steem username
+# > <text>Steemworld name
+function getSteemWorldHistory(steemname:text,worldname:text):
+  set metadata value "SteemWorldHistory-%{_worldname}%" of getDummy() to "wait"
+  while {getSteemWorldHistoryRequest} is set:
+    wait 1 tick
+  set {getSteemWorldHistoryRequest} to [{_steemname},{_worldname}]
+  $ thread
+  getSteemWorldHistoryAsync({getSteemWorldHistoryRequest})
+
+#
+# > Function - getSteemWorldHistoryAsync
+# > Should be called in a thread to get the edit history of a world.
+# > Parameters:
+# > <ArrayList>[<text>steemname,<text>worldname]
+function getSteemWorldHistoryAsync(request:object):
+  delete {getSteemWorldHistoryRequest}
+  set {_request::*} to ...{_request}
+  set {_steemname} to {_request::1}
+  set {_worldname} to {_request::2}
+
   set {_account} to new AccountName({_steemname})
   set {_SteemJ} to new SteemJ()
 
@@ -1089,7 +1183,12 @@ function getSteemWorldRevisions(steemname:text,worldname:text) :: object:
         set {_lowestkey} to "%loop-value%" parsed as integer
 
     set {_start} to Integer.valueOf({_lowestkey})	  
-  return {_revisions}
+  set metadata value "SteemWorldHistory-%{_worldname}%" of getDummy() to {_revisions}
+
+  #
+  # > Delete the history again after 5 seconds to not fill up the memory.
+  wait 5 seconds
+  delete metadata value "SteemWorldHistory-%{_worldname}%" of getDummy()
 
 #
 # > Function - createSteemWorld
@@ -1140,6 +1239,7 @@ function createSteemWorld(name:text):
   {_wb}.setCenter(spawn of {_world})
   {_wb}.setWarningDistance(0)
   {_wb}.setSize(32)
+  applySteemWorldSettings({_world})
 
   #
   # > Once the "wait" value from the steemworlds metadatahas been deleted,
@@ -1248,8 +1348,13 @@ function setSteemWorldBiome(world:world,biome:text):
 # > <text>the vanilla gamerule name which should be changed
 # > <setting>the value to which the gamerule should be changed
 function setSteemWorldGamerule(world:world,gamerule:text,setting:object):
-  set {_gamerule} to GameRule.getByName({_gamerule})
-  {_world}.setGameRule({_gamerule},{_setting})
+  set {_gameruleobj} to GameRule.getByName({_gamerule})
+  {_world}.setGameRule({_gameruleobj},{_setting})
+
+  set {_name} to "%{_world}%"
+  replace all "steemworlds-" with "" in {_name}
+  saveGeneralStorageData("steemworlds",{_name},"%{_gamerule}%", "%{_setting}%")
+
 
 #
 # > Function - getSteemWorldGamerule
@@ -1260,6 +1365,75 @@ function setSteemWorldGamerule(world:world,gamerule:text,setting:object):
 function getSteemWorldGamerule(world:world,gamerule:text) :: object:
   set {_gamerule} to GameRule.getByName({_gamerule})
   return {_world}.getGameRuleValue({_gamerule})
+
+#
+# > Function - setSteemWorldWeather
+# > Sets the weather of the specified steem world.
+# > Parameters:
+# > <world>the world
+# > <text>a weather string: Thunder, Rain or Clear
+function setSteemWorldWeather(world:world,weather:text):
+
+  if {_weather} is "Thunder":
+    {_world}.setStorm(true)
+    {_world}.setWeatherDuration(6000)
+    {_world}.setThundering(true)
+    {_world}.setThunderDuration(6000)
+
+  else if {_weather} is "Rain":
+    {_world}.setThundering(false)
+    {_world}.setThunderDuration(0)
+    {_world}.setStorm(true)
+    {_world}.setWeatherDuration(6000)
+
+  else if {_weather} is "Clear":
+    {_world}.setStorm(false)
+    {_world}.setWeatherDuration(0)
+    {_world}.setThundering(false)
+    {_world}.setThunderDuration(0)
+
+#
+# > Function - applySteemWorldSettings
+# > Applies steem world settings from local storage.
+# > Parameters:
+# > <world>the world
+function applySteemWorldSettings(world:world):
+  #
+  # > We just need the short name of the world,
+  # > remove "steeworlds-" from the name.
+  set {_name} to "%{_world}%"
+  replace all "steemworlds-" with "" in {_name}
+  
+  #
+  # > Check for each setting and apply it to the world.
+  set {_size} to getGeneralStorageData("steemworlds",{_name},"size")
+  if {_size} is set:
+    setSteemWorldSize({_world},round({_size}))
+
+  set {_randomTickSpeed} to getGeneralStorageData("steemworlds",{_name},"randomTickSpeed")
+  if {_randomTickSpeed} is set:
+    setSteemWorldGamerule({_world},"randomTickSpeed",{_randomTickSpeed} parsed as integer)
+  
+  #
+  # > Only apply the weather if the doWeatherCycle gamerule is set.
+  set {_weathercycle} to getGeneralStorageData("steemworlds",{_name},"doWeatherCycle")
+  if {_weathercycle} is set:
+    setSteemWorldGamerule({_world},"doWeatherCycle",{_weathercycle} parsed as boolean)
+
+    set {_weather} to getGeneralStorageData("steemworlds",{_name},"weather")
+    if {_weather} is set:
+      setSteemWorldWeather({_world},{_weather})
+
+  #
+  # > Only apply the time if the doDaylightCycle gamerule is set.
+  set {_daylightcycle} to getGeneralStorageData("steemworlds",{_name},"doDaylightCycle")
+  if {_daylightcycle} is set:
+    setSteemWorldGamerule({_world},"doDaylightCycle",{_daylightcycle} parsed as boolean)
+
+    set {_time} to getGeneralStorageData("steemworlds",{_name},"time")
+    if {_time} is set:
+      set {_setting} to {_time} parsed as time
+      set the time in {_world} to {_setting}
 
 #
 # > Event - on WorldInitEvent

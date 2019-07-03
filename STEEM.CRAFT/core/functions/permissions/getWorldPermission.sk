@@ -1,0 +1,26 @@
+#
+# ==============
+# getWorldPermission.sk
+# ==============
+# getWorldPermission.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+#
+# > Function - getWorldPermission
+# > Returns if the player has permissions for this world.
+# > Parameters:
+# > <world>the world name
+# > <player>the player who should get checked for permission
+# > [<text>]the type of permission which should be checked (default="build")
+# > [<boolean>]false = the player will not get a error message for not being allowed (default=true)
+function getWorldPermission(world:world,player:player,permissiontype:text="build",senderror:boolean=true) :: boolean:
+  set {_steemaccount} to getSyncedAccount({_player})
+  #
+  # > Currently, there is no real permission system behind. If the name of
+  # > the world matches which the synced username, the user has permission
+  # > to edit the world.
+  if "%{_world}%" does not contain "steemworlds-%{_steemaccount}%-":
+    if {_senderror} is true:
+      message "%getChatPrefix()% You can only change the settings of your own worlds."
+    return false
+  return true
