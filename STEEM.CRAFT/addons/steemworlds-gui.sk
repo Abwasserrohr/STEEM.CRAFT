@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds-gui.sk v0.0.3
+# steemworlds-gui.sk v0.0.4
 # ==============
 # steemworlds-gui.sk is part of the STEEM.CRAFT addons (addon to steemworlds.sk).
 # ==============
@@ -405,7 +405,8 @@ function openSteemWorldHistoryMenu(world:world,site:number,player:player,init:bo
   set {_objectMapper} to new ObjectMapper()
 
   if {_init} is true:
-    set {_steemusername} to "immanuel94"
+    set {_steemusername} to getGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"steemaccount")
+
     set {_permlink} to "re-steemcraft-%{_world}%"
 
     waitSteemWorldmenu({_player},true)
@@ -552,10 +553,10 @@ function openSteemWorldHistoryMenu(world:world,site:number,player:player,init:bo
       # > we have to add a item which allows to go to the next page.
       else:
         setguiitem({_player},26, {@forwarditem},1, "&r&lSite %{_site}+1%","","openSteemWorldHistoryMenu(""%{_world}%"" parsed as world,%{_site}+1%,""%{_player}%"" parsed as player,false)")
-        
+
         #
         # > Since we're done here, stop this loop.
-		stop loop
+        stop loop
 
   #
   # > If we're on a site that is higher than 1, add a item
