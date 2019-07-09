@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.29
+# steemworlds.sk v0.0.30
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -183,9 +183,8 @@ command /steemworldload [<number=0>]:
     # > To show off that saving and loading works, there is a single world per
     # > user, which is hardcoded for now. It is always named "steemworlds-steemusername-worldname"
     if "%player's world%" contains "steemworlds-":
-      set {_world} to "%player's world%"
-      replace all "steemworlds-" with "" in {_world}
-      set {_account} to getGeneralStorageData("steemworlds",{_world},"steemaccount")
+	  set {_name} to getSteemWorldShortName(player's world)
+      set {_account} to getGeneralStorageData("steemworlds",{_name},"steemaccount")
       #
       # > The following process needs to be executed as a thread, a global variable
       # > is used to call the function.
@@ -1256,6 +1255,7 @@ function createSteemWorld(name:text):
 # > <number>the new size of the world, 1 = 32x32 size.
 function setSteemWorldSize(world:world,size:number):
   set {_wb} to {_world}.getWorldBorder()
+  saveGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"size",{_size})
   {_wb}.setCenter(spawn of {_world})
   {_wb}.setWarningDistance(0)
   {_wb}.setSize({_size}*32)
@@ -1267,10 +1267,8 @@ function setSteemWorldSize(world:world,size:number):
 # > <world>the steem world which should be changed
 # > <location>the new spawn location of the world
 function setSteemWorldSpawn(world:world,l:location):
-  set {_world} to "%{_world}%"
-  replace all "steemworlds-" with "" in {_world}
   set {_l} to serializelocation({_l})
-  saveGeneralStorageData("steemworlds",{_world},"spawn",{_l})
+  saveGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"spawn",{_l})
 
 #
 # > Function - getSteemWorldSpawn
@@ -1278,9 +1276,7 @@ function setSteemWorldSpawn(world:world,l:location):
 # > Parameters:
 # > <world>the steem world which should be changed
 function getSteemWorldSpawn(world:world) :: location:
-  set {_worldstring} to "%{_world}%"
-  replace all "steemworlds-" with "" in {_worldstring}
-  set {_l} to getGeneralStorageData("steemworlds",{_worldstring},"spawn")
+  set {_l} to getGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"spawn")
   set {_l} to deserializelocation({_l},{_world})
   return {_l}
 
@@ -1302,9 +1298,7 @@ function setSteemWorldBiome(world:world,biome:text):
 
     #
     # > Save the changed biome to the storage.
-    set {_name} to "%{_world}%"
-    replace all "steemworlds-" with "" in {_name}
-    saveGeneralStorageData("steemworlds",{_name},"biome", "%{_biome}%")
+    saveGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"biome", "%{_biome}%")
 
     #
     # > Only the world within the world border has to be changed, get
@@ -1351,10 +1345,7 @@ function setSteemWorldGamerule(world:world,gamerule:text,setting:object):
   set {_gameruleobj} to GameRule.getByName({_gamerule})
   {_world}.setGameRule({_gameruleobj},{_setting})
 
-  set {_name} to "%{_world}%"
-  replace all "steemworlds-" with "" in {_name}
-  saveGeneralStorageData("steemworlds",{_name},"%{_gamerule}%", "%{_setting}%")
-
+  saveGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"%{_gamerule}%", "%{_setting}%")
 
 #
 # > Function - getSteemWorldGamerule
@@ -1399,11 +1390,9 @@ function setSteemWorldWeather(world:world,weather:text):
 # > <world>the world
 function applySteemWorldSettings(world:world):
   #
-  # > We just need the short name of the world,
-  # > remove "steeworlds-" from the name.
-  set {_name} to "%{_world}%"
-  replace all "steemworlds-" with "" in {_name}
-  
+  # > We just need the short name of the world here.
+  set {_name} to getSteemWorldShortName({_world})
+
   #
   # > Check for each setting and apply it to the world.
   set {_size} to getGeneralStorageData("steemworlds",{_name},"size")
@@ -1434,6 +1423,16 @@ function applySteemWorldSettings(world:world):
     if {_time} is set:
       set {_setting} to {_time} parsed as time
       set the time in {_world} to {_setting}
+
+#
+# > Function - getSteemWorldShortName
+# > Returns the short steem world name.
+# > Parameters:
+# > <world>the world to which the short name should be returned
+function getSteemWorldShortName(world:world) :: text:
+  set {_name} to "%{_world}%"
+  replace all "steemworlds-" with "" in {_name}
+  return {_name}
 
 #
 # > Event - on WorldInitEvent
