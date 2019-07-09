@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds-gui.sk v0.0.1
+# steemworlds-gui.sk v0.0.2
 # ==============
 # steemworlds-gui.sk is part of the STEEM.CRAFT addons (addon to steemworlds.sk).
 # ==============
@@ -196,8 +196,35 @@ function openSteemWorldSettingsMenu(world:world,player:player):
   
   setguiitem({_player},14, {_item},1, "&rWeather cycle",{_randomtickspeedlore},"changeSteemWorldGameruleInMenu(""%{_world}%"" parsed as world, ""doWeatherCycle"",%{_nextrandomtickspeed}%, ""%{_player}%"" parsed as player)")
 
+  #
+  # > World size setting
+  set {_worldsize} to getGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"size")
+  set {_item} to {@enableditem}
+  if {_worldsize} > 1:
+    set {_decreaselore} to "&7Rightclick to decrease it to &6%{_worldsize}-1%&7."
+  else:
+    set {_decreaselore} to ""
+  set {_worldsizelore} to "&7Current size: &6%{_worldsize}%\n&7Leftclick to increase it to &6%{_worldsize}+1%&7.\n%{_decreaselore}%"
+
+  setguiitem({_player},14, {_item},1, "&rWorld size",{_worldsizelore},"changeSteemWorldSizeInMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player, event)")
 
   setguiitem({_player},18, {@backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldMainMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
+
+#
+# > Function - changeSteemWorldSizeInMenu
+# > Changes the size of the steem based world using a menu.
+# > Parameters:
+# > <world>the world which should be changed
+# > <player>the player who wants to change the setting
+# > <event>the click event from the menu (needed to know if it was a left- or rightclick)
+function changeSteemWorldSizeInMenu(world:world,player:player,event:event):
+  set {_worldsize} to getGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"size")
+  if {_event}.isRightClick() is true:
+    if {_worldsize} > 1:
+      setSteemWorldSize({_world},round({_worldsize} - 1))
+  else:
+    setSteemWorldSize({_world},round({_worldsize} + 1))
+  openSteemWorldSettingsMenu({_world},{_player})
 
 #
 # > Function - openSteemWorldTimeMenu
@@ -315,10 +342,8 @@ function changeSteemWorldSettingInMenu(world:world,setting:text,value:object,pla
   if getWorldPermission({_world},{_player},"settings") is true:
     
     #
-    # > To store the now changed setting, we need the short name
-    # > of the world, which is the world name without 'steemworlds-'.
-    set {_name} to "%{_world}%"
-    replace all "steemworlds-" with "" in {_name}
+    # > To store the now changed setting, we need the short name.
+    set {_name} to getSteemWorldShortName({_world})
 
     if {_setting} is "time":
       set the time in {_world} to {_value}
@@ -340,7 +365,6 @@ function changeSteemWorldSettingInMenu(world:world,setting:text,value:object,pla
 # > <any object>the value to which the setting should be set
 # > <player> the player who requested the change
 function changeSteemWorldGameruleInMenu(world:world,gamerule:text,value:object,player:player):
-
   #
   # > Check if the player has the permission to execute this change.
   if getWorldPermission({_world},{_player},"settings") is true:
