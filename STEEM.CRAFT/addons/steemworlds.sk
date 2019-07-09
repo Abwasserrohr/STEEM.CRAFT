@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.30
+# steemworlds.sk v0.0.31
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -183,7 +183,7 @@ command /steemworldload [<number=0>]:
     # > To show off that saving and loading works, there is a single world per
     # > user, which is hardcoded for now. It is always named "steemworlds-steemusername-worldname"
     if "%player's world%" contains "steemworlds-":
-	  set {_name} to getSteemWorldShortName(player's world)
+      set {_name} to getSteemWorldShortName(player's world)
       set {_account} to getGeneralStorageData("steemworlds",{_name},"steemaccount")
       #
       # > The following process needs to be executed as a thread, a global variable
@@ -1143,7 +1143,7 @@ function getSteemWorldHistoryAsync(request:object):
         if {_history}.get(loop-value).getOp().getPermlink().getLink() is {_searchedpermlink}:
           #
           # > Add the block number and metadata of this world to the revisions HashMap.
-          {_revisions}.put({_history}.get(loop-value).getBlock().intValue(),{_history}.get(loop-value).getOp().getJsonMetadata())
+          {_revisions}.put({_history}.get(loop-value).getBlock().intValue(),{_history}.get(loop-value).getTimestamp().getDateTimeAsInt())
 
           #
           # > If this transaction has reached or somehow even exceeded the creation date of the
