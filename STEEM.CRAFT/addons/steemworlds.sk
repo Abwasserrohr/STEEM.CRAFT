@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.32
+# steemworlds.sk v0.0.33
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -349,8 +349,7 @@ function saveSteemWorld(player:player):
 
     #
     # > Get the size of the world to set the correct world coordinates.
-    set {_wb} to {_world}.getWorldBorder()
-    set {_size} to {_wb}.getSize() / 32
+    set {_size} to getGeneralStorageData("steemworlds",getSteemWorldShortName({_player}'s world),"size")
 	
     #
     # > Calculate both x- and z-start and endcoordinates of the world.
