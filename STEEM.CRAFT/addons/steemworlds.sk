@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.33
+# steemworlds.sk v0.0.34
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -96,6 +96,7 @@ import:
   eu.bittrade.libs.steemj.base.models.Permlink
   eu.bittrade.libs.steemj.base.models.operations.CommentOperation
   org.bukkit.block.Biome
+  org.bukkit.Difficulty
 
 #
 # > Command - /steemworldbiome | /swbiome, /scbiome
@@ -1358,6 +1359,25 @@ function getSteemWorldGamerule(world:world,gamerule:text) :: object:
   return {_world}.getGameRuleValue({_gamerule})
 
 #
+# > Function - setSteemWorldDifficulty
+# > Sets the difficulty of the steem world.
+# > Parameters:
+# > <world>the world
+# > <text>the difficulty name as a string. Either peaceful, easy, normal or hard
+function setSteemWorldDifficulty(world:world,difficulty:text):
+  set {_difficultyenum} to Difficulty.valueOf({_world})
+  {_world}.setDifficulty({_difficultyenum})
+  saveGeneralStorageData("steemworlds",{_name},"difficulty",{_difficulty})
+
+#
+# > Function - getSteemWorldDifficulty
+# > Returns the difficulty of the steem world.
+# > Parameters:
+# > <world>the world
+function getSteemWorldDifficulty(world:world) :: object:
+  return {_world}.getDifficulty()
+
+#
 # > Function - setSteemWorldWeather
 # > Sets the weather of the specified steem world.
 # > Parameters:
@@ -1402,7 +1422,15 @@ function applySteemWorldSettings(world:world):
   set {_randomTickSpeed} to getGeneralStorageData("steemworlds",{_name},"randomTickSpeed")
   if {_randomTickSpeed} is set:
     setSteemWorldGamerule({_world},"randomTickSpeed",{_randomTickSpeed} parsed as integer)
-  
+
+  set {_difficulty} to getGeneralStorageData("steemworlds",{_name},"difficulty")
+  if {_difficulty} is set:
+    setSteemWorldDifficulty({_world},{_difficulty})
+
+  set {_mobspawning} to getGeneralStorageData("steemworlds",{_name},"doMobSpawning")
+  if {_mobspawning} is set:
+    setSteemWorldGamerule({_world},"doMobSpawning",{_mobspawning} parsed as boolean)
+
   #
   # > Only apply the weather if the doWeatherCycle gamerule is set.
   set {_weathercycle} to getGeneralStorageData("steemworlds",{_name},"doWeatherCycle")
