@@ -659,16 +659,28 @@ function saveSteemWorld(player:player):
       {_finaljson}.put("biome", {_biome})
 
     #
+    # > Get the difficulty from the local storage and add it to the json.
+    set {_difficulty} to getGeneralStorageData("steemworlds",{_shortworld},"difficulty")
+    if {_difficulty} is set:
+      {_finaljson}.put("difficulty", {_difficulty})
+
+    #
     # > Get the doWeatherCycle gamerule from the local storage and add it to the json.
     set {_weathercycle} to getGeneralStorageData("steemworlds",{_shortworld},"doWeatherCycle")
     if {_weathercycle} is set:
       {_finaljson}.put("doWeatherCycle", {_weathercycle})
-	  
+
     #
     # > Get the doDaylightCycle gamerule from the local storage and add it to the json.
-    set {_weathercycle} to getGeneralStorageData("steemworlds",{_shortworld},"doDaylightCycle")
-    if {_weathercycle} is set:
-      {_finaljson}.put("doDaylightCycle", {_weathercycle})
+    set {_daylightcycle} to getGeneralStorageData("steemworlds",{_shortworld},"doDaylightCycle")
+    if {_daylightcycle} is set:
+      {_finaljson}.put("doDaylightCycle", {_daylightcycle})
+
+    #
+    # > Get the doMobSpawning gamerule from the local storage and add it to the json.
+    set {_mobspawning} to getGeneralStorageData("steemworlds",{_shortworld},"doMobSpawning")
+    if {_mobspawning} is set:
+      {_finaljson}.put("doMobSpawning", {_mobspawning})
 
     #
     # > Get the randomTickSpeed gamerule from the local storage and add it to the json.
@@ -925,7 +937,13 @@ function loadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
     set {_biome} to {_jsonNode}.get("biome").textValue()
     if {_biome} is set:
       saveGeneralStorageData("steemworlds",{_shortworld},"biome",{_biome})
-  
+
+    #
+    # > Get the difficulty and store it.
+    set {_difficulty} to {_jsonNode}.get("difficulty").textValue()
+    if {_difficulty} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"difficulty",{_difficulty})
+
     #
     # > Get the doWeatherCycle gamerule and store it.
     set {_weatherCycle} to {_jsonNode}.get("doWeatherCycle").textValue()
@@ -949,6 +967,12 @@ function loadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
     set {_doDaylightCycle} to {_jsonNode}.get("doDaylightCycle").textValue()
     if {_doDaylightCycle} is set:
       saveGeneralStorageData("steemworlds",{_shortworld},"doDaylightCycle",{_doDaylightCycle})
+
+    #
+    # > Get the doMobSpawning gamerule and store it.
+    set {_doMobSpawning} to {_jsonNode}.get("doMobSpawning").textValue()
+    if {_doMobSpawning} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"doMobSpawning",{_doMobSpawning})
 
     #
     # > Get the time and store it.
@@ -1365,9 +1389,9 @@ function getSteemWorldGamerule(world:world,gamerule:text) :: object:
 # > <world>the world
 # > <text>the difficulty name as a string. Either peaceful, easy, normal or hard
 function setSteemWorldDifficulty(world:world,difficulty:text):
-  set {_difficultyenum} to Difficulty.valueOf({_world})
+  set {_difficultyenum} to Difficulty.valueOf({_difficulty}.toUpperCase())
   {_world}.setDifficulty({_difficultyenum})
-  saveGeneralStorageData("steemworlds",{_name},"difficulty",{_difficulty})
+  saveGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"difficulty",{_difficulty})
 
 #
 # > Function - getSteemWorldDifficulty
