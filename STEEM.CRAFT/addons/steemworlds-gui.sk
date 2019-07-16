@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds-gui.sk v0.0.4
+# steemworlds-gui.sk v0.0.5
 # ==============
 # steemworlds-gui.sk is part of the STEEM.CRAFT addons (addon to steemworlds.sk).
 # ==============
@@ -98,12 +98,12 @@ function openSteemWorldMainMenu(world:world,player:player):
 function openSteemWorldSettingsMenu(world:world,player:player):
   #
   # > Just call our main settings menu "Settings".
-  opengui({_player},27,"&lSettings")
+  opengui({_player},36,"&lSettings")
   
   #
   # > Cover all inventory menu slots with a background item
   # > to prevent item loss for players.
-  loop 27 times:
+  loop 36 times:
     setguiitem({_player},loop-number - 1, {@backgrounditem},1, " ","")
 
   #
@@ -216,9 +216,46 @@ function openSteemWorldSettingsMenu(world:world,player:player):
     set {_decreaselore} to ""
   set {_worldsizelore} to "&7Current size: &6%{_worldsize}%\n&7Leftclick to increase it to &6%{_worldsize}+1%&7.\n%{_decreaselore}%"
 
-  setguiitem({_player},14, {_item},1, "&rWorld size",{_worldsizelore},"changeSteemWorldSizeInMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player, event)")
+  setguiitem({_player},15, {_item},1, "&rWorld size",{_worldsizelore},"changeSteemWorldSizeInMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player, event)")
 
-  setguiitem({_player},18, {@backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldMainMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
+  #
+  # > World difficulty setting
+  set {_difficulty} to getGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"difficulty")
+  set {_item} to {@enableditem}
+
+  #
+  # > Allow the player to switch through all the possible difficulties.
+  # > Set the next setting depending on the current setting from low to high.
+  if {_difficulty} is not set:
+    set {_difficulty} to "peaceful"
+  if {_difficulty} is "peaceful":
+    set {_nextsetting} to "easy"
+  else if {_difficulty} is "easy":
+    set {_nextsetting} to "normal"
+  else if {_difficulty} is "normal":
+    set {_nextsetting} to "hard"
+  else if {_difficulty} is "hard":
+    set {_nextsetting} to "peaceful"
+
+  set {_difficultylore} to "&7Current difficulty: &6%{_difficulty}%\n&7Click to switch through\n&7the difficulties.\n&7Next Difficulty: &6%{_nextsetting}%&7"
+
+  setguiitem({_player},16, {_item},1, "&rDifficulty",{_difficultylore},"changeSteemWorldSettingInMenu(""%{_world}%"" parsed as world,""difficulty"", ""%{_nextsetting}%"", ""%{_player}%"" parsed as player)")
+
+  #
+  # > Mob spawning boolean setting
+  set {_doMobSpawning} to getSteemWorldGamerule({_world},"doMobSpawning")
+  if {_doMobSpawning} is true:
+    set {_nextmobspawning} to false
+    set {_item} to {@enableditem}
+    set {_randomtickspeedlore} to "&7Currently: &6Enabled\n&7Click here to change it to &6disable&7."
+  else:
+    set {_nextmobspawning} to true
+    set {_item} to {@disableditem}
+    set {_randomtickspeedlore} to "&7Currently: &6Disabled\n&7Click here to change it to &6enable&7."
+
+  setguiitem({_player},19, {_item},1, "&rMob spawning",{_randomtickspeedlore},"changeSteemWorldGameruleInMenu(""%{_world}%"" parsed as world, ""doMobSpawning"",%{_nextmobspawning}%, ""%{_player}%"" parsed as player)")
+
+  setguiitem({_player},27, {@backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldMainMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
 
 #
 # > Function - changeSteemWorldSizeInMenu
@@ -366,6 +403,10 @@ function changeSteemWorldSettingInMenu(world:world,setting:text,value:object,pla
       set the time in {_world} to {_value}
       if getGeneralStorageData("steemworlds",{_name},"doDaylightCycle") is "false":
         saveGeneralStorageData("steemworlds",{_name},"time", "%{_value}%")
+
+    if {_setting} is "difficulty":
+      setSteemWorldDifficulty({_world},{_value})
+      openSteemWorldSettingsMenu({_world},{_player})
 
     if {_setting} is "weather":
       setSteemWorldWeather({_world},{_value})
