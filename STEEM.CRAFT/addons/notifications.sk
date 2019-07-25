@@ -189,33 +189,33 @@ function runBlockNotificationCheck():
           # > If the looped online steem player has revieved a transfer.
           if loop-value-2 contains "%{_operation}.getTo().getName()%|":
 
-              #
-              # > Get the parsed player out of the looped player string.
-              set {_player::*} to loop-value-2 split at "|"
-              set {_player} to {_player::2} parsed as player
+            #
+            # > Get the parsed player out of the looped player string.
+            set {_player::*} to loop-value-2 split at "|"
+            set {_player} to {_player::2} parsed as player
+
+            #
+            # > Get the predefined sound from the options parsed as list.
+            set {_sound::*} to ...{@transfernotificationsound}
+
+            #
+            # > If the first sound string is not a empty string, go forward.
+            if {_sound::1} is not "":
 
               #
-              # > Get the predefined sound from the options parsed as list.
-              set {_sound::*} to ...{@transfernotificationsound}
+              # > Play a sound to the player who gets the notification.
+              play sound {_sound::1} with volume {_sound::2} with pitch {_sound::3} at location of {_player} for {_player}
 
-              #
-              # > If the first sound string is not a empty string, go forward.
-              if {_sound::1} is not "":
+            #
+            # > Get tthe real amount of the transfer and the symbol for the
+            # > notifiaction message.
+            set {_amount} to {_operation}.getAmount().toReal().toString()
+            set {_symbol} to {_operation}.getAmount().getSymbol()
 
-                #
-                # > Play a sound to the player who gets the notification.
-                play sound {_sound::1} with volume {_sound::2} with pitch {_sound::3} at location of {_player} for {_player}
-
-              #
-              # > Get tthe real amount of the transfer and the symbol for the
-              # > notifiaction message.
-              set {_amount} to {_operation}.getAmount().toReal().toString()
-              set {_symbol} to {_operation}.getAmount().getSymbol()
-
-              #
-              # > Send the notifiaction message to the player.
-              message "%getChatPrefix()% Transaction:" to {_player}
-              message "%getChatPrefix()% %{_operation}.getFrom().getName()% sent %{_operation}.getTo().getName()% %{_amount}% %{_symbol}%" to {_player}
+            #
+            # > Send the notifiaction message to the player.
+            message "%getChatPrefix()% Transaction:" to {_player}
+            message "%getChatPrefix()% %{_operation}.getFrom().getName()% sent %{_operation}.getTo().getName()% %{_amount}% %{_symbol}%" to {_player}
 
 #
 # > Function - setSteemPlayerToOnlineStatus
