@@ -35,7 +35,7 @@ options:
   # > To disable: ["",0,0]
   transfernotificationsound: ["entity.player.levelup",1,0.5]
 
-every 3 seconds:
+every 1.5 seconds:
   if {@enable-notifications} is true:
     $ thread
     runBlockNotificationCheck()
