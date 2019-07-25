@@ -258,8 +258,8 @@ function setSteemPlayerToOnlineStatus(player:player,online:boolean):
             stop loop
 
     #
-	# > Save the new ArrayList to metadata, this is great since it is
-	# > accessible from threaded functions while being stored in memory.
+    # > Save the new ArrayList to metadata, this is great since it is
+    # > accessible from threaded functions while being stored in memory.
     set metadata value "onlineSteemUsers" of getDummy() to {_onlineusers}
 
 #
