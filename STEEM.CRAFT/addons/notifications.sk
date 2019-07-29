@@ -1,0 +1,279 @@
+#
+# ==============
+# notifications.sk v0.0.1
+# ==============
+# notifications.sk is part of the STEEM.CRAFT addons.
+# ==============
+# > notifications.sk allows players to get a notification if something
+# > happens that involves their account name on steem in new blocks.
+# ==============
+
+#
+# > Options
+# > These settings can be changed to fit your needs.
+options:
+  #
+  # > Enable or disable the notifications here. Instead of disabling it
+  # > here, adding a "-" prefix will also disable it on the next reload.
+  enable-notifications: true
+
+  #
+  # > Set the notification sound for comments here.
+  # > Format: ["sound name",volume,pitch]
+  # > To disable: ["",0,0]
+  commentnotificationsound: ["entity.player.levelup",1,0.5]
+
+  #
+  # > Set the notification sound for comments here.
+  # > Format: ["sound name",volume,pitch]
+  # > To disable: ["",0,0]
+  votenotificationsound: ["",0,0]
+
+  #
+  # > Set the notification sound for comments here.
+  # > Format: ["sound name",volume,pitch]
+  # > To disable: ["",0,0]
+  transfernotificationsound: ["entity.player.levelup",1,0.5]
+
+every 1.5 seconds:
+  if {@enable-notifications} is true:
+    $ thread
+    runBlockNotificationCheck()
+
+import:
+  java.util.ArrayList
+  eu.bittrade.libs.steemj.base.models.operations.CommentOperation
+  eu.bittrade.libs.steemj.base.models.operations.TransferOperation
+  eu.bittrade.libs.steemj.base.models.operations.VoteOperation
+
+#
+# > Function - runBlockNotificationCheck
+# > This function should be called in a thread and will
+# > check for notifiactions for currently online steem
+# > users to get a message and sound.
+function runBlockNotificationCheck():
+
+  #
+  # > SteemJ seems to only return blocks which are already confirmed,
+  # > which means we have to wait at least 21 blocks. This is not
+  # > optimal and has to be improved later on. Maybe make a custom
+  # > request for the checks.
+  set {_blocknumber} to getHeadBlockNumber() - 30
+
+  #
+  # > If this block hasn't been already processed, do it now.
+  if metadata value "lastSteemHeadBlockNumber" of getDummy() is not {_blocknumber}:
+
+    #
+    # > Set the metadata value to mark this block as the last processed
+    # > steem block. This helps to prevent the processing of the same
+    # > block multiple times.
+    set metadata value "lastSteemHeadBlockNumber" of getDummy() to {_blocknumber}
+	
+    #
+    # > Get all operations of the block.
+    set {_operations} to getOpsInBlock({_blocknumber},false)
+	
+    #
+    # > Get all Steem users that are currently online on this server to check
+    # > if we need to notify the user about something going on on the Steem
+    # > blockchain. E.g. transfer, comment, vote.
+    # > Adding a check for scot token would be nice later on.
+    set {_onlineusers::*} to ...metadata value "onlineSteemUsers" of getDummy()
+
+    #
+    # > Loop through all operations that happened in this block.
+    loop {_operations}.size() times:
+
+      # 
+      # > Select the currently looped operation.
+      set {_operation} to {_operations}.get(loop-number - 1).getOp()
+
+      #
+      # > If the operation is a CoommentOperation.
+      if {_operation} is instance of CommentOperation:
+
+        #
+        # > If the parent author isn't a empty string (blog post).
+        if {_operation}.getParentAuthor().getName() is not "":
+
+          #
+          # > Loop through the online users and check if the parent author is
+          # > currently online on our server.
+          loop {_onlineusers::*}:
+
+            #
+            # > If the looped online steem player is the parent author of this comment.
+            if loop-value-2 contains "%{_operation}.getParentAuthor().getName()%|":
+			  
+              #
+              # > If the looped online steem player is not the author of this comment.
+              if loop-value-2 doesn't contain "%{_operation}.getAuthor().getName()%|":
+
+                #
+                # > Get the parsed player out of the looped player string.
+                set {_player::*} to loop-value-2 split at "|"
+                set {_player} to {_player::2} parsed as player
+
+                #
+                # > Get the name of the author for the notification message.
+                set {_commenter} to {_operation}.getAuthor().getName()
+
+                #
+                # > Get the predefined sound from the options parsed as list.
+                set {_sound::*} to ...{@commentnotificationsound}
+
+                #
+                # > If the first sound string is not a empty string, go forward.
+                if {_sound::1} is not "":
+
+                  #
+                  # > Play a sound to the player who gets the notification.
+                  play sound {_sound::1} with volume {_sound::2} with pitch {_sound::3} at location of {_player} for {_player}
+
+                #
+                # > Send the actual notification message.
+                message "%getChatPrefix()% %{_commenter}% commented on your post." to {_player}
+
+      #
+      # > If the operation is a VoteOperation.
+      else if {_operation} is instance of VoteOperation:
+
+        #
+        # > Loop through the online users and check if the author which has
+        # > recieved the vote is online on the server.
+        loop {_onlineusers::*}:
+
+          #
+          # > If the looped online steem player is the author of the post which has been voted.
+          if loop-value-2 contains "%{_operation}.getAuthor().getName()%|":
+
+            #
+            # > If the looped online steem player is not the voter himself.
+            if loop-value-2 doesn't contain "%{_operation}.getVoter().getName()%|":
+
+              #
+              # > Get the voter for the final notifiaction message.
+              set {_voter} to {_operation}.getVoter().getName()
+			  
+              #
+              # > Get the parsed player out of the looped player string.
+              set {_player::*} to loop-value-2 split at "|"
+              set {_player} to {_player::2} parsed as player
+			
+              #
+              # > Get the predefined sound from the options parsed as list.
+              set {_sound::*} to ...{@votenotificationsound}
+
+              #
+              # > If the first sound string is not a empty string, go forward.
+              if {_sound::1} is not "":
+
+                #
+                # > Play a sound to the player who gets the notification.
+                play sound {_sound::1} with volume {_sound::2} with pitch {_sound::3} at location of {_player} for {_player}
+
+			
+              message "%getChatPrefix()% %{_voter}% voted on your post." to {_player}
+
+      #
+      # > If the operation is a TransferOperation.
+      else if {_operation} is instance of TransferOperation:
+
+        #
+        # > Loop through the online users and check if the sender or the
+        # > target of the transfer is currently online on our server.
+        loop {_onlineusers::*}:
+
+          #
+          # > If the looped online steem player has revieved a transfer.
+          if loop-value-2 contains "%{_operation}.getTo().getName()%|":
+
+            #
+            # > Get the parsed player out of the looped player string.
+            set {_player::*} to loop-value-2 split at "|"
+            set {_player} to {_player::2} parsed as player
+
+            #
+            # > Get the predefined sound from the options parsed as list.
+            set {_sound::*} to ...{@transfernotificationsound}
+
+            #
+            # > If the first sound string is not a empty string, go forward.
+            if {_sound::1} is not "":
+
+              #
+              # > Play a sound to the player who gets the notification.
+              play sound {_sound::1} with volume {_sound::2} with pitch {_sound::3} at location of {_player} for {_player}
+
+            #
+            # > Get tthe real amount of the transfer and the symbol for the
+            # > notifiaction message.
+            set {_amount} to {_operation}.getAmount().toReal().toString()
+            set {_symbol} to {_operation}.getAmount().getSymbol()
+
+            #
+            # > Send the notifiaction message to the player.
+            message "%getChatPrefix()% Transaction:" to {_player}
+            message "%getChatPrefix()% %{_operation}.getFrom().getName()% sent %{_operation}.getTo().getName()% %{_amount}% %{_symbol}%" to {_player}
+
+#
+# > Function - setSteemPlayerToOnlineStatus
+# > Sets the online status of a steem player to online
+# > of offline depending on the given parameters.
+# > Parameters:
+# > <player>the player who should have a status change
+# > <boolean>the current status of the player online=true,offline=false
+function setSteemPlayerToOnlineStatus(player:player,online:boolean):
+
+  #
+  # > Get the synced steem account of the player.
+  set {_steemaccount} to getSyncedAccount({_player})
+  
+  # > If the synced steem account of the player exists.
+  if {_steemaccount} is set:
+    if {_steemaccount} is not "":
+
+      #
+      # > Get all online players from the metadata.
+      set {_onlineusers} to metadata value "onlineSteemUsers" of getDummy()
+
+      #
+      # > If the online players from the metadata aren't set, then create
+      # > a new ArrayList which will contain online players.
+      if {_onlineusers} is not set:
+        set {_onlineusers} to new ArrayList()
+
+      #
+      # > If the player is online, then add the player.
+      if {_online} is true:
+        {_onlineusers}.add("%{_steemaccount}%|%{_player}%")
+
+      #
+      # > If the player is not online, then remove the player from the list.
+      else:
+        loop ...{_onlineusers}:
+          if loop-value is "%{_steemaccount}%|%{_player}%":
+            {_onlineusers}.remove(loop-value)
+            stop loop
+
+    #
+    # > Save the new ArrayList to metadata, this is great since it is
+    # > accessible from threaded functions while being stored in memory.
+    set metadata value "onlineSteemUsers" of getDummy() to {_onlineusers}
+
+#
+# > Event - on join
+# > Gets called once a player joins the game, it will
+# > set the player's steem status to online.
+on join:
+  if {@enable-notifications} is true:
+    setSteemPlayerToOnlineStatus(player,true)
+
+#
+# > Event - on join
+# > Gets called once a player leaves the game, it will
+# > set the player's steem status to offline.
+on quit:
+  if {@enable-notifications} is true:
+    setSteemPlayerToOnlineStatus(player,false)
