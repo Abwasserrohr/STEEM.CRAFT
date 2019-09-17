@@ -1,50 +1,12 @@
 #
 # ==============
-# steemworlds-gui.sk v0.0.6
+# steemworlds/gui.sk v0.0.7
 # ==============
-# steemworlds-gui.sk is part of the STEEM.CRAFT addons (addon to steemworlds.sk).
+# steemworlds/gui.sk is part of the STEEM.CRAFT addons.
 # ==============
-# > steemworlds-gui allows players to open a menu which can execute
+# > gui allows players to open a menu which can execute
 # > steemworlds functions through it in an easy way.
 # ==============
-
-#
-# > Options
-# > These settings can be changed to fit your needs.
-options:
-  #
-  # > The background item is used as background in inventory menues.
-  backgrounditem: black stained glass pane
-  #
-  # > The loading item is used in the loading bar inventory menu.
-  loadingitem: yellow stained glass pane
-  #
-  # > The settings item is the item which moves the player to the settings menu if clicked.
-  settingsitem: getcustomhead("Settings","eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTViZTIyYjVkNGE4NzVkNzdkZjNmNzcxMGZmNDU3OGVmMjc5MzlhOTY4NGNiZGIzZDMxZDk3M2YxNjY4NDkifX19","80272ba4-e5b6-48a7-8bfb-59212b25e1dd")
-  #
-  # > Page forward item
-  forwarditem: getcustomhead("Forwarditem","eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZDllY2NjNWMxYzc5YWE3ODI2YTE1YTdmNWYxMmZiNDAzMjgxNTdjNTI0MjE2NGJhMmFlZjQ3ZTVkZTlhNWNmYyJ9fX0=","1fb90fc9-62ea-47d6-bfed-9b0887df7bef")
-  #
-  # > Page backwards item
-  backwarditem: getcustomhead("Backwarditem","eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvODY0Zjc3OWE4ZTNmZmEyMzExNDNmYTY5Yjk2YjE0ZWUzNWMxNmQ2NjllMTljNzVmZDFhN2RhNGJmMzA2YyJ9fX0=","2b2bcd29-7e28-4569-85c1-662936f813d5")
-  #
-  # > The history item will move the player to the world save history menu.
-  historyitem: clock
-  #
-  # > The vote item will move the player to the world vote menu.
-  votesitem: enchanted book
-  #
-  # > The comment item will move the player to the world comment menu.
-  commentsitem: book and quill
-  #
-  # > The disabled item shows that something is switched off.
-  disableditem: red stained glass pane
-  #
-  # > The enabled item shows that something is switched on.
-  enableditem: green stained glass pane
-  #
-  # > The back item will move the player back to the previous menu.
-  backitem: redstone
 
 import:
   com.fasterxml.jackson.databind.ObjectMapper
@@ -80,20 +42,20 @@ function openSteemWorldMainMenu(world:world,player:player):
   #
   # > Cover all slots to prevent item loss, since players could put items into empty slots.
   loop 27 times:
-    setguiitem({_player},loop-number - 1, {@backgrounditem},1, " ","")
+    setguiitem({_player},loop-number - 1, scswGetConfig("backgrounditem"),1, " ","")
 
   #
   # > Add inventory menu content.
-  set {_votesitem} to {@votesitem}
+  set {_votesitem} to scswGetConfig("votesitem")
   setguiitem({_player},10, {_votesitem},1, "&rVotes","&7This feature is going to be\n&7added in a upcoming version.","")
 
-  set {_commentitem} to {@commentsitem}
+  set {_commentitem} to scswGetConfig("commentsitem")
   setguiitem({_player},11, {_commentitem},1, "&rComments","&7This feature is going to be\n&7added in a upcoming version.","")
 
-  set {_historyitem} to {@historyitem}
+  set {_historyitem} to scswGetConfig("historyitem")
   setguiitem({_player},12, {_historyitem},1, "&rWorld history","&7View and load older versions\n&7of this world here.","openSteemWorldHistoryMenu(""%{_world}%"" parsed as world, 1, ""%{_player}%"" parsed as player)")
 
-  setguiitem({_player},16, {@settingsitem},1, "&rSettings","&7Click here to open the\n&7settings for this world.","openSteemWorldSettingsMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
+  setguiitem({_player},16, scswGetConfig("settingsitem"),1, "&rSettings","&7Click here to open the\n&7settings for this world.","openSteemWorldSettingsMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
 
 #
 # > Function - openSteemWorldSettingsMenu
@@ -110,7 +72,7 @@ function openSteemWorldSettingsMenu(world:world,player:player):
   # > Cover all inventory menu slots with a background item
   # > to prevent item loss for players.
   loop 36 times:
-    setguiitem({_player},loop-number - 1, {@backgrounditem},1, " ","")
+    setguiitem({_player},loop-number - 1, scswGetConfig("backgrounditem"),1, " ","")
 
   #
   # > Menu part - randomTickSpeed
@@ -136,9 +98,9 @@ function openSteemWorldSettingsMenu(world:world,player:player):
 
   #
   # > If the randomTickSpeed is 0, it is disabled. Use the disabled item in that case.
-  set {_item} to {@enableditem}
+  set {_item} to scswGetConfig("enableditem")
   if {_randomtickspeed} is 0:
-    set {_item} to {@disableditem}
+    set {_item} to scswGetConfig("disableditem")
 
   #
   # > Set the subtext of the item (also called lore) for that item.
@@ -155,7 +117,7 @@ function openSteemWorldSettingsMenu(world:world,player:player):
   # > Set the lore and add the current time to it.
   set {_lore} to "&7Currently: &6%time in {_world}%\n&7Click here to change the time."
 
-  setguiitem({_player},11, {@enableditem},1, "&rTime ",{_lore},"openSteemWorldTimeMenu(""%{_world}%"" parsed as world,""%{_player}%"" parsed as player)")
+  setguiitem({_player},11, scswGetConfig("enableditem"),1, "&rTime ",{_lore},"openSteemWorldTimeMenu(""%{_world}%"" parsed as world,""%{_player}%"" parsed as player)")
 
   #
   # > Menu part - Daylight cycle
@@ -171,11 +133,11 @@ function openSteemWorldSettingsMenu(world:world,player:player):
   # > set the menu item to a enabled item and the subtext of the item (lore).
   if {_doDaylightCycle} is true:
     set {_nextsetting} to false
-    set {_item} to {@enableditem}
+    set {_item} to scswGetConfig("enableditem")
     set {_randomtickspeedlore} to "&7Currently: &6Enabled\n&7Click here to change it to &6disable&7."
   else:
     set {_nextsetting} to true
-    set {_item} to {@disableditem}
+    set {_item} to scswGetConfig("disableditem")
     set {_randomtickspeedlore} to "&7Currently: &6Disabled\n&7Click here to change it to &6enable&7."
   
   setguiitem({_player},12, {_item},1, "&rDaylight cycle",{_randomtickspeedlore},"changeSteemWorldGameruleInMenu(""%{_world}%"" parsed as world, ""doDaylightCycle"",%{_nextsetting}%, ""%{_player}%"" parsed as player)")
@@ -193,7 +155,7 @@ function openSteemWorldSettingsMenu(world:world,player:player):
     set {_weather} to "Clear"
     set {_nextweather} to "Rain"
 
-  set {_item} to {@enableditem}
+  set {_item} to scswGetConfig("enableditem")
   set {_randomtickspeedlore} to "&7Currently: &6%{_weather}%\n&7Click here to change it to &6%{_nextweather}%&7."
   
   setguiitem({_player},13, {_item},1, "&rWeather",{_randomtickspeedlore},"changeSteemWorldSettingInMenu(""%{_world}%"" parsed as world, ""weather"",""%{_nextweather}%"", ""%{_player}%"" parsed as player)")
@@ -203,11 +165,11 @@ function openSteemWorldSettingsMenu(world:world,player:player):
   set {_doDaylightCycle} to getSteemWorldGamerule({_world},"doWeatherCycle")
   if {_doDaylightCycle} is true:
     set {_nextrandomtickspeed} to false
-    set {_item} to {@enableditem}
+    set {_item} to scswGetConfig("enableditem")
     set {_randomtickspeedlore} to "&7Currently: &6Enabled\n&7Click here to change it to &6disable&7."
   else:
     set {_nextrandomtickspeed} to true
-    set {_item} to {@disableditem}
+    set {_item} to scswGetConfig("disableditem")
     set {_randomtickspeedlore} to "&7Currently: &6Disabled\n&7Click here to change it to &6enable&7."
   
   setguiitem({_player},14, {_item},1, "&rWeather cycle",{_randomtickspeedlore},"changeSteemWorldGameruleInMenu(""%{_world}%"" parsed as world, ""doWeatherCycle"",%{_nextrandomtickspeed}%, ""%{_player}%"" parsed as player)")
@@ -215,7 +177,7 @@ function openSteemWorldSettingsMenu(world:world,player:player):
   #
   # > World size setting
   set {_worldsize} to getGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"size")
-  set {_item} to {@enableditem}
+  set {_item} to scswGetConfig("enableditem")
   if {_worldsize} > 1:
     set {_decreaselore} to "&7Rightclick to decrease it to &6%{_worldsize}-1%&7."
   else:
@@ -227,7 +189,7 @@ function openSteemWorldSettingsMenu(world:world,player:player):
   #
   # > World difficulty setting
   set {_difficulty} to getGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"difficulty")
-  set {_item} to {@enableditem}
+  set {_item} to scswGetConfig("enableditem")
 
   #
   # > Allow the player to switch through all the possible difficulties.
@@ -252,16 +214,16 @@ function openSteemWorldSettingsMenu(world:world,player:player):
   set {_doMobSpawning} to getSteemWorldGamerule({_world},"doMobSpawning")
   if {_doMobSpawning} is true:
     set {_nextmobspawning} to false
-    set {_item} to {@enableditem}
+    set {_item} to scswGetConfig("enableditem")
     set {_randomtickspeedlore} to "&7Currently: &6Enabled\n&7Click here to change it to &6disable&7."
   else:
     set {_nextmobspawning} to true
-    set {_item} to {@disableditem}
+    set {_item} to scswGetConfig("disableditem")
     set {_randomtickspeedlore} to "&7Currently: &6Disabled\n&7Click here to change it to &6enable&7."
 
   setguiitem({_player},19, {_item},1, "&rMob spawning",{_randomtickspeedlore},"changeSteemWorldGameruleInMenu(""%{_world}%"" parsed as world, ""doMobSpawning"",%{_nextmobspawning}%, ""%{_player}%"" parsed as player)")
 
-  setguiitem({_player},27, {@backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldMainMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
+  setguiitem({_player},27, scswGetConfig("backitem"),1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldMainMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
 
 #
 # > Function - changeSteemWorldSizeInMenu
@@ -293,7 +255,7 @@ function openSteemWorldTimeMenu(world:world,player:player):
   # > Create a background item for every slot to prevent the player
   # > from putting items into there.
   loop 54 times:
-    setguiitem({_player},loop-number - 1, {@backgrounditem},1, " ","")
+    setguiitem({_player},loop-number - 1, scswGetConfig("backgrounditem"),1, " ","")
 
   #
   # > Create a menu which allows to select every hour of the day.
@@ -301,7 +263,7 @@ function openSteemWorldTimeMenu(world:world,player:player):
   # > but this is with just 16 lines smaller and faster to load.
   set {_slot} to 10
   set {_time} to 0
-  set {_item} to {@enableditem}
+  set {_item} to scswGetConfig("enableditem")
   loop 24 times:
     add 1 to {_slot}
     add 1 to {_slotskip}
@@ -325,7 +287,7 @@ function openSteemWorldTimeMenu(world:world,player:player):
 
     add 1 to {_time}
 
-    setguiitem({_player},45, {@backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldSettingsMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
+    setguiitem({_player},45, scswGetConfig("backitem"),1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldSettingsMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
 
 #
 # > Function - waitSteemWorldmenu
@@ -353,7 +315,7 @@ function waitSteemWorldmenu(player:player,start:boolean=true):
     #
     # > Create a background which prevents players from putting items into the menu.
     loop 27 times:
-      setguiitem({_player},loop-number - 1, {@backgrounditem},1, " ","")
+      setguiitem({_player},loop-number - 1, scswGetConfig("backgrounditem"),1, " ","")
 
     #
     # > To make it look better, the loading bar loop starts in the gui slot 10.
@@ -373,8 +335,8 @@ function waitSteemWorldmenu(player:player,start:boolean=true):
       # > until it is stopped or closed.
       if {_previousslot} < {_startslot}:
         set {_previousslot} to {_startslot} + 6
-      setguiitem({_player},{_previousslot}, {@backgrounditem},1, " ","")
-      setguiitem({_player},{_currentslot}, {@loadingitem},1, " ","")
+      setguiitem({_player},{_previousslot}, scswGetConfig("backgrounditem"),1, " ","")
+      setguiitem({_player},{_currentslot}, scswGetConfig("loadingitem"),1, " ","")
       set {_previousslot} to {_currentslot}
       add 1 to {_currentslot}
       if {_currentslot} > {_startslot}+6:
@@ -551,7 +513,7 @@ function openSteemWorldHistoryMenu(world:world,site:number,player:player,init:bo
   # > Cover all inventory menu slots with a background item
   # > to prevent item loss for players.
   loop 45 times:
-    setguiitem({_player},loop-number - 1, {@backgrounditem},1, " ","")
+    setguiitem({_player},loop-number - 1, scswGetConfig("backgrounditem"),1, " ","")
 
   #
   # > Loop through all world versions and create a viewable menu.
@@ -591,15 +553,15 @@ function openSteemWorldHistoryMenu(world:world,site:number,player:player,init:bo
         # > Create a different item with function if the player is allowed to load
         # > the world. If not allowed, the lore (subtext of item) is changed.
         if {_loadallowed} is true:
-          setguiitem({_player},{_slot}, {@enableditem},1, "&r&lWorld version %{_loopid}%","&7Block: %loop-index%\n&7Date: %loop-value%\n&7Click &6here&7 to load this version.","make ""%{_player}%"" parsed as player execute ""/steemworldload %loop-index%""",true)
+          setguiitem({_player},{_slot}, scswGetConfig("enableditem"),1, "&r&lWorld version %{_loopid}%","&7Block: %loop-index%\n&7Date: %loop-value%\n&7Click &6here&7 to load this version.","make ""%{_player}%"" parsed as player execute ""/steemworldload %loop-index%""",true)
         else:
-          setguiitem({_player},{_slot}, {@enableditem},1, "&r&lWorld version %{_loopid}%","&7Block: %loop-index%\n&7Date: %loop-value%")
+          setguiitem({_player},{_slot}, scswGetConfig("enableditem"),1, "&r&lWorld version %{_loopid}%","&7Block: %loop-index%\n&7Date: %loop-value%")
 
       #
       # > If the id of this entry is bigger than the site end variable,
       # > we have to add a item which allows to go to the next page.
       else:
-        setguiitem({_player},26, {@forwarditem},1, "&r&lSite %{_site}+1%","","openSteemWorldHistoryMenu(""%{_world}%"" parsed as world,%{_site}+1%,""%{_player}%"" parsed as player,false)")
+        setguiitem({_player},26, scswGetConfig("forwarditem"),1, "&r&lSite %{_site}+1%","","openSteemWorldHistoryMenu(""%{_world}%"" parsed as world,%{_site}+1%,""%{_player}%"" parsed as player,false)")
 
         #
         # > Since we're done here, stop this loop.
@@ -609,9 +571,9 @@ function openSteemWorldHistoryMenu(world:world,site:number,player:player,init:bo
   # > If we're on a site that is higher than 1, add a item
   # > which allows to get back to the previous page (site).
   if {_site} > 1:
-    setguiitem({_player},18, {@backwarditem},1, "&r&lSite %{_site}-1%","","openSteemWorldHistoryMenu(""%{_world}%"" parsed as world,%{_site}-1%,""%{_player}%"" parsed as player,false)")
+    setguiitem({_player},18, scswGetConfig("backwarditem"),1, "&r&lSite %{_site}-1%","","openSteemWorldHistoryMenu(""%{_world}%"" parsed as world,%{_site}-1%,""%{_player}%"" parsed as player,false)")
 
   #
   # > Add a item which allows the player to get back to the
   # > previous menu. In this case, the steem world main menu.
-  setguiitem({_player},36, {@backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldMainMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
+  setguiitem({_player},36, scswGetConfig("backitem"),1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldMainMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
