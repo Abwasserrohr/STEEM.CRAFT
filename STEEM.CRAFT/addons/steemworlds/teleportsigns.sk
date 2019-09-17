@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds/teleportsigns.sk v0.0.3
+# steemworlds/teleportsigns.sk v0.0.4
 # ==============
 # steemworlds/teleportsigns.sk is part of the STEEM.CRAFT addons (addon to steemworlds.sk).
 # ==============
@@ -15,14 +15,6 @@
 # ==============
 
 #
-# > Modify these settings will also remove the teleport
-# > functionality from already existing teleport signs.
-options:
-  detectline: [Steem]
-  signhead: &l[Steem]
-  signfooter: &l>>Click here<<
-
-#
 # > Event - on sign change
 # > Triggered if a sign is placed and text has been saved.
 # > Actions:
@@ -31,7 +23,7 @@ options:
 on sign change:
   #
   # > Only detect signs which match with the detectline option.
-  if line 1 is "{@detectline}":
+  if line 1 is scswGetConfig("teleportsigns_detectline"):
     #
     # > Get line 2 and line 3 with lowercase characters.
     set {_name} to (line 2).toLowerCase()
@@ -87,8 +79,9 @@ on sign change:
     #
     # > Since this is executed, no errors have occured above, format the
     # > sign to make it clickable.
-    set line 1 to "{@signhead}"
-    set line 4 to "{@signfooter}"
+	
+    set line 1 to "%scswGetConfig(""teleportsigns_signhead"")%"
+    set line 4 to "%scswGetConfig(""teleportsigns_footer"")%"
 
 #
 # > Event - on rightclick on sign
@@ -98,6 +91,5 @@ on sign change:
 # > which teleports the player to the world, if the
 # > sign has the right format.
 on rightclick on sign:
-  if line 1 of event-block is "{@signhead}":
-    if line 4 of event-block is "{@signfooter}":
-      make player execute "/steemworldvisit %line 2% %line 3%"
+  if line 1 of event-block is scswGetConfig("teleportsigns_signhead"):
+    make player execute "/steemworldvisit %line 2% %line 3%"
