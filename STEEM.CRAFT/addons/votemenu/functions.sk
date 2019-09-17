@@ -103,7 +103,7 @@ function openSteemVoteMenu(player:player,author:text,permlink:text,advanced:bool
 function executeSteemMenuVote(player:player,author:text,permlink:text,percentage:number):
   set {_processID} to getRandomUUID()
 
-  steemVote({_player},{_author},{_permlink},{_percentage},{_processID})
+  scBroadcastSteemVote({_player},{_author},{_permlink},{_percentage},{_processID})
   wait 1 tick
   while getSteemResponse({_processID}) is "wait":
     wait 1 tick
