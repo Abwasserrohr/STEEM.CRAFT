@@ -12,6 +12,7 @@ import:
   eu.bittrade.libs.steemj.configuration.SteemJConfig
   eu.bittrade.libs.steemj.enums.PrivateKeyType
   java.util.ArrayList
+  java.util.HashMap
   org.apache.commons.lang3.tuple.ImmutablePair
 
 #
@@ -93,6 +94,7 @@ function scBroadcastAsyncSteemVote(txvote:object):
     set metadata value "steem-tx-response-%{_processID}%" of getDummy() to last java error
   else:
     set metadata value "steem-tx-response-%{_processID}%" of getDummy() to "done"
+
   #
   # > To prevent the response from being stored for the whole
   # > session, delete it after 5 seconds.
