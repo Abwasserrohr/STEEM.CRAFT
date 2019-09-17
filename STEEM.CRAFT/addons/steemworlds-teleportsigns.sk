@@ -1,10 +1,10 @@
 #
 # ==============
-# steemworlds-teleportsigns.sk v0.0.3
+# steemworlds/teleportsigns.sk v0.0.3
 # ==============
-# steemworlds-teleportsigns.sk is part of the STEEM.CRAFT addons (addon to steemworlds.sk).
+# steemworlds/teleportsigns.sk is part of the STEEM.CRAFT addons (addon to steemworlds.sk).
 # ==============
-# > steemworlds-teleportsigns allows players to create signs which
+# > teleportsigns allows players to create signs which
 # > send players to a specific steemworld by clicking on it.
 # ==============
 # > Usage:
