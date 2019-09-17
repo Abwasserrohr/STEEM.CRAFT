@@ -1,0 +1,17 @@
+#
+# ==============
+# steemworlds/events/onWorldInitEvent.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  org.bukkit.event.world.WorldInitEvent
+
+#
+# > Event - on WorldInitEvent
+# > Triggered once a world is initialized
+# > Actions:
+# > This event will set the KeepSpawnInMemory value of
+# > all initialized worlds to false to prevent lagspikes.
+on WorldInitEvent with priority HIGHEST:
+  if "%event.getWorld()%" contains "steemworlds-":
+    event.getWorld().setKeepSpawnInMemory(false)
