@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds.sk v0.0.34
+# steemworlds.sk v0.0.35
 # ==============
 # steemworlds.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -60,6 +60,9 @@ options:
   # > The commennt parent permlink works the same way the parent author works.
   # > If this is changed, you can't load worlds from other comment parent permlinks.
   commentparentpermlink: w
+  #
+  # > Set the maximum amount of custom json transactions that are allowed per block.
+  maximumcustomjsontxperblock: 5
   
 on load:
   delete {sc::accountload}
@@ -565,17 +568,24 @@ function saveSteemWorld(player:player):
             #
 		    # > If there has been a error, wait 1 second and repeat.
             else:
-              message "%getChatPrefix()% Error. Repeating." to {_player}
-              wait 1 second
+              log "%{_player}% - custom json tx errror: %getSteemResponse({_txuuid})%" to "steemworlds-errors"
+              set {_wait} to {@maximumcustomjsontxperblock}
+              set {_wait} to "%3 / {_wait}% seconds" parsed as timespan
+              wait {_wait}
 
           delete {_done}
 
           #
-          # > If there are still some splits to go, wait 3 seconds after one has been done.
+          # > If there are still some splits to go, wait after one has been done.
           if size of {_chunksplit::*} >= {_partid}:
-            wait 3 seconds
+            #
+            # > Depending on the maximum amount of blocks that are allowed, wait more or less.
+            set {_wait} to {@maximumcustomjsontxperblock}
+            set {_wait} to "%3 / {_wait}% seconds" parsed as timespan
+            wait {_wait}
+
       #
-      # > Tell the player about the current status of the world broadcasting.
+      # > Tell the player about the current status of/ the world broadcasting.
       {_bossbar}.setTitle("&lBroadcasting chunks...")
       set {_progress} to (({_loopnumber} * {_pdone})/100)/2
       {_bossbar}.setProgress({_progress})
