@@ -79,8 +79,6 @@ import:
   org.bukkit.WorldCreator
   org.bukkit.World$Environment
   org.bukkit.WorldType
-  org.bukkit.event.world.WorldInitEvent
-  org.bukkit.event.server.ServerCommandEvent
   org.bukkit.GameRule
   com.boydti.fawe.object.schematic.Schematic
   com.sk89q.worldedit.regions.CuboidRegion
@@ -1060,16 +1058,20 @@ function loadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
             #
             # > Get the json Metadata as a string and check if the world matches with the
             # > world which should be loaded.
+            set {_objectMapper} to new ObjectMapper()
             set {_json} to "%{_ops}.get({_tx}).getOp().getJson()%"
-            if {_json} contains """w"":""%{_shortworld}%":
-              set {_objectMapper} to new ObjectMapper()
-              set {_jsonNode} to {_objectMapper}.readTree({_json})
+            set {_jsonNode} to {_objectMapper}.readTree({_json})
+            if {_jsonNode}.get("w").textValue() is {_shortworld}:
               set {_x} to {_jsonNode}.get("x")
               set {_z} to {_jsonNode}.get("z")
               set {_i} to {_jsonNode}.get("i")
               set {_data} to {_jsonNode}.get("data").textValue()
 
-              set {_plotparts::%{_x}%|%{_z}%|%{_i}%} to {_data}
+              #
+              # > Make sure that we have found the matching data in this block
+              # > since multiple transactions could be in one block.
+              if loop-index is "%{_x}%|%{_z}%|%{_i}%":
+                set {_plotparts::%{_x}%|%{_z}%|%{_i}%} to {_data}
 
   if {_bossbar} is not null:
     #
@@ -1496,25 +1498,4 @@ function getSteemWorldShortName(world:world) :: text:
   replace all "steemworlds-" with "" in {_name}
   return {_name}
 
-#
-# > Event - on WorldInitEvent
-# > Triggered once a world is initialized
-# > Actions:
-# > This event will set the KeepSpawnInMemory value of
-# > all initialized worlds to false to prevent lagspikes.
-on WorldInitEvent with priority HIGHEST:
-  if "%event.getWorld()%" contains "steemworlds-":
-    event.getWorld().setKeepSpawnInMemory(false)
 
-#
-# > Event - ServerCommandEvent
-# > Stops all commands which are executed by command blocks and
-# > command block minecarts and senders which might be able
-# > to send from a steem based world.
-on ServerCommandEvent:
-  if try event.getSender().getBlock() is set:
-    if "%event.getSender().getBlock().getWorld()%" contains "steemworlds-":
-      cancel event
-  else:
-    if "%event.getSender().getWorld()%" contains "steemworlds-":
-      cancel event
