@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds-gui.sk v0.0.5
+# steemworlds-gui.sk v0.0.6
 # ==============
 # steemworlds-gui.sk is part of the STEEM.CRAFT addons (addon to steemworlds.sk).
 # ==============
@@ -67,9 +67,15 @@ command /steemworlds:
 # > <player>the player who wants too view the menu
 function openSteemWorldMainMenu(world:world,player:player):
   
-  #
+  set {_worldname} to "%{_world}%"
+  replace all "steemworlds-" with "" in {_worldname}
+  set {_worldowner} to getGeneralStorageData("steemworlds",{_worldname},"steemaccount")
+
   # > The current menu is just 27 slots big, as there are not that much things to display yet.
-  opengui({_player},27,"&lSteemworlds")
+  if {_worldowner} is getSyncedAccount({_player}):
+    opengui({_player},27,"&lYour World")
+  else:
+    opengui({_player},27,"&l%{_worldowner}%'s world")
 
   #
   # > Cover all slots to prevent item loss, since players could put items into empty slots.
