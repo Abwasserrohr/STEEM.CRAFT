@@ -1,0 +1,114 @@
+#
+# ==============
+# votemenu/functions.sk v0.0.1
+# ==============
+# votemenu/functions.sk is part of the STEEM.CRAFT addons.
+# ==============
+# > Steemworlds allows the player to vote on any
+# > post or comment that is currently available
+# > on the Steem blockchain.
+# ==============
+
+#
+# > Options
+# > These settings can be changed to fit your needs.
+options:
+  #
+  # > The background item is used as background in inventory menues.
+  backgrounditem: black stained glass pane
+  #
+  # > The loading item is used in the loading bar inventory menu.
+  loadingitem: yellow stained glass pane
+
+  upvoteitem: green stained glass pane
+  downvoteitem: red stained glass pane
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+  
+#
+# > Function - openSteemVoteMenu
+# > Opens a menu that allows the player to vote either up or down.
+# > Parameters:
+# > <player>the player who wants to vote (needs a synced Steem Wallet)
+# > <text>the author who created a post/comment
+# > <text>the permlink to the post/comment by the author
+# > [<boolean>]should the player get a detailed voting menu with percenntages? default=false
+function openSteemVoteMenu(player:player,author:text,permlink:text,advanced:boolean=false):
+
+  waitSteemWorldmenu({_player})
+  
+  #
+  # > Check if the account exists.
+  getAccount({_author})
+
+  #
+  # > Wait for a response which happens in a thread.
+  while getAccountResponse({_author}) is "wait":
+    wait 1 tick
+
+  set {_steemauthor} to getAccountResponse({_author})
+	
+  #
+  # > Check if the world exists on Steem.
+  getSteemContent({_author},{_permlink})
+
+  #
+  # > Wait until the Steem content response is no longer "wait".
+  while getSteemContentResponse({_author},{_permlink}) is "wait":
+    wait 1 tick
+
+  #
+  # > Get the Steem content response.
+  set {_c} to getSteemContentResponse({_author},{_permlink})
+  
+  waitSteemWorldmenu({_player},false)
+  
+  #
+  # > Use the ObjectMapper to save and load data using JSON.
+  set {_objectMapper} to new ObjectMapper()
+
+  set {_steemauthormeta} to {_objectMapper}.readTree({_steemauthor}.getJsonMetadata())
+
+  set {_authorplayer} to {_steemauthormeta}.get("profile").get("uuid").textValue() parsed as offline player
+
+  #
+  # > The current menu is just 27 slots big, as there are not that much things to display yet.
+  opengui({_player},27,"&rVote &8&l>> &r%{_author}%")
+
+  #
+  # > Cover all slots to prevent item loss, since players could put items into empty slots.
+  loop 27 times:
+    setguiitem({_player},loop-number - 1, {@backgrounditem},1, " ","")
+
+  #
+  # > Currently, there is no advanced voting slider available.
+  set {_advanced} to false
+  if {_advanced} is false:
+    setguiitem({_player},15, {@upvoteitem},1, "&r&2&lNice!","","executeSteemMenuVote(""%{_player}%"" parsed as player,""%{_author}%"",""%{_permlink}%"",100)")
+
+    if {_authorplayer} is set:
+      setguiitem({_player},13, {_authorplayer}'s skull,1, "&r%{_authorplayer}%","")
+
+    setguiitem({_player},11, {@downvoteitem},1, "&r&4&lBad!","","executeSteemMenuVote(""%{_player}%"" parsed as player,""%{_author}%"",""%{_permlink}%"",-100)")
+
+#
+# > Function - executeSteemMenuVote
+# > Tries to execute the vote and infrom the player about the result.
+# > Parameters:
+# > <player>the player who wants to vote
+# > <text>the author of the post
+# > <text>the permlink of the post
+# > <number>the percentage of the vote (ranges between -100 and 1000)
+function executeSteemMenuVote(player:player,author:text,permlink:text,percentage:number):
+  set {_processID} to getRandomUUID()
+
+  steemVote({_player},{_author},{_permlink},{_percentage},{_processID})
+  wait 1 tick
+  while getSteemResponse({_processID}) is "wait":
+    wait 1 tick
+
+  if getSteemResponse({_processID}) is "done":
+    message "%getChatPrefix()% Your vote has been applied." to {_player}
+  else:
+    message "%getChatPrefix()% Error: %getSteemResponse({_processID})%" to {_player}
