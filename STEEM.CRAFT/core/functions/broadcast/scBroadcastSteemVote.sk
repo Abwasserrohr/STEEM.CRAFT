@@ -1,0 +1,100 @@
+#
+# ==============
+# scBroadcastSteemVote.sk
+# ==============
+# scBroadcastSteemVote.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  eu.bittrade.libs.steemj.SteemJ
+  eu.bittrade.libs.steemj.base.models.Permlink
+  eu.bittrade.libs.steemj.base.models.AccountName
+  eu.bittrade.libs.steemj.configuration.SteemJConfig
+  eu.bittrade.libs.steemj.enums.PrivateKeyType
+  java.util.ArrayList
+  org.apache.commons.lang3.tuple.ImmutablePair
+
+#
+# > Function - scBroadcastSteemVote
+# > Broadcasts a vote to the Steem blockchain for the player through an async thread.
+# > Parameters:
+# > <player>the player who wants to vote
+# > <text>the account that should recieve the vote
+# > <text>the permlink on which should be voted
+# > <number>a percentage which high the vote should be, range between -100 and 100
+# > [<text>]a process uuid that can be used to retrieve the status
+function scBroadcastSteemVote(player:offline player,account:text,permlink:text,percentage:number,processID:text=""):
+
+  #
+  # > Sets the broadcast status of this vote to "wait", which signals that
+  # > the process is still going on.
+  set metadata value "steem-tx-response-%{_processID}%" of getDummy() to "wait"
+
+  #
+  # > Wait until the txvote variable is free to use.
+  while {steemsk::txvote} is set:
+    wait 1 tick
+
+  #
+  # > All the important variables are passed into the scAsyncSteemVote function
+  # > using a HashMap.
+  set {_tx} to new HashMap()
+  {_tx}.put("player",{_player})
+  {_tx}.put("account",{_account})
+  {_tx}.put("permlink",{_permlink})
+  {_tx}.put("percentage",{_percentage})
+  {_tx}.put("processID",{_processID})
+  set {steemsk::txvote} to {_tx}
+
+  #
+  # > Run the creation of the comment in a separate thread.
+  $ thread
+
+  #
+  # > Once the function is called within a thread, it can't access
+  # > to local variables, this is why a global variable is used.
+  scBroadcastAsyncSteemVote({steemsk::txvote})
+
+#
+# > Function - scBroadcastAsyncSteemVote
+# > Tries to broadcast a vote to Steem while being executed in a thread.
+# > Parameters:
+# > <HashMap>a HashMap that has been created by the scBroadcastSteemVote function
+function scBroadcastAsyncSteemVote(txvote:object):
+  set {_vote} to {steemsk::txvote}
+  delete {steemsk::txvote}
+  
+  set {_player} to {_tx}.get("player")
+  set {_account} to {_tx}.get("account")
+  set {_permlink} to {_tx}.get("permlink")
+  set {_percentage} to {_tx}.get("percentage")
+  set {_processID} to {_tx}.get("processID")
+
+  set {_SteemJ} to new SteemJ()
+  
+  set {_config} to SteemJConfig.getInstance()
+  
+  set {_targetaccount} to new AccountName({_account})
+  set {_account} to new AccountName(getSyncedAccount({_player}))
+  set {_permlink} to new Permlink({_permlink})
+  {_config}.setDefaultAccount({_account})
+
+  set {_privatekeys} to new ArrayList()
+  {_privatekeys}.add(new ImmutablePair(PrivateKeyType.POSTING!, getPrivatePostingKey()))
+  {_config}.getPrivateKeyStorage().addAccount({_account},{_privatekeys})
+
+  {_SteemJ}.vote({_targetaccount}, {_permlink}, {_percentage})
+
+  #
+  # > If there has been a error in the last broadcast transaction,
+  # > set the error to the response metadata to allow addons to
+  # > send human readable errors.
+  if last java error is set:
+    set metadata value "steem-tx-response-%{_processID}%" of getDummy() to last java error
+  else:
+    set metadata value "steem-tx-response-%{_processID}%" of getDummy() to "done"
+  #
+  # > To prevent the response from being stored for the whole
+  # > session, delete it after 5 seconds.
+  wait 5 seconds
+  delete metadata value "steem-tx-response-%{_processID}%" of getDummy()
