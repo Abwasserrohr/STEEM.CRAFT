@@ -39,6 +39,16 @@ options:
   #
   # > The back item will move the player back to the previous menu.
   backitem: redstone
+  #
+  # > The text that should be written on teleport signs to set them up.
+  teleportsigns_detectline: [SteemWorld]
+  #
+  # > The text that should appear once the teleport sign has been set up.
+  # > If you change this setting, existing signs will stop working.
+  teleportsigns_signhead: &l[SteemWorld]
+  #
+  # > The footer text of the teleport sign that should be displayed.
+  teleportsigns_signfooter: &l>>Click here<<
 
 #
 # > Function - scswGetConfig
@@ -68,3 +78,9 @@ function scswGetConfig(setting:text) :: object:
     return {@enableditem}
   if {_setting} is "backitem":
     return {@backitem}
+  if {_setting} is "teleportsigns_detectline":
+    return {@teleportsigns_detectline}
+  if {_setting} is "teleportsigns_signhead":
+    return {@teleportsigns_signhead}
+  if {_setting} is "teleportsigns_signfooter":
+    return {@teleportsigns_signfooter}
