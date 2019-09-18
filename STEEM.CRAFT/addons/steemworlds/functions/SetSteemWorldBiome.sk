@@ -7,6 +7,7 @@
 
 import:
   org.bukkit.block.Biome
+  java.lang.Integer
 
 #
 # > Function - SetSteemWorldBiome
@@ -23,7 +24,6 @@ function SetSteemWorldBiome(world:world,biome:text):
   #
   # > If the result of the convert is a biome, go forward.
   if {_biome} is instance of a Biome:
-
     #
     # > Save the changed biome to the storage.
     saveGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"biome", "%{_biome}%")
@@ -45,7 +45,7 @@ function SetSteemWorldBiome(world:world,biome:text):
     loop {_size} times:
       set {_z} to {_zstart}
       loop {_size} times:
-        {_world}.setBiome(Integer.valueOf({_xstart}), Integer.valueOf({_z}), {_biome}) 
+        {_world}.setBiome(Integer.valueOf({_xstart}), Integer.valueOf({_z}), {_biome})
         add 1 to {_z}
         #
         # > Take a short break after each 50 changes.
