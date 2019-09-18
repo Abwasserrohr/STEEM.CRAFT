@@ -11,6 +11,6 @@
 # > Parameters:
 # > <world>the steem world which should be changed
 function GetSteemWorldSpawn(world:world) :: location:
-  set {_l} to getGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"spawn")
+  set {_l} to getGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"spawn")
   set {_l} to deserializelocation({_l},{_world})
   return {_l}

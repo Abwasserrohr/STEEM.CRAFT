@@ -26,7 +26,7 @@ function SetSteemWorldBiome(world:world,biome:text):
 
     #
     # > Save the changed biome to the storage.
-    saveGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"biome", "%{_biome}%")
+    saveGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"biome", "%{_biome}%")
 
     #
     # > Only the world within the world border has to be changed, get

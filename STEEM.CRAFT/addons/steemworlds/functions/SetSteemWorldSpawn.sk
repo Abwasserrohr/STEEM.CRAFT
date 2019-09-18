@@ -13,4 +13,4 @@
 # > <location>the new spawn location of the world
 function SetSteemWorldSpawn(world:world,l:location):
   set {_l} to serializelocation({_l})
-  saveGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"spawn",{_l})
+  saveGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"spawn",{_l})

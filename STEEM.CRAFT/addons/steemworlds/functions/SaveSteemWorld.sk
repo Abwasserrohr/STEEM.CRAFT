@@ -155,8 +155,8 @@ function SaveSteemWorld(player:player):
     set {_pdone} to 100 / {_plotsize}
 
     # 
-    # > Load the world data using loadSteemWorldData.
-    set {_map} to loadSteemWorldData({_steemname},"%{_world}%",null,0)
+    # > Load the world data using LoadSteemWorldData.
+    set {_map} to LoadSteemWorldData({_steemname},"%{_world}%",null,0)
 
     #
     # > The returned HashMap contains the response and the world. We need the
@@ -170,7 +170,7 @@ function SaveSteemWorld(player:player):
     # > the world to the final world comment.
     set {_objectMapper} to new ObjectMapper()
     set {_arraynode} to {_objectMapper}.createArrayNode()
-	
+    broadcast "chunks: %{_chunks::*}%"
     #
     # > All chunks are now looped. A schematic file is created and splitted
     # > into usable parts and encoded with base64.

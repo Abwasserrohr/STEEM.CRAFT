@@ -19,4 +19,4 @@ function SetSteemWorldGamerule(world:world,gamerule:text,setting:object):
   set {_gameruleobj} to GameRule.getByName({_gamerule})
   {_world}.setGameRule({_gameruleobj},{_setting})
 
-  saveGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"%{_gamerule}%", "%{_setting}%")
+  saveGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"%{_gamerule}%", "%{_setting}%")
