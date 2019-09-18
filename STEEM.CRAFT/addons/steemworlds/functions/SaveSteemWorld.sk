@@ -54,6 +54,7 @@ options:
 import:
   java.io.File
   java.nio.file.Files
+  java.util.regex.Pattern
   com.fasterxml.jackson.databind.ObjectMapper
   com.boydti.fawe.object.schematic.Schematic
   com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats
@@ -218,6 +219,7 @@ function SaveSteemWorld(player:player):
       set {_format} to ClipboardFormats.findByAlias("schem")
 
       {_schem}.save({_file},{_format})
+      delete {_file}
 
     #
     # > The world has been saved to file, teleport players back.
@@ -266,7 +268,6 @@ function SaveSteemWorld(player:player):
       # > broadcasting new transactions for this chunk and broadcast the already
       # > stored block to the new comment.
       if {_string} is {_worlddata}.get("%{_chunkx}%|%{_chunkz}%"):
-		
         #
         # > Reading the json metadata of the content is done using ObjectMapper.
         set {_jsonNode} to {_objectMapper}.readTree({_response}.getJsonMetadata())
@@ -330,7 +331,7 @@ function SaveSteemWorld(player:player):
           while {_done} is not set:
             set {_txuuid} to getRandomUUID()
             customJsonOperation({_txuuid},{_steemname},"{@jsonidplots}",{_txcontent})
-		  
+
             #
             # > Reset the timeout timer.
             delete {_waittime}
