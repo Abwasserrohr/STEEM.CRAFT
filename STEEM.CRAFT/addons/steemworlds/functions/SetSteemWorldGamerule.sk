@@ -5,6 +5,9 @@
 # SetSteemWorldGamerule.sk is part of the STEEM.CRAFT addons.
 # ==============
 
+import:
+  org.bukkit.GameRule
+
 #
 # > Function - SetSteemWorldGamerule
 # > Changes the gamerule of the world to the specified setting.

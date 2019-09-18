@@ -5,6 +5,12 @@
 # getSteemWorldHistory.sk is part of the STEEM.CRAFT addons.
 # ==============
 
+import:
+  eu.bittrade.libs.steemj.base.models.AccountName
+  eu.bittrade.libs.steemj.base.models.Permlink
+  eu.bittrade.libs.steemj.SteemJ
+  eu.bittrade.libs.steemj.base.models.operations.CommentOperation
+
 #
 # > Function - getSteemWorldHistory
 # > Gets the edit history for the defined steem username and world name.
@@ -13,11 +19,11 @@
 # > <text>Steemworld name
 function getSteemWorldHistory(steemname:text,worldname:text):
   set metadata value "SteemWorldHistory-%{_worldname}%" of getDummy() to "wait"
-  while {getSteemWorldHistoryRequest} is set:
+  while metadata value "SteemWorldHistoryRequest" of getDummy() is set:
     wait 1 tick
-  set {getSteemWorldHistoryRequest} to [{_steemname},{_worldname}]
+  set metadata value "SteemWorldHistoryRequest" of getDummy() to [{_steemname},{_worldname}]
   $ thread
-  getSteemWorldHistoryAsync({getSteemWorldHistoryRequest})
+  getSteemWorldHistoryAsync(metadata value "SteemWorldHistoryRequest" of getDummy())
 
 #
 # > Function - getSteemWorldHistoryResult
@@ -34,7 +40,7 @@ function getSteemWorldHistoryResult(steemname:text,worldname:text) :: object:
 # > Parameters:
 # > <ArrayList>[<text>steemname,<text>worldname]
 function getSteemWorldHistoryAsync(request:object):
-  delete {getSteemWorldHistoryRequest}
+  delete metadata value "SteemWorldHistoryRequest" of getDummy()
   set {_request::*} to ...{_request}
   set {_steemname} to {_request::1}
   set {_worldname} to {_request::2}
@@ -57,7 +63,7 @@ function getSteemWorldHistoryAsync(request:object):
   
   #
   # > This HashMap will hold all reversions of the world.
-  set {_revisions} to new HashMap()
+  set {_revisions} to HashMap()
   
   #
   # > We can get a maximum of 1000 transactions at a time.

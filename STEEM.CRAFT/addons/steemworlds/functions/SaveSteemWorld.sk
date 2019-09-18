@@ -6,6 +6,62 @@
 # ==============
 
 #
+# > These options can be changed but it is suggested to leave them as is to
+# > allow the best experience, these settings will not change the layout or
+# > design of any in-game view.
+options:
+  #
+  # > The post prefix changes how the comment looks like on blog based Steem apps.
+  # > This could get changed in the future to link to a world explorer.
+  postprefix: <a href=""https://steemit.com/@steem.craft""><img src=""https://cdn.steemitimages.com/DQmUzWn7xJhLpPhGAczEpkcph4gNMrRdcCeTC5RVHnRQrjE/steemheader-left.png""></a>
+  #
+  # > The json id is used to identify STEEM.CRAFT world transactions.
+  jsonidplots: STEEM.CRAFT/worlds
+  #
+  # The app is used to know which app is responsible for the comments.
+  commentapp: STEEM.CRAFT
+  #
+  # > The format is used to detect the format of the comment.
+  commentformat: markdown
+  #
+  # > The tags can be used to query specific contents from the blockchain.
+  commenttags: ["steemcraft","steemworlds"]
+  #
+  # > The title is used on almost all Steem based blog apps to see what
+  # > the comment is about.
+  commenttitle: "World - <world>"
+  #
+  # > The maximum length of json transactions may change. It is currently
+  # > set at a maximum length of 2000. To prevent exeeding this, it is
+  # > set at 1800 to prevent any problems by too long custom json.
+  customjsonlength: 1800
+  #
+  # > The time until a transaction is timed out and repeated in ticks.
+  timeoutticks: 800
+  #
+  # > The comment parent author is the author of the comments which hold
+  # > all the worlds. If this is changed, all already saved worlds can't
+  # > be loaded anymore.
+  commentparentauthor: steem.craft
+  #
+  # > The commennt parent permlink works the same way the parent author works.
+  # > If this is changed, you can't load worlds from other comment parent permlinks.
+  commentparentpermlink: w
+  #
+  # > Set the maximum amount of custom json transactions that are allowed per block.
+  maximumcustomjsontxperblock: 5
+
+import:
+  java.io.File
+  java.nio.file.Files
+  com.fasterxml.jackson.databind.ObjectMapper
+  com.boydti.fawe.object.schematic.Schematic
+  com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats
+  com.sk89q.worldedit.regions.CuboidRegion
+  com.sk89q.worldedit.bukkit.BukkitWorld
+  com.sk89q.worldedit.math.BlockVector3
+
+#
 # > Function - SaveSteemWorld:
 # > Saves the world of the player.
 # > Parameters:

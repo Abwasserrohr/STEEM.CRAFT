@@ -5,6 +5,11 @@
 # CreateSteemWorld.sk is part of the STEEM.CRAFT addons.
 # ==============
 
+import:
+  org.bukkit.Bukkit
+  org.bukkit.WorldCreator
+  org.bukkit.World$Environment
+
 #
 # > Function - CreateSteemWorld
 # > Creates or loads a steemworld for the defined name.

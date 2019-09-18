@@ -5,6 +5,9 @@
 # SetSteemWorldDifficulty.sk is part of the STEEM.CRAFT addons.
 # ==============
 
+import:
+  org.bukkit.Difficulty
+
 #
 # > Function - SetSteemWorldDifficulty
 # > Sets the difficulty of the steem world.

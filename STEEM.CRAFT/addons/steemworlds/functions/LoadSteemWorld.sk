@@ -5,6 +5,13 @@
 # LoadSteemWorld.sk is part of the STEEM.CRAFT addons.
 # ==============
 
+import:
+  java.io.File
+  com.sk89q.worldedit.math.BlockVector3
+  com.sk89q.worldedit.bukkit.BukkitWorld
+  org.apache.commons.io.FileUtils
+  com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats
+
 #
 # > Function - LoadSteemWorld
 # > Loads the speficied world.

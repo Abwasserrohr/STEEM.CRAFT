@@ -1,3 +1,14 @@
+#
+# ==============
+# LoadSteemWorldData.sk
+# ==============
+# LoadSteemWorldData.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+  eu.bittrade.libs.steemj.base.models.operations.CustomJsonOperation
+  java.util.ArrayList
 
 #
 # > Function - LoadSteemWorldData
@@ -20,7 +31,7 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
 	
   #
   # > Create a HashMap which stores all the data.
-  set {_map} to new HashMap()
+  set {_map} to HashMap()
 
   #
   # > Get the Steem content response.
@@ -201,7 +212,7 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
 
   #
   # > Create a HashMap which contains the world data.
-  set {_finalparts} to new HashMap()
+  set {_finalparts} to HashMap()
 
   #
   # > Set the chunk parts together to one big chunk.

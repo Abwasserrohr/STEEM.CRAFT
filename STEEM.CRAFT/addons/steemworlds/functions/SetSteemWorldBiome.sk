@@ -5,6 +5,9 @@
 # SetSteemWorldBiome.sk is part of the STEEM.CRAFT addons.
 # ==============
 
+import:
+  org.bukkit.block.Biome
+
 #
 # > Function - SetSteemWorldBiome
 # > Sets the biome of the defined steem world to the

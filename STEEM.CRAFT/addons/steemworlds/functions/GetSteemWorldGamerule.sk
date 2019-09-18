@@ -5,6 +5,9 @@
 # GetSteemWorldGamerule.sk is part of the STEEM.CRAFT addons.
 # ==============
 
+import:
+  org.bukkit.GameRule
+
 #
 # > Function - GetSteemWorldGamerule
 # > Returns the gamerule value of the world.
