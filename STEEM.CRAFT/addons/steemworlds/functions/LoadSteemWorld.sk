@@ -33,8 +33,7 @@ function LoadSteemWorld(steemname:text,worldname:text,player:player,blockid:numb
     # > Get the world parsed as a world.
     set {_world} to "%{_worldname}%" parsed as world
     set {_txid} to "%{_world}%"
-    set {_shortworld} to {_txid}
-    replace "steemworlds-" with "" in {_shortworld}
+    set {_shortworld} to GetSteemWorldShortName({_world})
 
     #
     # > Tell the player that the world is now being loaded.
@@ -144,5 +143,5 @@ function LoadSteemWorld(steemname:text,worldname:text,player:player,blockid:numb
     # > Apply world settings to the loaded world.
     set {_biome} to getGeneralStorageData("steemworlds",{_shortworld},"biome")
     set {_size} to getGeneralStorageData("steemworlds",{_shortworld},"size")
-    setSteemWorldBiome({_world},{_biome})
+    SetSteemWorldBiome({_world},{_biome})
     ApplySteemWorldSettings({_world})
