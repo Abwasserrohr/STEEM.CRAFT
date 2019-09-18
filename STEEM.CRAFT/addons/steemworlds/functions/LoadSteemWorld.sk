@@ -14,16 +14,40 @@ import:
 
 #
 # > Function - LoadSteemWorld
-# > Loads the speficied world.
+# > Prepares everything to load the speficied world in a thread.
 # > Parameters:
 # > <text> The steem username of the account which should be loaded.
 # > <text> The permlink of the world which should be loaded.
 # > <player> The player who should get informed about status messages.
+# > [<number>] The Block number of the world that should be loaded.
 function LoadSteemWorld(steemname:text,worldname:text,player:player,blockid:number=0):
+  set {_data} to HashMap()
+  {_data}.put("steemname",{_steemname})
+  {_data}.put("worldname",{_worldname})
+  {_data}.put("player",{_player})
+  {_data}.put("blockid",{_blockid})
+
+  while metadata value "SC|LoadSteemWorld" of getDummy() is set:
+    wait 1 tick
+
+  set metadata value "SC|LoadSteemWorld" of getDummy() to {_data}
+  $ thread
+  AsyncLoadSteemWorld(metadata value "SC|LoadSteemWorld" of getDummy())
+
+#
+# > Function - AsyncLoadSteemWorld
+# > Loads a world that has been prepared with the LoadSteemWorld function.
+# > Parameters:
+# > <HashMap> A HashMap that has been prepared by LoadSteemWorld.
+function AsyncLoadSteemWorld(data:object):
   #
   # > The function has been called with a global variable. Delete it here
   # > to allow more calls of this function after it has been called.
-  delete {sc::accountload}
+  delete metadata value "SC|LoadSteemWorld" of getDummy()
+  set {_steemname} to {_data}.get("steemname")
+  set {_worldname} to {_data}.get("worldname")
+  set {_player} to {_data}.get("player")
+  set {_blockid} to {_data}.get("blockid")
 
   #
   # > The steem name is needed, check if it is actually set.
@@ -143,5 +167,5 @@ function LoadSteemWorld(steemname:text,worldname:text,player:player,blockid:numb
     # > Apply world settings to the loaded world.
     set {_biome} to getGeneralStorageData("steemworlds",{_shortworld},"biome")
     set {_size} to getGeneralStorageData("steemworlds",{_shortworld},"size")
-    SetSteemWorldBiome({_world},{_biome})
+    SetSteemWorldBiome({_world},{_biome},null)
     ApplySteemWorldSettings({_world})

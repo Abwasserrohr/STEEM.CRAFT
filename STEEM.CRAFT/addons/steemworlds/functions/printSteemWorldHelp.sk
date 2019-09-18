@@ -1,11 +1,32 @@
+#
+# ==============
+# printSteemWorldHelp.sk
+# ==============
+# printSteemWorldHelp.sk is part of the STEEM.CRAFT addons.
+# ==============
 
-
-
+#
+# > Function - printSteemWorldHelp
+# > Sends a list of messages with all commands to the
+# > player, supports multiple pages if necessary.
+# > Parameters:
+# > <player>the player who should get the help
+# > <text>the page number as a string
 function printSteemWorldHelp(player:player,page:text="1"):
   set {_page} to {_page} parsed as number
   if {_page} is not a number:
     set {_page} to 1
   if {_page} < 1:
     set {_page} to 1
-	
-  message "%getChatPrefix()%" to {_player}
+  set {_prefix} to getChatPrefix()
+  message "%{_prefix}% STEEM.CRAFT Commands" to {_player}
+  message "%{_prefix}% &m                                              &m" to {_player}
+
+  message "%{_prefix}% /sw - Opens main menu" to {_player}
+  message "%{_prefix}% /sw ? - Shows this menu" to {_player}
+  message "%{_prefix}% /sw biome <biome> - Changes the biome" to {_player}
+  message "%{_prefix}% /sw set spawn - Changes the spawn" to {_player}
+  message "%{_prefix}% /sw save - Saves the world to Steem" to {_player}
+
+
+  message "%{_prefix}% &m                                              &m" to {_player}

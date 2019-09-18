@@ -170,10 +170,19 @@ function SaveSteemWorld(player:player):
     # > the world to the final world comment.
     set {_objectMapper} to new ObjectMapper()
     set {_arraynode} to {_objectMapper}.createArrayNode()
-    broadcast "chunks: %{_chunks::*}%"
+
     #
-    # > All chunks are now looped. A schematic file is created and splitted
-    # > into usable parts and encoded with base64.
+    # > Make sure that no player enters the area that is saved,
+    # > since the players would also get added and stored in the
+    # > file, which isn't wanted here.
+    loop all players in {_world}:
+      set {_playerlocations::%loop-player%} to location of loop-player
+      add 1000 to y-coord of {_playerlocations::%loop-player%}
+      teleport loop-player to {_playerlocations::%loop-player%}
+    wait 5 ticks
+
+    #
+	# > Save the world to take the current snapshot of it.
     loop {_chunks::*}:
       delete {_chunksplit::*}
       add 1 to {_loopnumber}
@@ -209,6 +218,28 @@ function SaveSteemWorld(player:player):
       set {_format} to ClipboardFormats.findByAlias("schem")
 
       {_schem}.save({_file},{_format})
+
+    #
+    # > The world has been saved to file, teleport players back.
+    loop all players in {_world}:
+      remove 1000 from y-coord of {_playerlocations::%loop-player%}
+      apply resistance 5 to loop-player for 1 second
+      teleport loop-player to {_playerlocations::%loop-player%}
+      delete {_playerlocations::%loop-player%}
+
+    #
+    # > All chunks are now looped. A schematic file is created and splitted
+    # > into usable parts and encoded with base64.
+    delete {_loopnumber}
+    loop {_chunks::*}:
+      delete {_chunksplit::*}
+      add 1 to {_loopnumber}
+      #
+      # > The schematic files are stored in the "tmp" folder in the root folder of the
+      # > Minecraft server.
+      set {_file} to new File("tmp/steemworlds_%{_world}%_%loop-value.getX()%_%loop-value.getZ()%.schem")
+      set {_chunkx} to loop-value.getX()
+      set {_chunkz} to loop-value.getZ()
 
       while {_file}.exists() is false:
         wait 1 tick

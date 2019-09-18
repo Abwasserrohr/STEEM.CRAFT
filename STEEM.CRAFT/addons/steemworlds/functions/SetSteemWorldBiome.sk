@@ -16,7 +16,7 @@ import:
 # > Parameters:
 # > <world>the steem world which should be changed
 # > <text>the name of the biome to which the world should be changed
-function SetSteemWorldBiome(world:world,biome:text):
+function SetSteemWorldBiome(world:world,biome:text,player:object):
   #
   # > Convert our string to a biome.
   set {_biome} to Biome.valueOf({_biome}.toUpperCase())
