@@ -9,6 +9,7 @@ import:
   org.bukkit.Bukkit
   org.bukkit.WorldCreator
   org.bukkit.World$Environment
+  org.bukkit.WorldType
 
 #
 # > Function - CreateSteemWorld
@@ -60,10 +61,10 @@ function CreateSteemWorld(name:text,type:text="create"):
   {_wb}.setCenter(spawn of {_world})
   {_wb}.setWarningDistance(0)
   {_wb}.setSize(32)
-  applySteemWorldSettings({_world})
+  ApplySteemWorldSettings({_world})
 
   #
-  # > Once the "wait" value from the steemworlds metadatahas been deleted,
+  # > Once the "wait" value from the steemworlds metadata has been deleted,
   # > other commands and functions can go forward as the world is now
   # > successfully loaded.
   delete metadata value "steemworlds-%{_name}%" of getDummy()
