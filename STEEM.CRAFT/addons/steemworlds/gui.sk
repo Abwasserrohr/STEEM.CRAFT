@@ -13,15 +13,6 @@ import:
   java.util.Date
 
 #
-# > Command - /steemworlds [ /sw, /sc ]
-# > Opens the steem world main menue for the current world of the player.
-command /steemworlds:
-  aliases: /sw, /sc
-  trigger:
-    if "%player's world%" contains "steemworlds-":
-      openSteemWorldMainMenu(player's world, player)
-
-#
 # > Function - openSteemWorldMainMenu
 # > Opens a menu in which the player can get to other sub-menues.
 # > Parameters:
