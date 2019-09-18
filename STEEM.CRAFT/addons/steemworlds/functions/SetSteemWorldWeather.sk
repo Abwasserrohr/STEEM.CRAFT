@@ -1,0 +1,32 @@
+#
+# ==============
+# SetSteemWorldWeather.sk
+# ==============
+# SetSteemWorldWeather.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SetSteemWorldWeather
+# > Sets the weather of the specified steem world.
+# > Parameters:
+# > <world>the world
+# > <text>a weather string: Thunder, Rain or Clear
+function SetSteemWorldWeather(world:world,weather:text):
+
+  if {_weather} is "Thunder":
+    {_world}.setStorm(true)
+    {_world}.setWeatherDuration(6000)
+    {_world}.setThundering(true)
+    {_world}.setThunderDuration(6000)
+
+  else if {_weather} is "Rain":
+    {_world}.setThundering(false)
+    {_world}.setThunderDuration(0)
+    {_world}.setStorm(true)
+    {_world}.setWeatherDuration(6000)
+
+  else if {_weather} is "Clear":
+    {_world}.setStorm(false)
+    {_world}.setWeatherDuration(0)
+    {_world}.setThundering(false)
+    {_world}.setThunderDuration(0)

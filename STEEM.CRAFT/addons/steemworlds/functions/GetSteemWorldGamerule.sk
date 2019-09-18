@@ -1,0 +1,16 @@
+#
+# ==============
+# GetSteemWorldGamerule.sk
+# ==============
+# GetSteemWorldGamerule.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - GetSteemWorldGamerule
+# > Returns the gamerule value of the world.
+# > Parameters:
+# > <world>the world
+# > <text>the vanilla gamerule name of which the set value should be returned
+function GetSteemWorldGamerule(world:world,gamerule:text) :: object:
+  set {_gamerule} to GameRule.getByName({_gamerule})
+  return {_world}.getGameRuleValue({_gamerule})

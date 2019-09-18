@@ -1,0 +1,60 @@
+#
+# ==============
+# SetSteemWorldBiome.sk
+# ==============
+# SetSteemWorldBiome.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SetSteemWorldBiome
+# > Sets the biome of the defined steem world to the
+# > biome name.
+# > Parameters:
+# > <world>the steem world which should be changed
+# > <text>the name of the biome to which the world should be changed
+function SetSteemWorldBiome(world:world,biome:text):
+  #
+  # > Convert our string to a biome.
+  set {_biome} to Biome.valueOf({_biome}.toUpperCase())
+
+  #
+  # > If the result of the convert is a biome, go forward.
+  if {_biome} is instance of a Biome:
+
+    #
+    # > Save the changed biome to the storage.
+    saveGeneralStorageData("steemworlds",getSteemWorldShortName({_world}),"biome", "%{_biome}%")
+
+    #
+    # > Only the world within the world border has to be changed, get
+    # > the worldborder to know what has to be changed.
+    set {_wb} to {_world}.getWorldBorder()
+
+    #
+    # > Add 4 extra blocks to prevent transitions within the border.
+    set {_size} to "%{_wb}.getSize()+4%" parsed as number
+
+    #
+    # > Start from the lowest point and loop through until all
+    # > world parts have been changed to the new biome type.
+    set {_xstart} to (0 - {_size}) / 2
+    set {_zstart} to (0 - {_size}) / 2
+    loop {_size} times:
+      set {_z} to {_zstart}
+      loop {_size} times:
+        {_world}.setBiome(Integer.valueOf({_xstart}), Integer.valueOf({_z}), {_biome}) 
+        add 1 to {_z}
+        #
+        # > Take a short break after each 50 changes.
+        add 1 to {_i}
+        if {_i} > 50:
+          wait 1 tick
+          delete {_i}
+      add 1 to {_xstart}
+
+    #
+    # > Refresh all loaded chunks from this world to display the new biomes.
+    set {_chunks::*} to ...{_world}.getLoadedChunks()
+    set {_craftworld} to {_world}.getHandle().getWorld()
+    loop {_chunks::*}:
+      {_craftworld}.refreshChunk(loop-value.getX(), loop-value.getZ())

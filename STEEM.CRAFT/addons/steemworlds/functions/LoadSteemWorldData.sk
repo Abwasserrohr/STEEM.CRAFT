@@ -1,0 +1,217 @@
+
+#
+# > Function - LoadSteemWorldData
+# > Loads a steem based world.
+# > Parameters:
+# > <text> steem name
+# > <text> world name
+# > [<BossBar>] a Bukkit bossbar to update the current progress
+# > Returns:
+# > <Hashmap>["response",SteemJ response],["world",<HashMap>["chunkid","base64 string"]]
+function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid:number=0) :: object:
+  #
+  # > Set the permlink to allow getting the comment content.
+  set {_permlink} to "re-steemcraft-%{_worldname}%"
+
+  #
+  # > Load the content using getSteemContent without thread,
+  # > since we're already in a thread.
+  getSteemContent({_steemname},{_permlink},false,{_blockid})
+	
+  #
+  # > Create a HashMap which stores all the data.
+  set {_map} to new HashMap()
+
+  #
+  # > Get the Steem content response.
+  while {_c} is not set:
+    set {_c} to getSteemContentResponse({_steemname},{_permlink})
+  {_map}.put("response",{_c})
+
+  #
+  # > Reading the json metadata of the content is done using ObjectMapper.
+  set {_objectMapper} to new ObjectMapper()    
+  set {_jsonNode} to {_objectMapper}.readTree({_c}.getJsonMetadata())
+
+  #
+  # > Get the compressed and base64 encoded string.
+  set {_plot} to {_jsonNode}.get("world").textValue()
+
+  #
+  # > The shortworld is used for short storage names.
+  set {_shortworld} to {_worldname}
+  replace "steemworlds-" with "" in {_shortworld}
+
+  #
+  # > Store new world data only if it is a world loading process with
+  # > a bossbar that is not null to prevent overwriting data while
+  # > saving the world to the blockchain.
+  if {_bossbar} is not null:
+    #
+    # > Get the serialized location and save it to the storage.
+    set {_spawn} to {_jsonNode}.get("spawn").textValue()
+    if {_spawn} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"spawn",{_spawn})
+
+    #
+    # > Get the biome and store it.
+    set {_biome} to {_jsonNode}.get("biome").textValue()
+    if {_biome} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"biome",{_biome})
+
+    #
+    # > Get the difficulty and store it.
+    set {_difficulty} to {_jsonNode}.get("difficulty").textValue()
+    if {_difficulty} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"difficulty",{_difficulty})
+
+    #
+    # > Get the doWeatherCycle gamerule and store it.
+    set {_weatherCycle} to {_jsonNode}.get("doWeatherCycle").textValue()
+    if {_weatherCycle} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"doWeatherCycle",{_weatherCycle})
+
+    #
+    # > Get the randomTickSpeed gamerule and store it.
+    set {_randomTickSpeed} to {_jsonNode}.get("randomTickSpeed").textValue()
+    if {_randomTickSpeed} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"randomTickSpeed",{_randomTickSpeed})
+
+    #
+    # > Get the weather and store it.
+    set {_weather} to {_jsonNode}.get("weather").textValue()
+    if {_weather} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"weather",{_weather})
+
+    #
+    # > Get the doDaylightCycle gamerule and store it.
+    set {_doDaylightCycle} to {_jsonNode}.get("doDaylightCycle").textValue()
+    if {_doDaylightCycle} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"doDaylightCycle",{_doDaylightCycle})
+
+    #
+    # > Get the doMobSpawning gamerule and store it.
+    set {_doMobSpawning} to {_jsonNode}.get("doMobSpawning").textValue()
+    if {_doMobSpawning} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"doMobSpawning",{_doMobSpawning})
+
+    #
+    # > Get the time and store it.
+    set {_time} to {_jsonNode}.get("time").textValue()
+    if {_time} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"time",{_time})
+
+    #
+    # > Set the world size to the defined size in the Steem comment.
+    set {_size} to {_jsonNode}.get("size").doubleValue()
+    if {_size} is set:
+      saveGeneralStorageData("steemworlds",{_shortworld},"size",{_size})
+
+    set {_size} to {_size}*32
+    set {_wb} to {_world}.getWorldBorder()
+    {_wb}.setWarningDistance(0)
+    {_wb}.setSize({_size})
+
+  #
+  # > Decompress and decode the base64 string, this increases the size.
+  set {_plot} to decompressBase64({_plot})
+
+  #
+  # > Since we now have a string, it has to be loaded using jackson again,
+  # > to access it later.
+  set {_plot} to {_objectMapper}.readTree({_plot})
+
+  #
+  # > Get all the block numers to load the chunks.
+  loop {_plot}.size().longValue() times:
+    set {_plotpart} to {_plot}.get(loop-number - 1)
+    set {_x} to {_plotpart}.get("x")
+    set {_z} to {_plotpart}.get("z")
+    set {_i} to {_plotpart}.get("i")
+    set {_b} to {_plotpart}.get("b").textValue()
+
+    set {_plotparts::%{_x}%|%{_z}%|%{_i}%} to {_b} parsed as number
+    add 1 to {_plotpartamount::%{_x}%|%{_z}%}
+
+  #
+  # > Get the size of the plotparts to give the player a loading bar.
+  set {_plotsize} to size of {_plotparts::*}
+  set {_pdone} to 100 / {_plotsize}
+
+  #
+  # > A empty ArrayList is needed for comparaisons later.
+  set {_emptylist} to new ArrayList()
+
+  #
+  # > Loop through the parts of the world and gather the needed
+  # > informations.
+  loop {_plotparts::*}:
+    add 1 to {_partnumber}
+
+    #
+    # > Get the operations of a block.
+    set {_ops} to getOpsInBlock(loop-value,false)
+
+    loop {_ops}.size() times:
+      set {_tx} to loop-number - 1
+      #
+      # > Only go forward if the operation contains json.
+      if {_ops}.get({_tx}).getOp() is instance of CustomJsonOperation:
+        #
+        # > Only go forward of the required posting auths match with the requested steem username.
+        set {_auths} to try {_ops}.get({_tx}).getOp().getRequiredPostingAuths()
+        if {_auths} is not {_emptylist}:
+          if {_ops}.get({_tx}).getOp().getRequiredPostingAuths().get(0).getName() is {_steemname}:
+            if {_bossbar} is not null:
+              #
+              # > Tell the player how the loading process is doing.
+              {_bossbar}.setTitle("&lLoading... [%{_partnumber} * {_pdone}%%%]")
+              set {_progress} to (({_partnumber} * {_pdone})/100)/1.5
+              {_bossbar}.setProgress({_progress})
+            #
+            # > Get the json Metadata as a string and check if the world matches with the
+            # > world which should be loaded.
+            set {_objectMapper} to new ObjectMapper()
+            set {_json} to "%{_ops}.get({_tx}).getOp().getJson()%"
+            set {_jsonNode} to {_objectMapper}.readTree({_json})
+            if {_jsonNode}.get("w").textValue() is {_shortworld}:
+              set {_x} to {_jsonNode}.get("x")
+              set {_z} to {_jsonNode}.get("z")
+              set {_i} to {_jsonNode}.get("i")
+              set {_data} to {_jsonNode}.get("data").textValue()
+
+              #
+              # > Make sure that we have found the matching data in this block
+              # > since multiple transactions could be in one block.
+              if loop-index is "%{_x}%|%{_z}%|%{_i}%":
+                set {_plotparts::%{_x}%|%{_z}%|%{_i}%} to {_data}
+
+  if {_bossbar} is not null:
+    #
+    # > Tell the player about the current status.
+    {_bossbar}.setTitle("&lDecompressing world...")
+    set {_progress} to 0.5
+    {_bossbar}.setProgress({_progress})
+
+  #
+  # > Set some variables to calculate the percentage of a loaded world.
+  set {_partnumber} to 0
+  set {_plotsize} to size of {_plotpartamount::*}
+  set {_pdone} to 100 / {_plotsize}
+
+  #
+  # > Create a HashMap which contains the world data.
+  set {_finalparts} to new HashMap()
+
+  #
+  # > Set the chunk parts together to one big chunk.
+  loop {_plotpartamount::*}:
+    set {_data} to ""
+    loop loop-value times:
+      set {_data} to "%{_data}%%{_plotparts::%loop-index-1%|%loop-number%}%"
+    {_finalparts}.put(loop-index,{_data})
+
+  {_map}.put("world",{_finalparts})
+
+  delete {_finalparts}
+  return {_map}

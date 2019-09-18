@@ -1,0 +1,64 @@
+#
+# ==============
+# CreateSteemWorld.sk
+# ==============
+# CreateSteemWorld.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - CreateSteemWorld
+# > Creates or loads a steemworld for the defined name.
+# > Parameters:
+# > <text>Steemworld name
+# > <text>world type either "view" (playing/viewing mode) or "create" (building mode)
+function CreateSteemWorld(name:text,type:text="create"):
+  #
+  # > Sets the steemworlds metadata value to wait to allow other
+  # > commands and functions to wait until the world is ready.
+  set metadata value "steemworlds-%{_name}%" of getDummy() to "wait"
+  saveGeneralStorageData("steemworlds",{_name},"created",true)
+
+  #
+  # > To create a new world, the WorldCreator is very useful,
+  # > it allows to set the world type, environment, and generator
+  # > settings before actually creating it.
+  set {_world} to new WorldCreator("steemworlds-%{_name}%")
+  {_world}.environment(Environment.NORMAL!)
+  {_world}.type(WorldType.FLAT!)
+
+  #
+  # > Disable any villages from spawning in.
+  {_world}.generateStructures(false)
+
+  #
+  # > Remove any not necessary block layers from the world to reduce size.
+  {_world}.generatorSettings("{""biome"":""minecraft:plains"",""layers"":[{""block"":""minecraft:grass_block"",""height"":1}],structures:{""village"":{}}}")
+
+  #
+  # > The world is created after all settings from the WorldCreator have
+  # > been done.
+  set {_world} to Bukkit.createWorld({_world})
+
+  #
+  # > The created world needs some changes to prevent resource intensive.
+  {_world}.setSpawnFlags(false,false)
+  {_world}.setMonsterSpawnLimit(0)
+  {_world}.setAnimalSpawnLimit(0)
+  {_world}.setSpawnLocation(0, 4, 0)
+
+  #
+  # > The size of the world is limited to a fixed size for now.
+  # > This is needed to prevent players from creating too much
+  # > world. Only the world within the border is being saved
+  # > to the Steem Blockchain.
+  set {_wb} to {_world}.getWorldBorder()
+  {_wb}.setCenter(spawn of {_world})
+  {_wb}.setWarningDistance(0)
+  {_wb}.setSize(32)
+  applySteemWorldSettings({_world})
+
+  #
+  # > Once the "wait" value from the steemworlds metadatahas been deleted,
+  # > other commands and functions can go forward as the world is now
+  # > successfully loaded.
+  delete metadata value "steemworlds-%{_name}%" of getDummy()

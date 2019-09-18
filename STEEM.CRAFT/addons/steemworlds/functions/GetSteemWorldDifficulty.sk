@@ -1,0 +1,14 @@
+#
+# ==============
+# GetSteemWorldDifficulty.sk
+# ==============
+# GetSteemWorldDifficulty.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - GetSteemWorldDifficulty
+# > Returns the difficulty of the steem world.
+# > Parameters:
+# > <world>the world
+function GetSteemWorldDifficulty(world:world) :: object:
+  return {_world}.getDifficulty()
