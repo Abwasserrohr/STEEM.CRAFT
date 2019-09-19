@@ -11,7 +11,7 @@
 # > Opens a GUI menu if no arguments have
 # > been added to the command.
 command /steemworlds [<text>] [<text>] [<text>]:
-  aliases: /sw, /sc
+  aliases: /sw, /sc, /steemworld
   trigger:
     # > == Help
     if arg-1 is "?" or "help":
@@ -68,6 +68,15 @@ command /steemworlds [<text>] [<text>] [<text>]:
     # > == Visit a world
     if arg-1 is "visit" or "home":
       VisitSteemWorld(player,arg-2,arg-3)
+      stop
+    if arg-1 is "comment" or "c":
+      if arg-2 is not set:
+        message "%getChatPrefix()% /sw c <comment>"
+        stop
+      if arg-3 is set:
+        CommentSteemWorld(player,"%arg-2% %arg-3%")
+      else:
+        CommentSteemWorld(player,arg-2)
       stop
     # > == World Menu
     if "%player's world%" contains "steemworlds-":
