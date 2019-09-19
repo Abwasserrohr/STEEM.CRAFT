@@ -1,0 +1,18 @@
+#
+# ==============
+# IsSteemWorld.sk
+# ==============
+# IsSteemWorld.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - IsSteemWorld
+# > Returns a boolean, true means that the world is a Steem world.
+# > Parameters:
+# > <world> The world which should be checked to be a Steem world.
+function IsSteemWorld(world:world) :: boolean:
+  set {_shortworld} to GetSteemWorldShortName({_world})
+  set {_created} to getGeneralStorageData("steemworlds",{_shortworld},"created")
+  if {_created} is true:
+    return true
+  return false
