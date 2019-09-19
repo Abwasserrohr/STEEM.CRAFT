@@ -1,4 +1,9 @@
-
+#
+# ==============
+# CommentSteemWorld.sk
+# ==============
+# CommentSteemWorld.sk is part of the STEEM.CRAFT addons.
+# ==============
 
 import:
   net.md_5.bungee.api.chat.ComponentBuilder
@@ -9,14 +14,35 @@ import:
   net.md_5.bungee.api.chat.HoverEvent$Action as HoverEventAction
   net.md_5.bungee.api.chat.ClickEvent$Action as ClickEventAction
 
-
-function CommentSteemWorld(player:player,text:text="",broadcast:boolean=false):
+#
+# > Function - CommentSteemWorld
+# > Comments a Steem world for the player. Player needs to stand in the world
+# > that should be commented.
+# > Parameters:
+# > <player> The player who wants to write the comment (needs synced Steem wallet)
+# > <text> The text the player wants to post.
+function CommentSteemWorld(player:player,text:text=""):
   set {_prefix} to getChatPrefix()
   set {_input::*} to {_text} split at "|"
+  
+  #
+  # > If the comment is a new input for which no data is written yet.
   if metadata value "SC|Comment|%{_input::1}%" of {_player} is not set:
+
+    #
+    # > If this input was a decision, then stop here and tell player to redo.
     if {_input::3} is "DC":
       message "%getChatPrefix()% This comment is expired, please redo." to {_player}
       stop
+
+    #
+    # > If the world of the player isn't a Steem world, stop and tell the player.
+    if IsSteemWorld({_player}'s world) is false:
+      message "%{_prefix}% You can only comment Steem worlds." to {_player}
+      stop
+
+    #
+    # > Ask the player to confirm the comment.
     message "%{_prefix}% Do you want to post this comment to Steem?" to {_player}
     message "%{_prefix}% &m                                                      &m" to {_player}
     message "%{_prefix}% %{_text}%" to {_player}
@@ -26,6 +52,8 @@ function CommentSteemWorld(player:player,text:text="",broadcast:boolean=false):
     set metadata value "SC|Comment|%{_randomid}%" of {_player} to {_text}
     set metadata value "SC|Comment|%{_randomid}%-world" of {_player} to {_player}'s world
 
+    # 
+    # > Create clickable "Discard" and "Confirm" text.
     set {_component} to new TextComponent("[&4&lDiscard&7] ")
     {_component}.setClickEvent(new ClickEvent(ClickEventAction.RUN_COMMAND!, "/steemworlds comment %{_randomid}%|D|DC"))
     {_component}.setHoverEvent(new HoverEvent(HoverEventAction.SHOW_TEXT!, new ComponentBuilder( "&7Click here to discard." ).create()))
@@ -36,9 +64,14 @@ function CommentSteemWorld(player:player,text:text="",broadcast:boolean=false):
     {_component}.setHoverEvent(new HoverEvent(HoverEventAction.SHOW_TEXT!, new ComponentBuilder( "&7Click here to publish." ).create()))
     {_message}.append({_component})
 
+    #
+    # > Send the clickable text to the player.
     {_player}.spigot().sendMessage({_message}.create())
-
     message "%{_prefix}% &m                                                      &m" to {_player}
+
+    #
+    # > Tell the player using the action bar to confirm or discard the comment.
+    # > Automatically discard after 200 seconds or if the player goes offline.
     while metadata value "SC|Comment|%{_randomid}%" of {_player} is set:
       send action bar "%{_prefix}% &lPlease &2&lconfirm&7&l or &4&ldiscard&7&l your comment." to {_player}
       wait 1 second
@@ -49,16 +82,27 @@ function CommentSteemWorld(player:player,text:text="",broadcast:boolean=false):
       if {_autodiscard} >= 200:
         delete metadata value "SC|Comment|%{_randomid}%" of {_player}
         delete metadata value "SC|Comment|%{_randomid}%-world" of {_player}
+    #
+    # > Reset the action bar of the player once this proces stops.
     send action bar " " to {_player}
+
+  #
+  # > If the input is a decision that has been registered before.
   else:
+
+    #
+    # > Get the needed values into local variables and clear out the global
+    # > metadata storage for that data.
     set {_comment} to metadata value "SC|Comment|%{_input::1}%" of {_player}
     set {_world} to metadata value "SC|Comment|%{_input::1}%-world" of {_player}
     delete metadata value "SC|Comment|%{_input::1}%" of {_player}
     delete metadata value "SC|Comment|%{_input::1}%-world" of {_player}
+
+    #
+    # > If the input entry 2 of the list is "D", the player wants to discard.
     if {_input::2} is "D":
       message "%getChatPrefix()% You discarded the comment." to {_player}
       stop
-	  
-	  
-	  
+
+
     message "%{_comment}%" to {_player}
