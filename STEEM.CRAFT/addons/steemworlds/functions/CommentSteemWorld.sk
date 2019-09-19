@@ -104,5 +104,34 @@ function CommentSteemWorld(player:player,text:text=""):
       message "%getChatPrefix()% You discarded the comment." to {_player}
       stop
 
+    #
+    # > Start a process to check if the player can broadcast
+    # > transactions to the Steem blockchain using the key of
+	# > the Minecraft server.
+    CompleteSteemSyncedCheck({_player})
+    while CompleteSteemSyncedCheckResult({_player}) is "wait":
+      wait 1 tick
 
-    message "%{_comment}%" to {_player}
+    #
+    # > If the player is allowed to broadcast, the {_steemname}
+    # > variable is set to the Steem wallet name of the player.
+    set {_steemname} to CompleteSteemSyncedCheckResult({_player})
+    if {_steemname} is false:
+      stop
+
+    #
+    # > Get a random uuid to check the response of the transaction later.
+    set {_txuuid} to getRandomUUID()
+
+    set {_permlink} to "re-steemcraft-%{_world}%"
+    set {_author} to getGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"steemaccount")
+	
+    createComment({_txuuid},{_steemname},{_comment},{_author},{_permlink},["steemcraft"],"Comment")
+
+    while getSteemResponse({_txuuid}) is "wait":
+      wait 1 tick
+
+    if getSteemResponse({_txuuid}) is "done":
+      message "%getChatPrefix()% Your comment has been posted." to {_player}
+    else:
+      message "%getChatPrefix()% A error occured: %getSteemResponse({_txuuid})%" to {_player}
