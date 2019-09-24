@@ -121,7 +121,6 @@ function runBlockNotificationCheck():
     # > blockchain. E.g. transfer, comment, vote.
     # > Adding a check for scot token would be nice later on.
     set {_onlineusers::*} to ...metadata value "onlineSteemUsers" of getDummy()
-    send action bar "%{_blocknumber}% - %{_transactions}.size()%" to "Immanuel94" parsed as player
 
     #
     # > Loop through all transactions that happened in this block.
