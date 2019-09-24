@@ -1,0 +1,101 @@
+#
+# ==============
+# customheads.sk v0.0.3
+# ==============
+# Get custom heads as a {_item} variable with a small amount of dependencies.
+# ==============
+# Dependencies
+# ==============
+# > Spigot 1.13.2 - https://hub.spigotmc.org/jenkins/job/BuildTools/
+# > Skript by bensku - https://github.com/SkriptLang/Skript/releases
+# ==============
+# How to use it:
+# ==============
+# > Add customheads.sk to your "plugins/Skript/scripts" folder and then reload.
+# > Use the customheads("name","base64 value",player) function to get a custom head with skin data.
+# --------------
+
+#
+# > Some Java classes are needed to create custom heads.
+import: 
+  org.bukkit.Bukkit
+  org.bukkit.Material
+  org.bukkit.inventory.ItemStack
+  java.util.UUID
+
+#
+# > These options are needed to import the right nms classes for the Minecraft version.
+option nms:
+  get: 
+    set {_nms version} to Bukkit.getServer().getClass().getPackage().getName().split("\.")[3]
+    return "net.minecraft.server.%{_nms version}%"
+option bukkitv:
+  get:
+    return Bukkit.getServer().getClass().getPackage().getName().split("\.")[3]
+import:
+  org.bukkit.craftbukkit.{@bukkitv}.inventory.CraftItemStack
+  {@nms}.NBTTagCompound
+  {@nms}.NBTTagList
+
+# > Function - getcustomhead:
+# > Arguments:
+# > <text>name, <text>base64 value, <player>player
+# > Actions:
+# > Execute this function with a custom name, a base64 encoded texture value, you can get it here: https://minecraft-heads.com/
+# > and the player who should get it. This returns a custom player head in some hacky way.
+# > If there is someone who can do this better, please open a pull request or contact me on Discord.
+function getcustomhead(name:text,value:text,uuid:text="none") :: item:
+  #
+  # > Create a NMS ItemStack, on which NMS can be assigned on.
+  set {_CraftItemStack} to CraftItemStack.asNMSCopy(new ItemStack(Material.PLAYER_HEAD!, 1))
+  #
+  # > Create all the needed NMS Tag Compounds and lists.
+  set {_SkullOwner} to new NBTTagCompound()
+  set {_properties} to new NBTTagCompound()
+  set {_textures} to new NBTTagList()
+  set {_texture} to new NBTTagCompound()
+  set {_id} to new NBTTagCompound()
+  set {_display} to new NBTTagCompound()
+  #
+  # > Later, this could be used to also edit heads, if there is already data
+  # > saved on the head, use it.
+  set {_NBTTagCompound} to {_CraftItemStack}.getTag()
+  if {_NBTTagCompound} is not set:
+    set {_NBTTagCompound} to new NBTTagCompound()
+  #
+  # > Get a random uuid for the head. Every head texture has to be unique to
+  # > prevent client side problems with displaying the heads. At best, the function
+  # > already gets a predefined random uuid for heads to prevent new random uuids for
+  # > every generated head through this function.
+  if {_uuid} is "none":
+    set {_uuid} to UUID.randomUUID()
+  #
+  # > Assign the base 64 value to the {_texture} NBT Tag Compound.
+  {_texture}.setString("Value", "%{_value}%")
+  #
+  # > Add the {_texture} NBT Tag Compound to the {_textures} NBT list.
+  {_textures}.add({_texture})
+  #
+  # > Sets the "texture" value of the Properties NBT Tag Compound to the {_textures} NBT list.
+  {_properties}.set("textures", {_textures})
+  #
+  # > Sets the uuid value for caching on client side to the Id of the {_SkullOwner} NBT Tag Compound.
+  {_SkullOwner}.setString("Id", "%{_uuid}%")
+  #
+  # > Sets the "Properties" NBT Tag Compound to the {_SkullOwner} NBT Tag Compound.
+  {_SkullOwner}.set("Properties", {_properties})
+  #
+  # > Sets the "SkullOwner" NBT Tag Compound to the {_NBTTagCompound} NBT Tag Compound.
+  {_NBTTagCompound}.set("SkullOwner", {_SkullOwner})
+  #
+  # > Set the NBT Tag Compound back to the NMS ItemStack.
+  {_CraftItemStack}.setTag({_NBTTagCompound})
+  #
+  # > Convert the NMS ItemStack back to a Bukkit ItemStack.
+  set {_item} to CraftItemStack.asBukkitCopy({_CraftItemStack})
+  #
+  # > Change the name of the new item.
+  set {_item} to 1 of {_item} named "&r%{_name}%"
+  #
+  # > Return the item (head).
+  return {_item}
