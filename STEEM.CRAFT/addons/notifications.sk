@@ -1,6 +1,6 @@
 #
 # ==============
-# notifications.sk v0.0.1
+# notifications.sk v0.0.2
 # ==============
 # notifications.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -35,7 +35,11 @@ options:
   # > To disable: ["",0,0]
   transfernotificationsound: ["entity.player.levelup",1,0.5]
 
-every 1.5 seconds:
+on load:
+  wait 1 tick
+  set metadata value "lastSteemHeadBlockNumber" of getDummy() to getHeadBlockNumber()
+
+every 3 seconds:
   if {@enable-notifications} is true:
     $ thread
     runBlockNotificationCheck()
@@ -53,12 +57,8 @@ import:
 # > users to get a message and sound.
 function runBlockNotificationCheck():
 
-  #
-  # > SteemJ seems to only return blocks which are already confirmed,
-  # > which means we have to wait at least 21 blocks. This is not
-  # > optimal and has to be improved later on. Maybe make a custom
-  # > request for the checks.
-  set {_blocknumber} to getHeadBlockNumber() - 30
+  set {_blocknumber} to metadata value "lastSteemHeadBlockNumber" of getDummy()
+  add 1 to {_blocknumber}
 
   #
   # > If this block hasn't been already processed, do it now.
@@ -69,11 +69,15 @@ function runBlockNotificationCheck():
     # > steem block. This helps to prevent the processing of the same
     # > block multiple times.
     set metadata value "lastSteemHeadBlockNumber" of getDummy() to {_blocknumber}
-	
+
     #
     # > Get all operations of the block.
-    set {_operations} to getOpsInBlock({_blocknumber},false)
-	
+    set {_id} to getRawBlock({_blocknumber})
+    while CustomSteemRequestResult({_id}) is "wait":
+      wait 1 tick
+    set {_response} to CustomSteemRequestResult({_id})
+    set {_transactions} to {_response}.get("result").get("transactions")
+
     #
     # > Get all Steem users that are currently online on this server to check
     # > if we need to notify the user about something going on on the Steem
@@ -82,46 +86,93 @@ function runBlockNotificationCheck():
     set {_onlineusers::*} to ...metadata value "onlineSteemUsers" of getDummy()
 
     #
-    # > Loop through all operations that happened in this block.
-    loop {_operations}.size() times:
+    # > Loop through all transactions that happened in this block.
+    loop {_transactions}.size() times:
 
       # 
       # > Select the currently looped operation.
-      set {_operation} to {_operations}.get(loop-number - 1).getOp()
+      set {_operations} to {_transactions}.get(loop-number - 1)
 
-      #
-      # > If the operation is a CoommentOperation.
-      if {_operation} is instance of CommentOperation:
-
+      set {_loop} to -1
+      loop {_operations}.get("operations").size() times:
+        add 1 to {_loop}
+        set {_operation} to {_operations}.get("operations").get({_loop})
+        set {_optype} to {_operation}.get(0).textValue()
         #
-        # > If the parent author isn't a empty string (blog post).
-        if {_operation}.getParentAuthor().getName() is not "":
+        # > If the operation is a CoommentOperation.
+        if {_optype} is "comment":
 
           #
-          # > Loop through the online users and check if the parent author is
-          # > currently online on our server.
+          # > If the parent author isn't a empty string (blog post).
+          if {_operation}.get(1).get("parent_author").textValue() is not "":
+
+            #
+            # > Loop through the online users and check if the parent author is
+            # > currently online on our server.
+            loop {_onlineusers::*}:
+
+              #
+              # > If the looped online steem player is the parent author of this comment.
+              if loop-value-3 contains "%{_operation}.get(1).get(""parent_author"").textValue()%|":
+			  
+                #
+                # > If the looped online steem player is not the author of this comment.
+                if loop-value-3 doesn't contain "%{_operation}.get(1).get(""author"").textValue()%|":
+
+                  #
+                  # > Get the parsed player out of the looped player string.
+                  set {_player::*} to loop-value-3 split at "|"
+                  set {_player} to {_player::2} parsed as player
+
+                  #
+                  # > Get the name of the author for the notification message.
+                  set {_commenter} to {_operation}.get(1).get("author").textValue()
+
+                  #
+                  # > Get the predefined sound from the options parsed as list.
+                  set {_sound::*} to ...{@commentnotificationsound}
+
+                  #
+                  # > If the first sound string is not a empty string, go forward.
+                  if {_sound::1} is not "":
+
+                    #
+                    # > Play a sound to the player who gets the notification.
+                    play sound {_sound::1} with volume {_sound::2} with pitch {_sound::3} at location of {_player} for {_player}
+
+                  #
+                  # > Send the actual notification message.
+                  message "%getChatPrefix()% %{_commenter}% commented on your post." to {_player}
+
+        #
+        # > If the operation is a VoteOperation.
+        else if {_optype} is "vote":
+
+          #
+          # > Loop through the online users and check if the author which has
+          # > recieved the vote is online on the server.
           loop {_onlineusers::*}:
 
             #
-            # > If the looped online steem player is the parent author of this comment.
-            if loop-value-2 contains "%{_operation}.getParentAuthor().getName()%|":
-			  
-              #
-              # > If the looped online steem player is not the author of this comment.
-              if loop-value-2 doesn't contain "%{_operation}.getAuthor().getName()%|":
+            # > If the looped online steem player is the author of the post which has been voted.
+            if loop-value-3 contains "%{_operation}.get(1).get(""author"").textValue()%|":
 
+              #
+              # > If the looped online steem player is not the voter himself.
+              if loop-value-3 doesn't contain "%{_operation}.get(1).get(""voter"").textValue()%|":
+
+                #
+                # > Get the voter for the final notifiaction message.
+                set {_voter} to {_operation}.get(1).get("voter").textValue()
+			  
                 #
                 # > Get the parsed player out of the looped player string.
-                set {_player::*} to loop-value-2 split at "|"
+                set {_player::*} to loop-value-3 split at "|"
                 set {_player} to {_player::2} parsed as player
-
-                #
-                # > Get the name of the author for the notification message.
-                set {_commenter} to {_operation}.getAuthor().getName()
-
+			
                 #
                 # > Get the predefined sound from the options parsed as list.
-                set {_sound::*} to ...{@commentnotificationsound}
+                set {_sound::*} to ...{@votenotificationsound}
 
                 #
                 # > If the first sound string is not a empty string, go forward.
@@ -131,39 +182,30 @@ function runBlockNotificationCheck():
                   # > Play a sound to the player who gets the notification.
                   play sound {_sound::1} with volume {_sound::2} with pitch {_sound::3} at location of {_player} for {_player}
 
-                #
-                # > Send the actual notification message.
-                message "%getChatPrefix()% %{_commenter}% commented on your post." to {_player}
-
-      #
-      # > If the operation is a VoteOperation.
-      else if {_operation} is instance of VoteOperation:
+			
+                message "%getChatPrefix()% %{_voter}% voted on your post." to {_player}
 
         #
-        # > Loop through the online users and check if the author which has
-        # > recieved the vote is online on the server.
-        loop {_onlineusers::*}:
+        # > If the operation is a TransferOperation.
+        else if {_optype} is "transfer":
 
           #
-          # > If the looped online steem player is the author of the post which has been voted.
-          if loop-value-2 contains "%{_operation}.getAuthor().getName()%|":
+          # > Loop through the online users and check if the sender or the
+          # > target of the transfer is currently online on our server.
+          loop {_onlineusers::*}:
 
             #
-            # > If the looped online steem player is not the voter himself.
-            if loop-value-2 doesn't contain "%{_operation}.getVoter().getName()%|":
+            # > If the looped online steem player has revieved a transfer.
+            if loop-value-3 contains "%{_operation}.get(1).get(""to"").textValue()%|":
 
               #
-              # > Get the voter for the final notifiaction message.
-              set {_voter} to {_operation}.getVoter().getName()
-			  
-              #
               # > Get the parsed player out of the looped player string.
-              set {_player::*} to loop-value-2 split at "|"
+              set {_player::*} to loop-value-3 split at "|"
               set {_player} to {_player::2} parsed as player
-			
+
               #
               # > Get the predefined sound from the options parsed as list.
-              set {_sound::*} to ...{@votenotificationsound}
+              set {_sound::*} to ...{@transfernotificationsound}
 
               #
               # > If the first sound string is not a empty string, go forward.
@@ -173,49 +215,16 @@ function runBlockNotificationCheck():
                 # > Play a sound to the player who gets the notification.
                 play sound {_sound::1} with volume {_sound::2} with pitch {_sound::3} at location of {_player} for {_player}
 
-			
-              message "%getChatPrefix()% %{_voter}% voted on your post." to {_player}
-
-      #
-      # > If the operation is a TransferOperation.
-      else if {_operation} is instance of TransferOperation:
-
-        #
-        # > Loop through the online users and check if the sender or the
-        # > target of the transfer is currently online on our server.
-        loop {_onlineusers::*}:
-
-          #
-          # > If the looped online steem player has revieved a transfer.
-          if loop-value-2 contains "%{_operation}.getTo().getName()%|":
-
-            #
-            # > Get the parsed player out of the looped player string.
-            set {_player::*} to loop-value-2 split at "|"
-            set {_player} to {_player::2} parsed as player
-
-            #
-            # > Get the predefined sound from the options parsed as list.
-            set {_sound::*} to ...{@transfernotificationsound}
-
-            #
-            # > If the first sound string is not a empty string, go forward.
-            if {_sound::1} is not "":
+              #
+              # > Get the amount, memo and the sender.
+              set {_amount} to {_operation}.get(1).get("amount").textValue()
+              set {_memo} to {_operation}.get(1).get("memo").textValue()
+              set {_sender} to {_operation}.get(1).get("from").textValue()
 
               #
-              # > Play a sound to the player who gets the notification.
-              play sound {_sound::1} with volume {_sound::2} with pitch {_sound::3} at location of {_player} for {_player}
-
-            #
-            # > Get tthe real amount of the transfer and the symbol for the
-            # > notifiaction message.
-            set {_amount} to {_operation}.getAmount().toReal().toString()
-            set {_symbol} to {_operation}.getAmount().getSymbol()
-
-            #
-            # > Send the notifiaction message to the player.
-            message "%getChatPrefix()% Transaction:" to {_player}
-            message "%getChatPrefix()% %{_operation}.getFrom().getName()% sent %{_operation}.getTo().getName()% %{_amount}% %{_symbol}%" to {_player}
+              # > Send the notifiaction message to the player.
+              message "%getChatPrefix()% %{_sender}% sent you %{_amount}%:" to {_player}
+              message "%getChatPrefix()% %{_memo}%" to {_player}
 
 #
 # > Function - setSteemPlayerToOnlineStatus
