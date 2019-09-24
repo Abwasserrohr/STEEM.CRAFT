@@ -1,6 +1,6 @@
 #
 # ==============
-# notifications.sk v0.0.3
+# notifications.sk v0.0.4
 # ==============
 # notifications.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -38,12 +38,23 @@ options:
 import:
   com.fasterxml.jackson.databind.ObjectMapper
   java.util.ArrayList
+  net.md_5.bungee.api.chat.ComponentBuilder
+  net.md_5.bungee.api.chat.TextComponent
+  net.md_5.bungee.api.chat.BaseComponent
+  net.md_5.bungee.api.chat.ClickEvent
+  net.md_5.bungee.api.chat.HoverEvent
+  net.md_5.bungee.api.chat.HoverEvent$Action as HoverEventAction
+  net.md_5.bungee.api.chat.ClickEvent$Action as ClickEventAction
+
 
 #
 # > Event - on load
 # > Saves the current head block number to memory for new block checks.
 on load:
   wait 1 tick
+  UpdateHeadBlockNumber()
+
+function UpdateHeadBlockNumber():
   set {_mapper} to new ObjectMapper()
 
   set {_request} to HashMap()
@@ -60,9 +71,10 @@ on load:
     wait 1 tick
 
   set {_response} to CustomSteemRequestResult({_requestID})
-  set {_headblocknumber} to {_response}.get("result").get("head_block_number").intValue()
+  set {_headblocknumber} to {_response}.get("result").get("head_block_number").doubleValue()
 
-  set metadata value "lastSteemHeadBlockNumber" of getDummy() to {_headblocknumber}
+  set metadata value "SC|HeadBlockNumber" of getDummy() to {_headblocknumber}
+  set {SC::HeadBlockNumber} to {_headblocknumber}
 
 every 3 seconds:
   if {@enable-notifications} is true:
@@ -76,7 +88,7 @@ every 3 seconds:
 # > users to get a message and sound.
 function runBlockNotificationCheck():
 
-  set {_blocknumber} to metadata value "lastSteemHeadBlockNumber" of getDummy()
+  set {_blocknumber} to {SC::HeadBlockNumber}
   add 1 to {_blocknumber}
 
   if {_blocknumber} is set:
@@ -85,7 +97,8 @@ function runBlockNotificationCheck():
     # > Set the metadata value to mark this block as the last processed
     # > steem block. This helps to prevent the processing of the same
     # > block multiple times.
-    set metadata value "lastSteemHeadBlockNumber" of getDummy() to {_blocknumber}
+    set metadata value "SC|HeadBlockNumber" of getDummy() to {_blocknumber}
+    set {SC::HeadBlockNumber} to {_blocknumber}
 
     #
     # > Get all operations of the block.
@@ -94,7 +107,13 @@ function runBlockNotificationCheck():
       wait 1 tick
     set {_response} to CustomSteemRequestResult({_id})
 
-    set {_transactions} to {_response}.get("result").get("transactions")
+    set {_transactions} to try {_response}.get("result").get("transactions")
+
+    #
+    # > If the transactions aren't set, then update the head block number and stop.
+    if "%try {_transactions}.size()%" is "<none>":
+      UpdateHeadBlockNumber()
+      stop
 
     #
     # > Get all Steem users that are currently online on this server to check
@@ -102,6 +121,7 @@ function runBlockNotificationCheck():
     # > blockchain. E.g. transfer, comment, vote.
     # > Adding a check for scot token would be nice later on.
     set {_onlineusers::*} to ...metadata value "onlineSteemUsers" of getDummy()
+    send action bar "%{_blocknumber}% - %{_transactions}.size()%" to "Immanuel94" parsed as player
 
     #
     # > Loop through all transactions that happened in this block.
@@ -158,9 +178,28 @@ function runBlockNotificationCheck():
                     # > Play a sound to the player who gets the notification.
                     play sound {_sound::1} with volume {_sound::2} with pitch {_sound::3} at location of {_player} for {_player}
 
+                  set {_body} to {_operation}.get(1).get("body").textValue()
+                  set {_permlink} to {_operation}.get(1).get("permlink").textValue()
+
                   #
                   # > Send the actual notification message.
-                  message "%getChatPrefix()% %{_commenter}% commented on your post." to {_player}
+                  message "%getChatPrefix()% %{_commenter}% replied to you:" to {_player}
+                  message "%getChatPrefix()% %{_body}%" to {_player}
+                  set {_message} to new ComponentBuilder("%getChatPrefix()% ")
+
+                  set {_component} to new TextComponent("[&2&lVote&7] ")
+                  {_component}.setClickEvent(new ClickEvent(ClickEventAction.RUN_COMMAND!, "/steem vote %{_commenter}% %{_permlink}% "))
+                  {_component}.setHoverEvent(new HoverEvent(HoverEventAction.SHOW_TEXT!, new ComponentBuilder( "&7Click here to vote on the reply." ).create()))
+                  {_message}.append({_component})
+
+                  set {_component} to new TextComponent("[&2&lReply&7]")
+                  {_component}.setClickEvent(new ClickEvent(ClickEventAction.SUGGEST_COMMAND!, "/steem comment %{_commenter}% %{_permlink}% "))
+                  {_component}.setHoverEvent(new HoverEvent(HoverEventAction.SHOW_TEXT!, new ComponentBuilder( "&7Click here to reply." ).create()))
+                  {_message}.append({_component})
+
+                  #
+                  # > Send the clickable text to the player.
+                  {_player}.spigot().sendMessage({_message}.create())
 
         #
         # > If the operation is a VoteOperation.
