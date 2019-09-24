@@ -1,6 +1,6 @@
 #
 # ==============
-# notifications.sk v0.0.2
+# notifications.sk v0.0.3
 # ==============
 # notifications.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -35,20 +35,39 @@ options:
   # > To disable: ["",0,0]
   transfernotificationsound: ["entity.player.levelup",1,0.5]
 
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+  java.util.ArrayList
+
+#
+# > Event - on load
+# > Saves the current head block number to memory for new block checks.
 on load:
   wait 1 tick
-  set metadata value "lastSteemHeadBlockNumber" of getDummy() to getHeadBlockNumber()
+  set {_mapper} to new ObjectMapper()
+
+  set {_request} to HashMap()
+
+  {_request}.put("jsonrpc", "2.0")
+  {_request}.put("method", "condenser_api.get_dynamic_global_properties")
+  {_request}.put("params", new ArrayList())
+  {_request}.put("id", 1)
+
+  set {_requestID} to getRandomUUID()
+  CustomSteemRequest({_mapper}.writeValueAsString({_request}),{_requestID})
+
+  while CustomSteemRequestResult({_requestID}) is "wait":
+    wait 1 tick
+
+  set {_response} to CustomSteemRequestResult({_requestID})
+  set {_headblocknumber} to {_response}.get("result").get("head_block_number").intValue()
+
+  set metadata value "lastSteemHeadBlockNumber" of getDummy() to {_headblocknumber}
 
 every 3 seconds:
   if {@enable-notifications} is true:
     $ thread
     runBlockNotificationCheck()
-
-import:
-  java.util.ArrayList
-  eu.bittrade.libs.steemj.base.models.operations.CommentOperation
-  eu.bittrade.libs.steemj.base.models.operations.TransferOperation
-  eu.bittrade.libs.steemj.base.models.operations.VoteOperation
 
 #
 # > Function - runBlockNotificationCheck
@@ -60,9 +79,7 @@ function runBlockNotificationCheck():
   set {_blocknumber} to metadata value "lastSteemHeadBlockNumber" of getDummy()
   add 1 to {_blocknumber}
 
-  #
-  # > If this block hasn't been already processed, do it now.
-  if metadata value "lastSteemHeadBlockNumber" of getDummy() is not {_blocknumber}:
+  if {_blocknumber} is set:
 
     #
     # > Set the metadata value to mark this block as the last processed
@@ -76,6 +93,7 @@ function runBlockNotificationCheck():
     while CustomSteemRequestResult({_id}) is "wait":
       wait 1 tick
     set {_response} to CustomSteemRequestResult({_id})
+
     set {_transactions} to {_response}.get("result").get("transactions")
 
     #
