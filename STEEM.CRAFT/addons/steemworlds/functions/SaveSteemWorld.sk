@@ -109,6 +109,11 @@ function SaveSteemWorld(player:player):
     #
     # > Get the size of the world to set the correct world coordinates.
     set {_size} to getGeneralStorageData("steemworlds",{_shortworld},"size")
+
+    #
+    # > If the size is not set for some reason, set it to 1.
+    if {_size} is not set:
+      set {_size} to 1
 	
     #
     # > Calculate both x- and z-start and endcoordinates of the world.
