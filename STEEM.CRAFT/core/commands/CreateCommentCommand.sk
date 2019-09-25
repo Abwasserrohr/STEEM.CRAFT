@@ -113,7 +113,7 @@ function CreateCommentCommand(player:player,parentauthor:text,parentpermlink:tex
     # > Get a random uuid to check the response of the transaction later.
     set {_txuuid} to getRandomUUID()
 	
-    createComment({_txuuid},{_steemname},{_comment},{_parentauthor},{_parentpermlink},["steemcraft"],"Comment")
+    createComment({_txuuid},{_steemname},{_comment},{_parentauthor},{_parentpermlink},getDefaultAppTags(),"Comment")
 
     while getSteemResponse({_txuuid}) is "wait":
       wait 1 tick
