@@ -1,3 +1,4 @@
+#
 # ==============
 # steemworlds/config.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -49,6 +50,9 @@ options:
   #
   # > The footer text of the teleport sign that should be displayed.
   teleportsigns_signfooter: "&l>>Click here<<"
+  #
+  # > The categories (tags) that are available to set for the world.
+  worldcategories: ["Creative","Adventure","Parkour","Exploration"]
 
 #
 # > Function - scswGetConfig
@@ -84,3 +88,5 @@ function scswGetConfig(setting:text) :: object:
     return {@teleportsigns_signhead}
   if {_setting} is "teleportsigns_signfooter":
     return {@teleportsigns_signfooter}
+  if {_setting} is "worldcategories":
+    return {@worldcategories}
