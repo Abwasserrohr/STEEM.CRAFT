@@ -22,34 +22,7 @@ command /steem [<text>] [<text>] [<text>] [<text>]:
       openSteemVoteMenu(player,arg-2,arg-3)
 
     if arg-1 is "comment":
-      set {_player} to player
-      #
-      # > Start a process to check if the player can broadcast
-      # > transactions to the Steem blockchain using the key of
-      # > the Minecraft server.
-      CompleteSteemSyncedCheck({_player})
-      while CompleteSteemSyncedCheckResult({_player}) is "wait":
-        wait 1 tick
-
-      #
-      # > If the player is allowed to broadcast, the {_steemname}
-      # > variable is set to the Steem wallet name of the player.
-      set {_steemname} to CompleteSteemSyncedCheckResult({_player})
-      if {_steemname} is false:
+      if arg-4 or arg-3 or arg-2 is not set:
+        message "%getChatPrefix()% /steem comment <author> <permlink> <comment>"
         stop
-
-      set {_id} to getRandomUUID()
-      set {_tags} to ["steemcraft","steemworlds"]
-      set {_comment} to arg-4
-      set {_parentauthor} to arg-2
-      set {_parentpermlink} to arg-3
-
-      createComment({_id},{_steemname},{_comment},{_parentauthor},{_parentpermlink},{_tags})
-
-      while getSteemResponse({_id}) is "wait":
-        wait 1 tick
-
-      if getSteemResponse({_id}) is "done":
-        message "%getChatPrefix()% Your comment has been posted." to {_player}
-      else:
-        message "%getChatPrefix()% A error occured: %getSteemResponse({_id})%" to {_player}
+      CreateCommentCommand(player,arg-2,arg-3,arg-4)
