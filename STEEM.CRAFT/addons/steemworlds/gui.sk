@@ -695,7 +695,7 @@ function openSteemWorldHistoryMenu(world:world,site:number,player:player,init:bo
         # > Create a different item with function if the player is allowed to load
         # > the world. If not allowed, the lore (subtext of item) is changed.
         if {_loadallowed} is true:
-          setguiitem({_player},{_slot}, {_enableditem},1, "&r&lWorld version %{_loopid}%","&7Block: %loop-index%\n&7Date: %loop-value%\n&7Click &6here&7 to load this version.","make ""%{_player}%"" parsed as player execute ""/steemworldload %loop-index%""",true)
+          setguiitem({_player},{_slot}, {_enableditem},1, "&r&lWorld version %{_loopid}%","&7Block: %loop-index%\n&7Date: %loop-value%\n&7Click &6here&7 to load this version.","make ""%{_player}%"" parsed as player execute ""/sw load %loop-index%""",true)
         else:
           setguiitem({_player},{_slot}, {_enableditem},1, "&r&lWorld version %{_loopid}%","&7Block: %loop-index%\n&7Date: %loop-value%")
 
