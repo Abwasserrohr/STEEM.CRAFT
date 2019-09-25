@@ -25,7 +25,7 @@ options:
   commentformat: markdown
   #
   # > The tags can be used to query specific contents from the blockchain.
-  commenttags: ["steemcraft","steemworlds"]
+  commenttags: ["steemcraft","steemworlds","sbi-skip"]
   #
   # > The title is used on almost all Steem based blog apps to see what
   # > the comment is about.
@@ -55,6 +55,7 @@ import:
   java.io.File
   java.nio.file.Files
   java.util.regex.Pattern
+  java.util.ArrayList
   com.fasterxml.jackson.databind.ObjectMapper
   com.boydti.fawe.object.schematic.Schematic
   com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats
@@ -103,10 +104,11 @@ function SaveSteemWorld(player:player):
       stop
 
     set {_world} to {_player}'s world
+    set {_shortworld} to GetSteemWorldShortName({_player}'s world)
 
     #
     # > Get the size of the world to set the correct world coordinates.
-    set {_size} to getGeneralStorageData("steemworlds",GetSteemWorldShortName({_player}'s world),"size")
+    set {_size} to getGeneralStorageData("steemworlds",{_shortworld},"size")
 	
     #
     # > Calculate both x- and z-start and endcoordinates of the world.
@@ -311,11 +313,6 @@ function SaveSteemWorld(player:player):
             set {_done} to true
         delete {_done}
         delete {_partid}
-        set {_shortworld} to "%{_world}%"
-
-        #
-        # > Only the short world name is necessary here.
-        replace "steemworlds-" with "" in {_shortworld}
 
         #
         # > Now, the splitted chunks are being looped through. Every splitted chunk
@@ -330,6 +327,7 @@ function SaveSteemWorld(player:player):
           # > process in case of any error.
           while {_done} is not set:
             set {_txuuid} to getRandomUUID()
+            set {_transactionhappened} to true
             customJsonOperation({_txuuid},{_steemname},"{@jsonidplots}",{_txcontent})
 
             #
@@ -373,22 +371,26 @@ function SaveSteemWorld(player:player):
       {_bossbar}.setTitle("&lBroadcasting chunks...")
       set {_progress} to (({_loopnumber} * {_pdone})/100)/2
       {_bossbar}.setProgress({_progress})
-
-    #
-    # > Tell the player that the world has been saved and that it needs to wait
-    # > until the transactions are consensus, since I currently can't get the block
-    # > number of the transaction directly.
-    set {_timer} to 80
-    loop 80 times:
-      add 0.005 to {_progress}
-      {_bossbar}.setTitle("&lWait &6&l%{_timer}%&f&l seconds...")
-      {_bossbar}.setProgress({_progress})
-      remove 1 from {_timer}
-      wait 1 second
+    
+    if {_transactionhappened} is set:
+      #
+      # > Tell the player that the world has been saved and that it needs to wait
+      # > until the transactions are consensus, since I currently can't get the block
+      # > number of the transaction directly.
+      set {_timer} to 80
+      loop {_timer} times:
+        add 0.005 to {_progress}
+        {_bossbar}.setTitle("&lWait &6&l%{_timer}%&f&l seconds...")
+        {_bossbar}.setProgress({_progress})
+        remove 1 from {_timer}
+        wait 1 second
+    else:
+      set {_progress} to 0.90
 
     #
     # > Tell the player that the world is now being broadcasted.
     {_bossbar}.setTitle("&lBroadcasting world...")
+    {_bossbar}.setProgress({_progress})
 
     #
     # > Go through the last 1000 transactions of the user.
@@ -426,12 +428,18 @@ function SaveSteemWorld(player:player):
     {_finaljson}.put("app", "{@commentapp}")
 
     #
-    # > Apply tags by converting the array to a list and
-    # > adding each entry into the ArrayNode.
-    set {_tags} to {_objectMapper}.createArrayNode()
+    # > Get the categories (tags) from the local storage and add them to the tags.
     set {_tags::*} to ...{@commenttags}
+    set {_tags} to {_objectMapper}.createArrayNode()
     loop {_tags::*}:
       {_tags}.add(loop-value)
+    set {_categories} to getGeneralStorageData("steemworlds",{_shortworld},"categories")
+    if {_categories} is set:
+      set {_jsonNode} to try {_objectMapper}.readTree({_categories})
+      set {_categoryloop::*} to ...try {_jsonNode}.get("categories")
+      if {_categoryloop::*} is set:
+        loop {_categoryloop::*}:
+          try {_tags}.add(loop-value.textValue())
 
     {_finaljson}.put("tags", {_tags})
     {_finaljson}.put("format", "{@commentformat}")
@@ -490,9 +498,9 @@ function SaveSteemWorld(player:player):
 
     #
     # > Get the time from the local storage and add it to the json.
-    set {_weather} to getGeneralStorageData("steemworlds",{_shortworld},"time")
-    if {_weather} is set:
-      {_finaljson}.put("time", {_weather})
+    set {_time} to getGeneralStorageData("steemworlds",{_shortworld},"time")
+    if {_time} is set:
+      {_finaljson}.put("time", {_time})
 
     #
     # > To shrink down the chunk reference parts, this data is being
@@ -503,12 +511,17 @@ function SaveSteemWorld(player:player):
     set {_txuuid} to "%{_txid}.toLowerCase()%"
     set {_comment} to "{@postprefix}"
     set {_title} to {@commenttitle}
-    replace all "<world>" with "%{_world}%" in {_title}	
+    replace all "<world>" with "%{_shortworld}%" in {_title}	
 
     #
     # > The createComment function is going to create a comment.
     createComment({_txuuid},{_steemname},{_comment},"{@commentparentauthor}","{@commentparentpermlink}",{@commenttags},{_title},{_finaljson}.toString())
 
+    #
+    # > Set the loading bossbar to 100% and the title to a success message
+    # > to tell the player that everything worked.
+    {_bossbar}.setTitle("&lWaiting for approval.")
+    {_bossbar}.setProgress(0.95)
     #
     # > The comment is going to be created in a separate thread, to catch
     # > if everything worked, we can wait here until the response is no longer
