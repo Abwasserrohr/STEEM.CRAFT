@@ -112,6 +112,25 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
       saveGeneralStorageData("steemworlds",{_shortworld},"time",{_time})
 
     #
+    # > Get the tags and store valid categories.
+    set {_tags} to {_jsonNode}.get("tags")
+    set {_usedtags} to new ArrayList() 
+    set {_validtags} to scswGetConfig("worldcategories")
+
+    #
+    # > Loop through all tags and check if one of them match with a valid,
+    # > valid tags represent a pre-configured category that is displayed
+    # > in the game.
+    loop ...{_tags}:
+      loop ...{_validtags}:
+        if loop-value-1.textValue() is loop-value-2.toLowerCase():
+          {_usedtags}.add(loop-value-1)
+	
+    set {_currentcategories} to HashMap()
+    {_currentcategories}.put("categories", {_usedtags})
+    saveGeneralStorageData("steemworlds",{_shortworld},"categories", {_objectMapper}.writeValueAsString({_currentcategories}))
+
+    #
     # > Set the world size to the defined size in the Steem comment.
     set {_size} to {_jsonNode}.get("size").doubleValue()
     if {_size} is set:
