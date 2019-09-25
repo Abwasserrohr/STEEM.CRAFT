@@ -1,0 +1,124 @@
+#
+# ==============
+# CreateCommentCommand.sk
+# ==============
+# CreateCommentCommand.sk is part of the STEEM.CRAFT core functions for commands.
+# ==============
+
+import:
+  net.md_5.bungee.api.chat.ComponentBuilder
+  net.md_5.bungee.api.chat.TextComponent
+  net.md_5.bungee.api.chat.BaseComponent
+  net.md_5.bungee.api.chat.ClickEvent
+  net.md_5.bungee.api.chat.HoverEvent
+  net.md_5.bungee.api.chat.HoverEvent$Action as HoverEventAction
+  net.md_5.bungee.api.chat.ClickEvent$Action as ClickEventAction
+
+#
+# > Function - CreateCommentCommand
+# > Used by /steem comment author permlink mycomment to make safe comments
+# > that can't be abused by custom text books.
+# > Parameters:
+# > <player> The player who wants to write the comment (needs synced Steem wallet)
+# > <text> The text the player wants to post.
+function CreateCommentCommand(player:player,parentauthor:text,parentpermlink:text,text:text=""):
+  set {_prefix} to getChatPrefix()
+  set {_input::*} to {_text} split at "|"
+  
+  #
+  # > If the comment is a new input for which no data is written yet.
+  if metadata value "SC|Comment|%{_input::1}%" of {_player} is not set:
+
+    #
+    # > If this input was a decision, then stop here and tell player to redo.
+    if {_input::3} is "DC":
+      message "%getChatPrefix()% This comment is expired, please redo." to {_player}
+      stop
+
+    #
+    # > Ask the player to confirm the comment.
+    message "%{_prefix}% Do you want to post this comment to Steem?" to {_player}
+    message "%{_prefix}% &m                                                      &m" to {_player}
+    message "%{_prefix}% %{_text}%" to {_player}
+    message "%{_prefix}% &m                                                      &m" to {_player}
+    set {_message} to new ComponentBuilder("%{_prefix}% ")
+    set {_randomid} to getRandomUUID()
+    set metadata value "SC|Comment|%{_randomid}%" of {_player} to {_text}
+
+    # 
+    # > Create clickable "Discard" and "Confirm" text.
+    set {_component} to new TextComponent("[&4&lDiscard&7] ")
+    {_component}.setClickEvent(new ClickEvent(ClickEventAction.RUN_COMMAND!, "/steem comment %{_parentauthor}% %{_parentpermlink}% %{_randomid}%|D|DC"))
+    {_component}.setHoverEvent(new HoverEvent(HoverEventAction.SHOW_TEXT!, new ComponentBuilder( "&7Click here to discard." ).create()))
+    {_message}.append({_component})
+
+    set {_component} to new TextComponent("[&2&lConfirm&7]")
+    {_component}.setClickEvent(new ClickEvent(ClickEventAction.RUN_COMMAND!, "/steem comment %{_parentauthor}% %{_parentpermlink}% %{_randomid}%|C|DC"))
+    {_component}.setHoverEvent(new HoverEvent(HoverEventAction.SHOW_TEXT!, new ComponentBuilder( "&7Click here to publish." ).create()))
+    {_message}.append({_component})
+
+    #
+    # > Send the clickable text to the player.
+    {_player}.spigot().sendMessage({_message}.create())
+    message "%{_prefix}% &m                                                      &m" to {_player}
+
+    #
+    # > Tell the player using the action bar to confirm or discard the comment.
+    # > Automatically discard after 200 seconds or if the player goes offline.
+    while metadata value "SC|Comment|%{_randomid}%" of {_player} is set:
+      send action bar "%{_prefix}% &lPlease &2&lconfirm&7&l or &4&ldiscard&7&l your comment." to {_player}
+      wait 1 second
+      if {_player} is online:
+        add 1 to {_autodiscard}
+      else:
+        add 200 to {_autodiscard}
+      if {_autodiscard} >= 200:
+        delete metadata value "SC|Comment|%{_randomid}%" of {_player}
+    #
+    # > Reset the action bar of the player once this proces stops.
+    send action bar " " to {_player}
+
+  #
+  # > If the input is a decision that has been registered before.
+  else:
+
+    #
+    # > Get the needed values into local variables and clear out the global
+    # > metadata storage for that data.
+    set {_comment} to metadata value "SC|Comment|%{_input::1}%" of {_player}
+    delete metadata value "SC|Comment|%{_input::1}%" of {_player}
+
+    #
+    # > If the input entry 2 of the list is "D", the player wants to discard.
+    if {_input::2} is "D":
+      message "%getChatPrefix()% You discarded the comment." to {_player}
+      stop
+
+    #
+    # > Start a process to check if the player can broadcast
+    # > transactions to the Steem blockchain using the key of
+	# > the Minecraft server.
+    CompleteSteemSyncedCheck({_player})
+    while CompleteSteemSyncedCheckResult({_player}) is "wait":
+      wait 1 tick
+
+    #
+    # > If the player is allowed to broadcast, the {_steemname}
+    # > variable is set to the Steem wallet name of the player.
+    set {_steemname} to CompleteSteemSyncedCheckResult({_player})
+    if {_steemname} is false:
+      stop
+
+    #
+    # > Get a random uuid to check the response of the transaction later.
+    set {_txuuid} to getRandomUUID()
+	
+    createComment({_txuuid},{_steemname},{_comment},{_parentauthor},{_parentpermlink},["steemcraft"],"Comment")
+
+    while getSteemResponse({_txuuid}) is "wait":
+      wait 1 tick
+
+    if getSteemResponse({_txuuid}) is "done":
+      message "%getChatPrefix()% Your comment has been posted." to {_player}
+    else:
+      message "%getChatPrefix()% A error occured: %getSteemResponse({_txuuid})%" to {_player}
