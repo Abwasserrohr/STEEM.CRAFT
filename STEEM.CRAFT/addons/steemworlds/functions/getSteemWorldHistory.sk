@@ -10,6 +10,7 @@ import:
   eu.bittrade.libs.steemj.base.models.Permlink
   eu.bittrade.libs.steemj.SteemJ
   eu.bittrade.libs.steemj.base.models.operations.CommentOperation
+  java.lang.Integer
 
 #
 # > Function - getSteemWorldHistory
@@ -75,7 +76,6 @@ function getSteemWorldHistoryAsync(request:object):
     #
     # > Get the history of the account from Steem.
     set {_history} to {_SteemJ}.getAccountHistory({_account},{_start},{_limit})
-
     #
     # > Get the keys of the HashMap and convert them into a Skript list to loop.	
     loop ...{_history}.keySet():
