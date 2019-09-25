@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds/gui.sk v0.0.9
+# steemworlds/gui.sk v0.0.10
 # ==============
 # steemworlds/gui.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -585,7 +585,9 @@ function openSteemWorldHistoryMenu(world:world,site:number,player:player,init:bo
       # > Getting the history data from steem can take some time, which is why it is done in a thread.
       while getSteemWorldHistoryResult({_steemusername},"%{_world}%") is "wait":
         wait 1 tick
-      
+
+      saveGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"lastupdate", {_c}.getLastUpdate().getDateTimeAsInt())
+
       #
       # > The waiting is over, stop the waiting menu.
       waitSteemWorldmenu({_player},false)
