@@ -160,4 +160,4 @@ function ViewSteemCommentReplies(player:player,author:text,permlink:text,site:nu
     #
     # > Add a item which allows the player to get back to the
     # > previous menu. In this case, the steem world main menu.
-    setguiitem({_player},36, {_backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldMainMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
+    setguiitem({_player},36, {_backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldMainMenu(""%{_player}'s world%"" parsed as world, ""%{_player}%"" parsed as player)")
