@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds/gui.sk v0.0.10
+# steemworlds/gui.sk v0.0.11
 # ==============
 # steemworlds/gui.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -30,6 +30,8 @@ function openSteemWorldMainMenu(world:world,player:player):
   else:
     opengui({_player},27,"&l%{_worldowner}%'s world")
 
+  set {_permlink} to "re-steemcraft-%{_world}%"
+
   #
   # > Cover all slots to prevent item loss, since players could put items into empty slots.
   set {_bgitem} to scswGetConfig("backgrounditem")
@@ -42,7 +44,7 @@ function openSteemWorldMainMenu(world:world,player:player):
   setguiitem({_player},10, {_votesitem},1, "&rVotes","&7This feature is going to be\n&7added in a upcoming version.","")
 
   set {_commentitem} to scswGetConfig("commentsitem")
-  setguiitem({_player},11, {_commentitem},1, "&rComments","&7This feature is going to be\n&7added in a upcoming version.","")
+  setguiitem({_player},11, {_commentitem},1, "&rComments","&7View comments about your\n&7worlds by others here.","ViewSteemCommentReplies(""%{_player}%"" parsed as player,""%{_worldowner}%"",""%{_permlink}%"",1)")
 
   set {_historyitem} to scswGetConfig("historyitem")
   setguiitem({_player},12, {_historyitem},1, "&rWorld history","&7View and load older versions\n&7of this world here.","openSteemWorldHistoryMenu(""%{_world}%"" parsed as world, 1, ""%{_player}%"" parsed as player)")
