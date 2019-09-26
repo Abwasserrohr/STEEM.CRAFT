@@ -6,9 +6,9 @@
 # ==============
 
 import:
+  org.bukkit.Bukkit
   org.bukkit.boss.BarStyle
   org.bukkit.boss.BarColor
-  org.bukkit.Bukkit
 
 #
 # > Function - createBossBar
@@ -19,22 +19,8 @@ import:
 # > [<text>] bossbar segments - Options: "solid","6","10","12","20"
 function createBossBar(title:text,barcolor:text="white",barstyle:text="solid") :: object:
   #
-  # > Creates a bar color to the boxx bar. This is done to allow
-  # > the server operator easily calling the function with text.
-  if {_barcolor} is "blue":
-    set {_bc} to BarColor.BLUE!
-  else if {_barcolor} is "green":
-    set {_bc} to BarColor.GREEN!
-  else if {_barcolor} is "pink":
-    set {_bc} to BarColor.PINK!
-  else if {_barcolor} is "purple":
-    set {_bc} to BarColor.PURPLE!
-  else if {_barcolor} is "red":
-    set {_bc} to BarColor.RED!
-  else if {_barcolor} is "white":
-    set {_bc} to BarColor.WHITE!
-  else if {_barcolor} is "yellow":
-    set {_bc} to BarColor.YELLOW!
+  # > Creates a bar color for the boss bar.
+  set {_bc} to BarColor.valueOf({_barcolor}.toUpperCase())
 
   #
   # > Creates a bar style to the boss bar. This is done to allow
