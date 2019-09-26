@@ -1,0 +1,39 @@
+#
+# ==============
+# steemworlds/events/SaveSteemWorldLocation.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Event - on join
+# > Teleports the player back to the original location, if the player
+# > logged out within a Steem world or got disconnected due to server 
+# > stop.
+on join:
+  set {_username} to getStorageData("steemworlds-players",player,"lastusername")
+  if {_username} is set:
+    if {_username} is not "":
+      set {_worldname} to getStorageData("steemworlds-players",player,"lastworldname")
+
+      VisitSteemWorld(player,{_username},{_worldname})
+      wait 1 second
+
+      set {_loc} to getStorageData("steemworlds-players",player,"lastloc")
+
+      saveStorageData("steemworlds-players",player,"lastloc","")
+      saveStorageData("steemworlds-players",player,"lastusername","")
+      saveStorageData("steemworlds-players",player,"lastworldname","")
+
+      teleport player to {_loc}
+
+#
+# > Event - on quit
+# > If the player disconnects on a Steem world, store the author, name
+# > of the world and the location to load and teleport the player back
+# > to the location. Otherwise, the player would fall into the void.
+on quit:
+  if "%player's world%" contains "steemworlds-":
+    set {_world} to "%player's world%"
+    set {_data::*} to {_world} split at "-"
+    saveStorageData("steemworlds-players",player,"lastusername",{_data::2})
+    saveStorageData("steemworlds-players",player,"lastworldname",{_data::3})
+    saveStorageData("steemworlds-players",player,"lastloc",player's location)
