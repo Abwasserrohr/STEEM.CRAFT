@@ -39,4 +39,4 @@ command /steem [<text>] [<text>] [<text>] [<text>]:
       if arg-3 or arg-2 is not set:
         message "%getChatPrefix()% /steem replies <author> <permlink>"
         stop
-      ViewSteemCommentReplies(player,arg-2,arg-3)	  
+      ViewSteemCommentReplies(player,arg-2,arg-3,1)	  
