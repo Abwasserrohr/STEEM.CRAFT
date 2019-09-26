@@ -374,57 +374,55 @@ function SaveSteemWorld(player:player):
       #
       # > Tell the player about the current status of/ the world broadcasting.
       {_bossbar}.setTitle("&lBroadcasting chunks...")
-      set {_progress} to (({_loopnumber} * {_pdone})/100)/2
+      set {_progress} to (({_loopnumber} * {_pdone})/100)/1.1
       {_bossbar}.setProgress({_progress})
-    
-    if {_transactionhappened} is set:
-      #
-      # > Tell the player that the world has been saved and that it needs to wait
-      # > until the transactions are consensus, since I currently can't get the block
-      # > number of the transaction directly.
-      set {_timer} to 80
-      loop {_timer} times:
-        add 0.005 to {_progress}
-        {_bossbar}.setTitle("&lWait &6&l%{_timer}%&f&l seconds...")
-        {_bossbar}.setProgress({_progress})
-        remove 1 from {_timer}
-        wait 1 second
-    else:
-      set {_progress} to 0.90
+    set {_objectMapper} to new ObjectMapper()
+
+    {_bossbar}.setTitle("&lChecking chunks...")
+
+    wait 5 seconds
+    set {_doneheadblocknumber} to getHeadBlockNumber()
+    set {_loopblock} to {_startHeadBlockNumber}
+	
+
+    while {_searchdone} is not set:
+      if {_loopblock} is {_doneheadblocknumber}:
+        set {_searchdone} to true
+
+      set {_id} to getRawBlock({_loopblock})
+      while CustomSteemRequestResult({_id}) is "wait":
+        wait 1 tick
+      set {_block} to CustomSteemRequestResult({_id})
+      set {_transactions::*} to ...try {_block}.get("result").get("transactions")
+      if {_transactions::*} is set:
+        loop {_transactions::*}:
+          loop ...loop-value.get("operations"):
+            if loop-value-2.get(0).textValue() is "custom_json":
+              set {_json} to {_objectMapper}.readTree(loop-value-2.get(1).get("json").textValue())
+              if {_json}.get("w").textValue() is {_shortworld}:
+                set {_x} to {_json}.get("x")
+                set {_z} to {_json}.get("z")
+                set {_i} to {_json}.get("i")
+                #
+                # > Store the block numbers within the comment custom json.
+                set {_chunkpart} to {_objectMapper}.createObjectNode()
+                {_chunkpart}.put("x", {_x})
+                {_chunkpart}.put("z", {_z})
+                {_chunkpart}.put("i", {_i})
+                {_chunkpart}.put("b", "%{_loopblock}%")
+                {_arraynode}.add({_chunkpart})
+
+        #
+        # > Increase the block number only, if the transactions variable is set.
+        add 1 to {_loopblock}
+ 
+
+    set {_progress} to 0.90
 
     #
     # > Tell the player that the world is now being broadcasted.
     {_bossbar}.setTitle("&lBroadcasting world...")
     {_bossbar}.setProgress({_progress})
-
-    #
-    # > Go through the last 1000 transactions of the user.
-    set {_history} to getAccountHistory({_steemname},-1,1000)
-
-    #
-    # > Loop the transactions and find transactions that
-    # > happened since beginning of this process and filter
-    # > the needed block numbers out.
-    loop ...{_history}.keySet():
-      set {_h} to {_history}.get(loop-value)
-      if {_h}.getBlock() >= {_startHeadBlockNumber}:
-        if try {_h}.getOp().getJson() is set:
-          set {_json} to "%{_h}.getOp().getJson()%"
-          if {_json} contains """w"":""%{_shortworld}%":
-            set {_objectMapper} to new ObjectMapper()
-            set {_jsonNode} to {_objectMapper}.readTree({_json})
-            set {_x} to {_jsonNode}.get("x")
-            set {_z} to {_jsonNode}.get("z")
-            set {_i} to {_jsonNode}.get("i")
-
-            #
-            # > Store the block numbers within the comment custom json.
-            set {_chunkpart} to {_objectMapper}.createObjectNode()
-            {_chunkpart}.put("x", {_x})
-            {_chunkpart}.put("z", {_z})
-            {_chunkpart}.put("i", {_i})
-            {_chunkpart}.put("b", "%{_h}.getBlock()%")
-            {_arraynode}.add({_chunkpart})
 
     #
     # > Once the chunk block numbers have been collected, 
