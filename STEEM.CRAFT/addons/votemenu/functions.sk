@@ -1,6 +1,6 @@
 #
 # ==============
-# votemenu/functions.sk v0.0.1
+# votemenu/functions.sk v0.0.2
 # ==============
 # votemenu/functions.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -69,9 +69,7 @@ function openSteemVoteMenu(player:player,author:text,permlink:text,advanced:bool
   set {_objectMapper} to new ObjectMapper()
 
   set {_steemauthormeta} to {_objectMapper}.readTree({_steemauthor}.getJsonMetadata())
-
-  set {_authorplayer} to {_steemauthormeta}.get("profile").get("uuid").textValue() parsed as offline player
-
+  set {_authorplayer} to {_steemauthormeta}.get("profile").get("minecraftuuid").textValue() parsed as offline player
   #
   # > The current menu is just 27 slots big, as there are not that much things to display yet.
   opengui({_player},27,"&rVote &8&l>> &r%{_author}%")
@@ -85,12 +83,13 @@ function openSteemVoteMenu(player:player,author:text,permlink:text,advanced:bool
   # > Currently, there is no advanced voting slider available.
   set {_advanced} to false
   if {_advanced} is false:
-    setguiitem({_player},15, {@upvoteitem},1, "&r&2&lNice!","","executeSteemMenuVote(""%{_player}%"" parsed as player,""%{_author}%"",""%{_permlink}%"",100)")
+    setguiitem({_player},15, {@upvoteitem},1, "&r&2&lLike","","executeSteemMenuVote(""%{_player}%"" parsed as player,""%{_author}%"",""%{_permlink}%"",100)",true)
 
     if {_authorplayer} is set:
-      setguiitem({_player},13, {_authorplayer}'s skull,1, "&r%{_authorplayer}%","")
+      if "%{_authorplayer}%" is not "null":
+        setguiitem({_player},13, {_authorplayer}'s skull,1, "&r%{_authorplayer}%","")
 
-    setguiitem({_player},11, {@downvoteitem},1, "&r&4&lBad!","","executeSteemMenuVote(""%{_player}%"" parsed as player,""%{_author}%"",""%{_permlink}%"",-100)")
+    setguiitem({_player},11, {@downvoteitem},1, "&r&4&lDislike","","executeSteemMenuVote(""%{_player}%"" parsed as player,""%{_author}%"",""%{_permlink}%"",-100)",true)
 
 #
 # > Function - executeSteemMenuVote
@@ -102,13 +101,14 @@ function openSteemVoteMenu(player:player,author:text,permlink:text,advanced:bool
 # > <number>the percentage of the vote (ranges between -100 and 1000)
 function executeSteemMenuVote(player:player,author:text,permlink:text,percentage:number):
   set {_processID} to getRandomUUID()
-
   scBroadcastSteemVote({_player},{_author},{_permlink},{_percentage},{_processID})
   wait 1 tick
   while getSteemResponse({_processID}) is "wait":
-    wait 1 tick
+    send action bar "%getChatPrefix()% &7Broadcasting vote..." to {_player}
+    wait 5 ticks
 
   if getSteemResponse({_processID}) is "done":
     message "%getChatPrefix()% Your vote has been applied." to {_player}
   else:
     message "%getChatPrefix()% Error: %getSteemResponse({_processID})%" to {_player}
+  send action bar " " to {_player}
