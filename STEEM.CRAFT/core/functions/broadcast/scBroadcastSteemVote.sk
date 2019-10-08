@@ -33,7 +33,7 @@ function scBroadcastSteemVote(player:offline player,account:text,permlink:text,p
 
   #
   # > Wait until the txvote variable is free to use.
-  while {steemsk::txvote} is set:
+  while metadata value "txvote" of getDummy() is set:
     wait 1 tick
 
   #
@@ -45,7 +45,7 @@ function scBroadcastSteemVote(player:offline player,account:text,permlink:text,p
   {_tx}.put("permlink",{_permlink})
   {_tx}.put("percentage",{_percentage})
   {_tx}.put("processID",{_processID})
-  set {steemsk::txvote} to {_tx}
+  set metadata value "txvote" of getDummy() to {_tx}
 
   #
   # > Run the creation of the comment in a separate thread.
@@ -54,22 +54,21 @@ function scBroadcastSteemVote(player:offline player,account:text,permlink:text,p
   #
   # > Once the function is called within a thread, it can't access
   # > to local variables, this is why a global variable is used.
-  scBroadcastAsyncSteemVote({steemsk::txvote})
+  scBroadcastAsyncSteemVote(metadata value "txvote" of getDummy())
 
 #
 # > Function - scBroadcastAsyncSteemVote
 # > Tries to broadcast a vote to Steem while being executed in a thread.
 # > Parameters:
 # > <HashMap>a HashMap that has been created by the scBroadcastSteemVote function
-function scBroadcastAsyncSteemVote(txvote:object):
-  set {_vote} to {steemsk::txvote}
-  delete {steemsk::txvote}
+function scBroadcastAsyncSteemVote(vote:object):
+  delete metadata value "txvote" of getDummy()
   
-  set {_player} to {_tx}.get("player")
-  set {_account} to {_tx}.get("account")
-  set {_permlink} to {_tx}.get("permlink")
-  set {_percentage} to {_tx}.get("percentage")
-  set {_processID} to {_tx}.get("processID")
+  set {_player} to {_vote}.get("player")
+  set {_account} to {_vote}.get("account")
+  set {_permlink} to {_vote}.get("permlink")
+  set {_percentage} to {_vote}.get("percentage")
+  set {_processID} to {_vote}.get("processID")
 
   set {_SteemJ} to new SteemJ()
   
