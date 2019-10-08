@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds/gui.sk v0.0.11
+# steemworlds/gui.sk v0.0.12
 # ==============
 # steemworlds/gui.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -41,7 +41,7 @@ function openSteemWorldMainMenu(world:world,player:player):
   #
   # > Add inventory menu content.
   set {_votesitem} to scswGetConfig("votesitem")
-  setguiitem({_player},10, {_votesitem},1, "&rVotes","&7This feature is going to be\n&7added in a upcoming version.","")
+  setguiitem({_player},10, {_votesitem},1, "&rVotes","&7This feature is going to be\n&7added in a upcoming version.","ViewSteemVotes(""%{_player}%"" parsed as player,""%{_worldowner}%"",""%{_permlink}%"",1)")
 
   set {_commentitem} to scswGetConfig("commentsitem")
   setguiitem({_player},11, {_commentitem},1, "&rComments","&7View comments about your\n&7worlds by others here.","ViewSteemCommentReplies(""%{_player}%"" parsed as player,""%{_worldowner}%"",""%{_permlink}%"",1)")
