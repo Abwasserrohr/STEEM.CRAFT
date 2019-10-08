@@ -1,0 +1,22 @@
+#
+# ==============
+# SetSteemWorldGamerule.sk
+# ==============
+# SetSteemWorldGamerule.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  org.bukkit.GameRule
+
+#
+# > Function - SetSteemWorldGamerule
+# > Changes the gamerule of the world to the specified setting.
+# > Parameters:
+# > <world>the world
+# > <text>the vanilla gamerule name which should be changed
+# > <setting>the value to which the gamerule should be changed
+function SetSteemWorldGamerule(world:world,gamerule:text,setting:object):
+  set {_gameruleobj} to GameRule.getByName({_gamerule})
+  {_world}.setGameRule({_gameruleobj},{_setting})
+
+  saveGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"%{_gamerule}%", "%{_setting}%")

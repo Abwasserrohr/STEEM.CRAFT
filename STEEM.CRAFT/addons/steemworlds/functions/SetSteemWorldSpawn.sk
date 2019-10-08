@@ -1,0 +1,16 @@
+#
+# ==============
+# SetSteemWorldSpawn.sk
+# ==============
+# SetSteemWorldSpawn.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SetSteemWorldSpawn
+# > Sets a new spawn for the defined steemworld.
+# > Parameters:
+# > <world>the steem world which should be changed
+# > <location>the new spawn location of the world
+function SetSteemWorldSpawn(world:world,l:location):
+  set {_l} to serializelocation({_l})
+  saveGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"spawn",{_l})

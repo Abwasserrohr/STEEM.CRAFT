@@ -1,0 +1,20 @@
+#
+# ==============
+# SetSteemWorldDifficulty.sk
+# ==============
+# SetSteemWorldDifficulty.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  org.bukkit.Difficulty
+
+#
+# > Function - SetSteemWorldDifficulty
+# > Sets the difficulty of the steem world.
+# > Parameters:
+# > <world>the world
+# > <text>the difficulty name as a string. Either peaceful, easy, normal or hard
+function SetSteemWorldDifficulty(world:world,difficulty:text):
+  set {_difficultyenum} to Difficulty.valueOf({_difficulty}.toUpperCase())
+  {_world}.setDifficulty({_difficultyenum})
+  saveGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"difficulty",{_difficulty})

@@ -1,0 +1,163 @@
+#
+# ==============
+# ViewSteemCommentReplies.sk
+# ==============
+# ViewSteemCommentReplies.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+  java.util.ArrayList
+
+#
+# > Function - ViewSteemCommentReplies
+# > Opens a menu that shows all replies to a comment, once a player
+# > clicks on a comment, it will be opened in chat to allow voting, 
+# > replying or going into deeper replies.
+# > Parameters:
+# > <player> The player who wants to view the replies.
+# > <text> The author of the comment.
+# > <text> The permlink of the comment to which replies should be shown.
+# > <number> A site, if many comments have been made, multiple sites are used.
+function ViewSteemCommentReplies(player:player,author:text,permlink:text,site:number=1):
+  
+  #
+  # > Open a waiting page to signalize the player that the process is going on.
+  waitSteemWorldmenu({_player})
+  
+  #
+  # > The ObjectMapper is required to create JSON.
+  set {_mapper} to new ObjectMapper()
+
+  #
+  # > Create a custom Steem request to get content replies.
+  set {_request} to HashMap()
+  set {_params} to new ArrayList()
+  {_params}.add({_author})
+  {_params}.add({_permlink})
+
+  {_request}.put("jsonrpc", "2.0")
+  {_request}.put("method", "condenser_api.get_content_replies")
+  {_request}.put("params", {_params})
+  {_request}.put("id", 1)
+
+  set {_requestID} to getRandomUUID()
+  CustomSteemRequest({_mapper}.writeValueAsString({_request}),{_requestID})
+
+  #
+  # > Wait for the api node to return a result.
+  while CustomSteemRequestResult({_requestID}) is "wait":
+    wait 1 tick
+
+  set {_response} to CustomSteemRequestResult({_requestID})
+
+  set {_replies} to {_response}.get("result")
+
+  #
+  # > If the size of the replies is 0, then there are no comments to show.
+  if {_replies}.size! is 0:
+    message "%getChatPrefix()% There are no comments." to {_player}
+    stop
+  close {_player}'s inventory
+
+  #
+  # > Set the maximum amount of versions that should be displayed
+  # > per site. For a better look, use 21 versions per site.
+  # > These settings can be ajusted but will change the layout of
+  # > the comment replies menu a lot.
+  set {_sizelimit} to 21
+  set {_slot} to 9
+  set {_slotskipat} to 8
+  set {_slotskipamount} to 2
+
+  opengui({_player},45,"&lComments")
+
+  #
+  # > Cover all inventory menu slots with a background item
+  # > to prevent item loss for players.
+  set {_bgitem} to scswGetConfig("backgrounditem")
+  loop 45 times:
+    setguiitem({_player},loop-number - 1, {_bgitem},1, " ","")
+
+  set {_enableditem} to scswGetConfig("enableditem")
+  set {_backwarditem} to scswGetConfig("backwarditem")
+  set {_backitem} to scswGetConfig("backitem")
+  set {_forwarditem} to scswGetConfig("forwarditem")
+
+  loop ...{_replies}:
+    set {_commentbody} to loop-value.get("body").textValue()
+    set {_commentauthor} to loop-value.get("author").textValue()
+    set {_commentpermlink} to loop-value.get("permlink").textValue()
+    
+    #
+    # > Count up for every comment.
+    add 1 to {_loopid}
+	
+    #
+    # > Depending on the current site, calculate at which entry the site ends.
+    set {_siteend} to {_sizelimit}*{_site}
+
+    #
+    # > Depending on the end of the site, calculate at which entry the site starts.
+    set {_sitestart} to {_siteend} - {_sizelimit}
+	
+    #
+    # > Only show entries that are higher than the site start variable
+    # > and equal or lower than the site end variable.
+    if {_loopid} > {_sitestart}:
+      if {_loopid} <= {_siteend}:
+
+        #
+        # > Skip some slots every predefined amount of slots for improve
+        # > the layout of the menu.
+        add 1 to {_nextslotskip}
+        if {_nextslotskip} is {_slotskipat}:
+          add {_slotskipamount} to {_slot}
+          set {_nextslotskip} to 1
+
+        #
+        # > To not overwrite any slots, increase the current slot always by 1.
+        add 1 to {_slot}
+        set {_commentbody::*} to {_commentbody} split at ""
+        set {_commentbody} to ""
+
+        delete {_bodyloop}
+        delete {_done}
+        loop {_commentbody::*}:
+          if {_done} is not set:
+            add 1 to {_bodyloop}
+            set {_add} to loop-value-2
+            set {_commentbody} to "%{_commentbody}%%{_add}%"
+            if {_bodyloop} is 30:
+              set {_commentbody} to "%{_commentbody}%\n&7"
+              delete {_bodyloop}
+            if length of {_commentbody} > 300:
+              set {_commentbody} to "%{_commentbody}%...&7"
+              set {_done} to true
+        set {_commentbody} to "%{_commentbody}%\n&7Click here to get more\n&7interactions with this comment."
+
+        setguiitem({_player},{_slot}, book,1, "&r&l%{_commentauthor}%:","&7%{_commentbody}%","make ""%{_player}%"" parsed as player execute ""/steem view %{_commentauthor}% %{_commentpermlink}%""",true)
+
+      #
+      # > If the id of this entry is bigger than the site end variable,
+      # > we have to add a item which allows to go to the next page.
+      else:
+        setguiitem({_player},26, {_forwarditem},1, "&r&lSite %{_site}+1%","","ViewSteemCommentReplies(""%{_player}%"" parsed as player, ""%{_author}%"", ""%{_permlink}%"", %{_site}+1%)")
+
+        #
+        # > Since we're done here, stop this loop.
+        stop loop
+
+  #
+  # > If we're on a site that is higher than 1, add a item
+  # > which allows to get back to the previous page (site).
+  if {_site} > 1:
+    setguiitem({_player},18, {_backwarditem},1, "&r&lSite %{_site}-1%","","ViewSteemCommentReplies(""%{_player}%"" parsed as player, ""%{_author}%"", ""%{_permlink}%"", %{_site}-1%)")
+
+  #
+  # > Show a back to steemworlds menu link for steem based world comments.
+  if {_permlink} contains "re-steemcraft":
+    #
+    # > Add a item which allows the player to get back to the
+    # > previous menu. In this case, the steem world main menu.
+    setguiitem({_player},36, {_backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldMainMenu(""%{_player}'s world%"" parsed as world, ""%{_player}%"" parsed as player)")

@@ -1,0 +1,147 @@
+#
+# ==============
+# ViewSteemVotes.sk
+# ==============
+# ViewSteemVotes.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+  java.util.ArrayList
+
+#
+# > Function - ViewSteemVotes
+# > Opens a menu that shows all votes of the defined post.
+# > Parameters:
+# > <player> The player who wants to view the votes.
+# > <text> The author of the post.
+# > <text> The permlink of the post to which the votes should be shown.
+# > <number> A site, if many votes have been made, multiple sites are used.
+function ViewSteemVotes(player:player,author:text,permlink:text,site:number=1):
+  
+  #
+  # > Open a waiting page to signalize the player that the process is going on.
+  waitSteemWorldmenu({_player})
+  
+  #
+  # > The ObjectMapper is required to create JSON.
+  set {_mapper} to new ObjectMapper()
+
+  #
+  # > Create a custom Steem request to get content replies.
+  set {_request} to HashMap()
+  set {_params} to new ArrayList()
+  {_params}.add({_author})
+  {_params}.add({_permlink})
+
+  {_request}.put("jsonrpc", "2.0")
+  {_request}.put("method", "condenser_api.get_active_votes")
+  {_request}.put("params", {_params})
+  {_request}.put("id", 1)
+
+  set {_requestID} to getRandomUUID()
+  CustomSteemRequest({_mapper}.writeValueAsString({_request}),{_requestID})
+
+  #
+  # > Wait for the api node to return a result.
+  while CustomSteemRequestResult({_requestID}) is "wait":
+    wait 1 tick
+
+  set {_response} to CustomSteemRequestResult({_requestID})
+
+  set {_votes} to {_response}.get("result")
+  close {_player}'s inventory
+  #
+  # > If the size of the replies is 0, then there are no votess to show.
+  if {_votes}.size() is 0:
+    message "%getChatPrefix()% There are no votes." to {_player}
+    stop
+
+  #
+  # > Set the maximum amount of versions that should be displayed
+  # > per site. For a better look, use 21 versions per site.
+  # > These settings can be ajusted but will change the layout of
+  # > the votes menu a lot.
+  set {_sizelimit} to 21
+  set {_slot} to 9
+  set {_slotskipat} to 8
+  set {_slotskipamount} to 2
+
+  opengui({_player},45,"&lVotes")
+
+  #
+  # > Cover all inventory menu slots with a background item
+  # > to prevent item loss for players.
+  set {_bgitem} to scswGetConfig("backgrounditem")
+  loop 45 times:
+    setguiitem({_player},loop-number - 1, {_bgitem},1, " ","")
+
+  set {_enableditem} to scswGetConfig("enableditem")
+  set {_backwarditem} to scswGetConfig("backwarditem")
+  set {_backitem} to scswGetConfig("backitem")
+  set {_forwarditem} to scswGetConfig("forwarditem")
+
+  loop ...{_votes}:
+
+    set {_votepercent} to loop-value.get("percent").doubleValue()
+    set {_votepercent} to {_votepercent} / 100
+    set {_voter} to loop-value.get("voter").textValue()
+    
+    #
+    # > Count up for every vote.
+    add 1 to {_loopid}
+	
+    #
+    # > Depending on the current site, calculate at which entry the site ends.
+    set {_siteend} to {_sizelimit}*{_site}
+
+    #
+    # > Depending on the end of the site, calculate at which entry the site starts.
+    set {_sitestart} to {_siteend} - {_sizelimit}
+	
+    #
+    # > Only show entries that are higher than the site start variable
+    # > and equal or lower than the site end variable.
+    if {_loopid} > {_sitestart}:
+      if {_loopid} <= {_siteend}:
+
+        #
+        # > Skip some slots every predefined amount of slots for improve
+        # > the layout of the menu.
+        add 1 to {_nextslotskip}
+        if {_nextslotskip} is {_slotskipat}:
+          add {_slotskipamount} to {_slot}
+          set {_nextslotskip} to 1
+
+        #
+        # > To not overwrite any slots, increase the current slot always by 1.
+        add 1 to {_slot}
+
+        delete {_bodyloop}
+        delete {_done}
+
+        setguiitem({_player},{_slot}, book,1, "&r&l%{_voter}%:","&7%{_votepercent}%%%","",false)
+
+      #
+      # > If the id of this entry is bigger than the site end variable,
+      # > we have to add a item which allows to go to the next page.
+      else:
+        setguiitem({_player},26, {_forwarditem},1, "&r&lSite %{_site}+1%","","ViewSteemVotes(""%{_player}%"" parsed as player, ""%{_author}%"", ""%{_permlink}%"", %{_site}+1%)")
+
+        #
+        # > Since we're done here, stop this loop.
+        stop loop
+
+  #
+  # > If we're on a site that is higher than 1, add a item
+  # > which allows to get back to the previous page (site).
+  if {_site} > 1:
+    setguiitem({_player},18, {_backwarditem},1, "&r&lSite %{_site}-1%","","ViewSteemVotes(""%{_player}%"" parsed as player, ""%{_author}%"", ""%{_permlink}%"", %{_site}-1%)")
+
+  #
+  # > Show a back to steemworlds menu link for steem based world votes.
+  if {_permlink} contains "re-steemcraft":
+    #
+    # > Add a item which allows the player to get back to the
+    # > previous menu. In this case, the steem world main menu.
+    setguiitem({_player},36, {_backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldMainMenu(""%{_player}'s world%"" parsed as world, ""%{_player}%"" parsed as player)")

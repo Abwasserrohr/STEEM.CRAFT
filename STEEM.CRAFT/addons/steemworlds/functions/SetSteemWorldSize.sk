@@ -1,0 +1,20 @@
+#
+# ==============
+# SetSteemWorldSize.sk
+# ==============
+# SetSteemWorldSize.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SetSteemWorldSize
+# > Sets the world border of the world to the defined size.
+# > The size is multiplied by 32.
+# > Parameters:
+# > <world>the steem world which should be changed
+# > <number>the new size of the world, 1 = 32x32 size.
+function SetSteemWorldSize(world:world,size:number):
+  set {_wb} to {_world}.getWorldBorder()
+  saveGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"size",{_size})
+  {_wb}.setCenter(spawn of {_world})
+  {_wb}.setWarningDistance(0)
+  {_wb}.setSize({_size}*32)

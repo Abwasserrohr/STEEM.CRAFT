@@ -1,0 +1,84 @@
+#
+# ==============
+# steemworlds.sk
+# ==============
+# steemworlds.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Command - /steemworlds [ /sw, /sc ]
+# > The main command for all functions.
+# > Opens a GUI menu if no arguments have
+# > been added to the command.
+command /steemworlds [<text>] [<text>] [<text>]:
+  aliases: /sw, /sc, /steemworld
+  trigger:
+    # > == Help
+    if arg-1 is "?" or "help":
+      printSteemWorldHelp(player,arg-2)
+      stop
+    # > == Biome
+    if arg-1 is "biome":
+      if CheckSteemWorldPermission(player's world,player,"settings",true) is true:
+        set {_biome} to arg-2
+        if {_biome} is not set:
+          set {_biome} to "PLAINS"
+        SetSteemWorldBiome(player's world, {_biome}, player)
+      stop
+    # > == Size
+    if arg-1 is "size":
+      if CheckSteemWorldPermission(player's world,player,"settings",true) is true:
+        set {_size} to arg-2 parsed as number
+        #
+        # > If the input was no text, send a custom message which
+        # > sends how the command should be used.
+        if {_size} is not a number:
+          message "%getChatPrefix()% /sw size <number>"
+          stop
+        #
+        # > Don't allow a size smaller than 1.
+        if {_size} < 1:
+          set {_size} to 1
+        SetSteemWorldSize(player's world,round({_size}))
+        stop
+    # > == Set World Settings
+    if arg-1 is "set":
+      if CheckSteemWorldPermission(player's world,player,"settings",true) is true:
+        if arg-2 is "spawn":
+          SetSteemWorldSpawn(player's world,player's location)
+          message "%getChatPrefix()% The spawn of this world has been changed."
+          stop
+      message "%getChatPrefix()% /sw set spawn"
+    # > == Save World
+    if arg-1 is "save":
+      if CheckSteemWorldPermission(player's world,player,"onlyowner",true) is true:
+        $ thread
+        SaveSteemWorld(player)
+        stop
+    # > == Load World
+    if arg-1 is "load":
+      if CheckSteemWorldPermission(player's world,player,"onlyowner",true) is true:
+        set {_name} to GetSteemWorldShortName(player's world)
+        set {_account} to getGeneralStorageData("steemworlds",{_name},"steemaccount")
+        set {_blocknumber} to arg-2 parsed as number
+        if {_blocknumber} is not a number:
+          set {_blocknumber} to 0
+        LoadSteemWorld({_account},"%player's world%",player,{_blocknumber})
+        stop
+    # > == Visit a world
+    if arg-1 is "visit" or "home":
+      VisitSteemWorld(player,arg-2,arg-3)
+      stop
+    if arg-1 is "comment" or "c":
+      if arg-2 is not set:
+        message "%getChatPrefix()% /sw c <comment>"
+        stop
+      if arg-3 is set:
+        CommentSteemWorld(player,"%arg-2% %arg-3%")
+      else:
+        CommentSteemWorld(player,arg-2)
+      stop
+    # > == World Menu
+    if "%player's world%" contains "steemworlds-":
+      openSteemWorldMainMenu(player's world, player)
+      stop

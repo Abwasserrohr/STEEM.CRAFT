@@ -1,0 +1,20 @@
+#
+# ==============
+# steemworlds/events/onServerCommandEvent.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  org.bukkit.event.server.ServerCommandEvent
+
+#
+# > Event - ServerCommandEvent
+# > Stops all commands which are executed by command blocks and
+# > command block minecarts and senders which might be able
+# > to send from a steem based world.
+on ServerCommandEvent:
+  if try event.getSender().getBlock() is set:
+    if "%event.getSender().getBlock().getWorld()%" contains "steemworlds-":
+      cancel event
+  else:
+    if "%event.getSender().getWorld()%" contains "steemworlds-":
+      cancel event

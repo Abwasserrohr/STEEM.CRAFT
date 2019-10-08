@@ -1,0 +1,135 @@
+#
+# ==============
+# getSteemWorldHistory.sk
+# ==============
+# getSteemWorldHistory.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  eu.bittrade.libs.steemj.base.models.AccountName
+  eu.bittrade.libs.steemj.base.models.Permlink
+  eu.bittrade.libs.steemj.SteemJ
+  eu.bittrade.libs.steemj.base.models.operations.CommentOperation
+  java.lang.Integer
+
+#
+# > Function - getSteemWorldHistory
+# > Gets the edit history for the defined steem username and world name.
+# > Parameters:
+# > <text>steem username
+# > <text>Steemworld name
+function getSteemWorldHistory(steemname:text,worldname:text):
+  set metadata value "SteemWorldHistory-%{_worldname}%" of getDummy() to "wait"
+  while metadata value "SteemWorldHistoryRequest" of getDummy() is set:
+    wait 1 tick
+  set metadata value "SteemWorldHistoryRequest" of getDummy() to [{_steemname},{_worldname}]
+  $ thread
+  getSteemWorldHistoryAsync(metadata value "SteemWorldHistoryRequest" of getDummy())
+
+#
+# > Function - getSteemWorldHistoryResult
+# > Gets the result of a edit history request.
+# > Parameters:
+# > <text>steem username
+# > <text>Steemworld name
+function getSteemWorldHistoryResult(steemname:text,worldname:text) :: object:
+  return metadata value "SteemWorldHistory-%{_worldname}%" of getDummy()
+
+#
+# > Function - getSteemWorldHistoryAsync
+# > Should be called in a thread to get the edit history of a world.
+# > Parameters:
+# > <ArrayList>[<text>steemname,<text>worldname]
+function getSteemWorldHistoryAsync(request:object):
+  delete metadata value "SteemWorldHistoryRequest" of getDummy()
+  set {_request::*} to ...{_request}
+  set {_steemname} to {_request::1}
+  set {_worldname} to {_request::2}
+
+  set {_account} to new AccountName({_steemname})
+  set {_SteemJ} to new SteemJ()
+
+  #
+  # > Create a permlink and get the world which should be stored there.
+  set {_searchedpermlink} to "re-steemcraft-%{_worldname}%"
+
+  set {_result} to {_steemj}.getContent({_account},new Permlink({_searchedpermlink}))
+
+  #
+  # > Get the creation date of the comment to stop searching for more
+  # > revisions once the creation date has been reached.
+  set {_creationdate} to {_result}.getCreated().getDateTimeAsInt()
+
+  set {_start} to -1
+  
+  #
+  # > This HashMap will hold all reversions of the world.
+  set {_revisions} to HashMap()
+  
+  #
+  # > We can get a maximum of 1000 transactions at a time.
+  set {_limit} to 1000
+  
+  #
+  # > Loop until the first creation post has been found.
+  while {_done} is not set:
+    #
+    # > Get the history of the account from Steem.
+    set {_history} to {_SteemJ}.getAccountHistory({_account},{_start},{_limit})
+    #
+    # > Get the keys of the HashMap and convert them into a Skript list to loop.	
+    loop ...{_history}.keySet():
+      #
+      # > The steem based worlds are stored in comments, look out for CommentOperation.
+      if {_history}.get(loop-value).getOp() is a instance of CommentOperation:
+        #
+        # > Not any comment that has been made is interesting for us, just go further if
+        # > the permlink matches with the seachred one.
+        if {_history}.get(loop-value).getOp().getPermlink().getLink() is {_searchedpermlink}:
+          #
+          # > Add the block number and metadata of this world to the revisions HashMap.
+          {_revisions}.put({_history}.get(loop-value).getBlock().intValue(),{_history}.get(loop-value).getTimestamp().getDateTimeAsInt())
+
+          #
+          # > If this transaction has reached or somehow even exceeded the creation date of the
+          # > first world save, stop here, since there will be no more revisions before the 
+          # > first creation (save) of the world.
+          if {_creationdate} >= {_history}.get(loop-value).getTimestamp().getDateTimeAsInt():
+            set {_done} to true
+
+      #
+      # > Warning: This is an explaination of how getAccountHistory can be used to
+      # > loop through all transactions from an account, if you know it already,
+      # > there is no reason to read it.
+      # > If we get the account history, every transaction will have an number which
+      # > will increase each time a new trasnsaction is made by the account, to search
+      # > through the account, we first started with -1, which gives us the latest
+      # > 1000 transactions of the account. To get the next 1000, we have to get the last
+      # > transaction number, here loop-value and decrease it by our limit, here 1000.
+      # > Since SteemJ wants Integers and Skript is not always trustworthy 
+      # > for the creation of new integers, Integer.valueOf() is used.
+      # > -------------------------------------------------------------------------------
+      # > Example: I have 20000 transactions in my account.
+      # > {_SteemJ}.getAccountHistory(new AccountName("Exampleuser"),-1,1000)
+      # > This will show the latest 1000 transactions by Exampleuser.
+      # > The returned HashMap has keys according to the transaction number of the user:
+      # > [20000,19999,19998,19997] and so on.
+      # > After Skript is done with looping, just take the last used value, 20000 in
+      # > our case and remove 1000 from it. If we remove 1000 from 20000, we have 19000.
+      # > Then, we can repeat the process until we have everything we searched for.
+      # > {_SteemJ}.getAccountHistory(new AccountName("Exampleuser"),19000,1000)
+      # > You see, we just take the last used key of the loop, remove 1000 (limit) and
+      # > call it again. Be sure to use integers in getAccountHistory.
+      # > -------------------------------------------------------------------------------
+      if {_lowestkey} is not set:
+        set {_lowestkey} to "%loop-value%" parsed as integer
+      else if "%loop-value%" parsed as integer is smaller than {_lowestkey}:
+        set {_lowestkey} to "%loop-value%" parsed as integer
+
+    set {_start} to Integer.valueOf({_lowestkey})
+  set metadata value "SteemWorldHistory-%{_worldname}%" of getDummy() to {_revisions}
+
+  #
+  # > Delete the history again after 5 seconds to not fill up the memory.
+  wait 5 seconds
+  delete metadata value "SteemWorldHistory-%{_worldname}%" of getDummy()

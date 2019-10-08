@@ -1,0 +1,723 @@
+#
+# ==============
+# steemworlds/gui.sk v0.0.12
+# ==============
+# steemworlds/gui.sk is part of the STEEM.CRAFT addons.
+# ==============
+# > gui allows players to open a menu which can execute
+# > steemworlds functions through it in an easy way.
+# ==============
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+  java.util.Date
+  java.util.ArrayList
+
+#
+# > Function - openSteemWorldMainMenu
+# > Opens a menu in which the player can get to other sub-menues.
+# > Parameters:
+# > <world>the menu has world specific content, select the right world
+# > <player>the player who wants too view the menu
+function openSteemWorldMainMenu(world:world,player:player):
+  
+  set {_worldname} to GetSteemWorldShortName({_world})
+  set {_worldowner} to getGeneralStorageData("steemworlds",{_worldname},"steemaccount")
+
+  # > The current menu is just 27 slots big, as there are not that much things to display yet.
+  if {_worldowner} is getSyncedAccount({_player}):
+    opengui({_player},27,"&lYour World")
+  else:
+    opengui({_player},27,"&l%{_worldowner}%'s world")
+
+  set {_permlink} to "re-steemcraft-%{_world}%"
+
+  #
+  # > Cover all slots to prevent item loss, since players could put items into empty slots.
+  set {_bgitem} to scswGetConfig("backgrounditem")
+  loop 27 times:
+    setguiitem({_player},loop-number - 1, {_bgitem},1, " ","")
+
+  #
+  # > Add inventory menu content.
+  set {_votesitem} to scswGetConfig("votesitem")
+  setguiitem({_player},10, {_votesitem},1, "&rVotes","&7This feature is going to be\n&7added in a upcoming version.","ViewSteemVotes(""%{_player}%"" parsed as player,""%{_worldowner}%"",""%{_permlink}%"",1)")
+
+  set {_commentitem} to scswGetConfig("commentsitem")
+  setguiitem({_player},11, {_commentitem},1, "&rComments","&7View comments about your\n&7worlds by others here.","ViewSteemCommentReplies(""%{_player}%"" parsed as player,""%{_worldowner}%"",""%{_permlink}%"",1)")
+
+  set {_historyitem} to scswGetConfig("historyitem")
+  setguiitem({_player},12, {_historyitem},1, "&rWorld history","&7View and load older versions\n&7of this world here.","openSteemWorldHistoryMenu(""%{_world}%"" parsed as world, 1, ""%{_player}%"" parsed as player)")
+
+  set {_settingsitem} to scswGetConfig("settingsitem")
+  setguiitem({_player},16, {_settingsitem},1, "&rSettings","&7Click here to open the\n&7settings for this world.","openSteemWorldSettingsMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
+
+#
+# > Function - openSteemWorldSettingsMenu
+# > Opens a menu in which the world settings can be changed.
+# > Parameters:
+# > <world>the world which should be affected by the setting changes
+# > <player>the player who wants to change the settings
+function openSteemWorldSettingsMenu(world:world,player:player):
+  #
+  # > Just call our main settings menu "Settings".
+  opengui({_player},36,"&lSettings")
+  
+  #
+  # > Cover all inventory menu slots with a background item
+  # > to prevent item loss for players.
+  set {_bgitem} to scswGetConfig("backgrounditem")
+  loop 36 times:
+    setguiitem({_player},loop-number - 1, {_bgitem},1, " ","")
+
+  #
+  # > Menu part - randomTickSpeed
+  # > This part of the menu is going to allow the player to change
+  # > the randomTickSpeed gamerule of his world.
+  
+  #
+  # > Get the current randomTickSpeed parsed as a number.
+  set {_randomtickspeed} to "%GetSteemWorldGamerule({_world},""randomTickSpeed"")%" parsed as number
+
+  #
+  # > If the number is equal or higher than 3, the next randomTickSpeed hasStorm
+  # > to be 0, since we're not allowing a higher number, since it could lag the
+  # > server.
+  if {_randomtickspeed} >= 3:
+    set {_nextrandomtickspeed} to 0
+
+  #
+  # > If the value is smaller than 3, the next randomTickSpeed will be 1 higher
+  # > than the current randomTickSpeed value.
+  else:
+    set {_nextrandomtickspeed} to {_randomtickspeed} + 1
+
+  #
+  # > If the randomTickSpeed is 0, it is disabled. Use the disabled item in that case.
+  set {_item} to scswGetConfig("enableditem")
+  if {_randomtickspeed} is 0:
+    set {_item} to scswGetConfig("disableditem")
+
+  #
+  # > Set the subtext of the item (also called lore) for that item.
+  set {_randomtickspeedlore} to "&7Currently: &6%{_randomtickspeed}%\n&7Click here to change it to &6%{_nextrandomtickspeed}%&7."
+  
+  setguiitem({_player},10, {_item},1, "&rRandom tick speed",{_randomtickspeedlore},"changeSteemWorldGameruleInMenu(""%{_world}%"" parsed as world, ""randomTickSpeed"",%{_nextrandomtickspeed}%, ""%{_player}%"" parsed as player)")
+
+  #
+  # > Menu part - Time
+  # > This part of the menu will open another sub menu to
+  # > set the time of the world.
+
+  #
+  # > Set the lore and add the current time to it.
+  set {_lore} to "&7Click here to change the\n&7time of this world."
+
+  set {_enableditem} to scswGetConfig("enableditem")
+  setguiitem({_player},11, {_enableditem},1, "&rTime ",{_lore},"openSteemWorldTimeMenu(""%{_world}%"" parsed as world,""%{_player}%"" parsed as player)")
+
+  #
+  # > Menu part - Daylight cycle
+  # > This part of the menu allows the player to change if
+  # > a daylight cycle should happen or not.
+
+  #
+  # > Get the current setting for the doDaylightCycle gamerule.
+  set {_doDaylightCycle} to GetSteemWorldGamerule({_world},"doDaylightCycle")
+  
+  #
+  # > If the daylight cycle is currently on (true), set the next setting to off (false),
+  # > set the menu item to a enabled item and the subtext of the item (lore).
+  if {_doDaylightCycle} is true:
+    set {_nextsetting} to false
+    set {_item} to scswGetConfig("enableditem")
+    set {_randomtickspeedlore} to "&7Currently: &6Enabled\n&7Click here to change it to &6disable&7."
+  else:
+    set {_nextsetting} to true
+    set {_item} to scswGetConfig("disableditem")
+    set {_randomtickspeedlore} to "&7Currently: &6Disabled\n&7Click here to change it to &6enable&7."
+  
+  setguiitem({_player},12, {_item},1, "&rDaylight cycle",{_randomtickspeedlore},"changeSteemWorldGameruleInMenu(""%{_world}%"" parsed as world, ""doDaylightCycle"",%{_nextsetting}%, ""%{_player}%"" parsed as player)")
+
+  #
+  # > Change weather setting
+  if {_world}.hasStorm() is true:
+    if {_world}.isThundering() is false:
+      set {_weather} to "Rain"
+      set {_nextweather} to "Thunder"
+    else:
+      set {_weather} to "Thunder"
+      set {_nextweather} to "Clear"
+  else:
+    set {_weather} to "Clear"
+    set {_nextweather} to "Rain"
+
+  set {_item} to scswGetConfig("enableditem")
+  set {_randomtickspeedlore} to "&7Currently: &6%{_weather}%\n&7Click here to change it to &6%{_nextweather}%&7."
+  
+  setguiitem({_player},13, {_item},1, "&rWeather",{_randomtickspeedlore},"changeSteemWorldSettingInMenu(""%{_world}%"" parsed as world, ""weather"",""%{_nextweather}%"", ""%{_player}%"" parsed as player)")
+
+  #
+  # > Weather cycle boolean setting
+  set {_doDaylightCycle} to GetSteemWorldGamerule({_world},"doWeatherCycle")
+  if {_doDaylightCycle} is true:
+    set {_nextrandomtickspeed} to false
+    set {_item} to scswGetConfig("enableditem")
+    set {_randomtickspeedlore} to "&7Currently: &6Enabled\n&7Click here to change it to &6disable&7."
+  else:
+    set {_nextrandomtickspeed} to true
+    set {_item} to scswGetConfig("disableditem")
+    set {_randomtickspeedlore} to "&7Currently: &6Disabled\n&7Click here to change it to &6enable&7."
+  
+  setguiitem({_player},14, {_item},1, "&rWeather cycle",{_randomtickspeedlore},"changeSteemWorldGameruleInMenu(""%{_world}%"" parsed as world, ""doWeatherCycle"",%{_nextrandomtickspeed}%, ""%{_player}%"" parsed as player)")
+
+  #
+  # > World size setting
+  set {_worldsize} to getGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"size")
+  set {_item} to scswGetConfig("enableditem")
+  if {_worldsize} > 1:
+    set {_decreaselore} to "&7Rightclick to decrease it to &6%{_worldsize}-1%&7."
+  else:
+    set {_decreaselore} to ""
+  set {_worldsizelore} to "&7Current size: &6%{_worldsize}%\n&7Leftclick to increase it to &6%{_worldsize}+1%&7.\n%{_decreaselore}%"
+
+  setguiitem({_player},15, {_item},1, "&rWorld size",{_worldsizelore},"changeSteemWorldSizeInMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player, event)")
+
+  #
+  # > World difficulty setting
+  set {_difficulty} to getGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"difficulty")
+  set {_item} to scswGetConfig("enableditem")
+
+  #
+  # > Allow the player to switch through all the possible difficulties.
+  # > Set the next setting depending on the current setting from low to high.
+  if {_difficulty} is not set:
+    set {_difficulty} to "peaceful"
+  if {_difficulty} is "peaceful":
+    set {_nextsetting} to "easy"
+  else if {_difficulty} is "easy":
+    set {_nextsetting} to "normal"
+  else if {_difficulty} is "normal":
+    set {_nextsetting} to "hard"
+  else if {_difficulty} is "hard":
+    set {_nextsetting} to "peaceful"
+
+  set {_difficultylore} to "&7Current difficulty: &6%{_difficulty}%\n&7Click to switch through\n&7the difficulties.\n&7Next Difficulty: &6%{_nextsetting}%&7"
+
+  setguiitem({_player},16, {_item},1, "&rDifficulty",{_difficultylore},"changeSteemWorldSettingInMenu(""%{_world}%"" parsed as world,""difficulty"", ""%{_nextsetting}%"", ""%{_player}%"" parsed as player)")
+
+  #
+  # > Mob spawning boolean setting
+  set {_doMobSpawning} to GetSteemWorldGamerule({_world},"doMobSpawning")
+  if {_doMobSpawning} is true:
+    set {_nextmobspawning} to false
+    set {_item} to scswGetConfig("enableditem")
+    set {_randomtickspeedlore} to "&7Currently: &6Enabled\n&7Click here to change it to &6disable&7."
+  else:
+    set {_nextmobspawning} to true
+    set {_item} to scswGetConfig("disableditem")
+    set {_randomtickspeedlore} to "&7Currently: &6Disabled\n&7Click here to change it to &6enable&7."
+
+  setguiitem({_player},19, {_item},1, "&rMob spawning",{_randomtickspeedlore},"changeSteemWorldGameruleInMenu(""%{_world}%"" parsed as world, ""doMobSpawning"",%{_nextmobspawning}%, ""%{_player}%"" parsed as player)")
+
+  #
+  # > Menu part - Categories
+  # > This part of the menu will open another sub menu to
+  # > change the categories of the world.
+
+  #
+  # > Set the lore and add the current time to it.
+  set {_lore} to "&7Click here to set the categories\n&7of this world."
+
+  set {_enableditem} to scswGetConfig("enableditem")
+  setguiitem({_player},20, {_enableditem},1, "&rCategories ",{_lore},"openSteemWorldCategories(""%{_world}%"" parsed as world,""%{_player}%"" parsed as player)")
+
+  set {_backitem} to scswGetConfig("backitem")
+  setguiitem({_player},27, {_backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldMainMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
+
+#
+# > Function - changeSteemWorldSizeInMenu
+# > Changes the size of the steem based world using a menu.
+# > Parameters:
+# > <world>the world which should be changed
+# > <player>the player who wants to change the setting
+# > <event>the click event from the menu (needed to know if it was a left- or rightclick)
+function changeSteemWorldSizeInMenu(world:world,player:player,event:event):
+  set {_worldsize} to getGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"size")
+  if {_event}.isRightClick() is true:
+    if {_worldsize} > 1:
+      SetSteemWorldSize({_world},round({_worldsize} - 1))
+  else:
+    SetSteemWorldSize({_world},round({_worldsize} + 1))
+  openSteemWorldSettingsMenu({_world},{_player})
+
+#
+# > Function - openSteemWorldTimeMenu
+# > Opens a menu in which the world time can be set.
+# > Parameters:
+# > <world>the world which should be affected by the time change
+# > <player>the player who wants to change the time
+function openSteemWorldTimeMenu(world:world,player:player):
+  #
+  # > Opens a big menu named settings.
+  opengui({_player},54,"&lSettings")
+  #
+  # > Create a background item for every slot to prevent the player
+  # > from putting items into there.
+  set {_bgitem} to scswGetConfig("backgrounditem")
+  loop 54 times:
+    setguiitem({_player},loop-number - 1, {_bgitem},1, " ","")
+
+  #
+  # > Create a menu which allows to set up to 3 categories.
+  set {_slot} to 9
+  set {_time} to 0
+  set {_item} to scswGetConfig("enableditem")
+  loop 24 times:
+    add 1 to {_slot}
+    add 1 to {_slotskip}
+
+    #
+    # > To make the menu look better, skip 3 slots every 7 slots.
+    if {_slotskip} is 7:
+      add 3 to {_slot}
+      set {_slotskip} to 1
+
+    #
+    # > If the time is lower than 10, add a 0 in front of it.
+    if {_time} < 10:
+      set {_nextsetting} to "0%{_time}%:00"
+    else:
+      set {_nextsetting} to "%{_time}%:00"
+
+    set {_lore} to "&7Click here to change \n&7the time to &6%{_nextsetting}%&7."
+
+    setguiitem({_player},{_slot}, {_item},1, "&r%{_nextsetting}%",{_lore},"changeSteemWorldSettingInMenu(""%{_world}%"" parsed as world, ""time"",%{_nextsetting}%, ""%{_player}%"" parsed as player)")
+
+    add 1 to {_time}
+
+    set {_backitem} to scswGetConfig("backitem")
+    setguiitem({_player},45, {_backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldSettingsMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
+
+#
+# > Function - openSteemWorldCategories
+# > Opens a menu in which the world categories (tags) can be set.
+# > Parameters:
+# > <world> The world which should get new categories (tags).
+# > <player> The player who wants to change the categories.
+function openSteemWorldCategories(world:world,player:player):
+  #
+  # > Opens a big menu named settings.
+  opengui({_player},54,"&lSettings")
+  #
+  # > Create a background item for every slot to prevent the player
+  # > from putting items into there.
+  set {_bgitem} to scswGetConfig("backgrounditem")
+  loop 54 times:
+    setguiitem({_player},loop-number - 1, {_bgitem},1, " ","")
+
+  #
+  # > Create a menu which allows to select every hour of the day.
+  # > Could also simply create 24 times the setguiitem function,
+  # > but this is with just 16 lines smaller and faster to load.
+  set {_slot} to 10
+  set {_time} to 0
+  set {_enableditem} to scswGetConfig("enableditem")
+  set {_disableditem} to scswGetConfig("disableditem")
+  set {_categories} to scswGetConfig("worldcategories")
+  set {_categories::*} to ...{_categories}
+  
+  set {_worldname} to GetSteemWorldShortName({_world})
+
+  set {_currentcategories} to getGeneralStorageData("steemworlds",{_worldname},"categories")
+  if {_currentcategories} is set:
+    set {_mapper} to new ObjectMapper()
+    set {_jsonNode} to {_mapper}.readTree({_currentcategories})
+    loop ...{_jsonNode}.get("categories"):
+      set {_currentcategories::%loop-value.textValue()%} to loop-value.textValue()
+    set {_size} to try {_jsonNode}.get("categories").size()
+	
+    if {_size} is not set:
+      set {_size} to 0
+
+  loop {_categories::*}:
+    add 1 to {_slot}
+    add 1 to {_slotskip}
+    set {_categoryname} to loop-value
+
+    #
+    # > To make the menu look better, skip 3 slots every 7 slots.
+    if {_slotskip} is 7:
+      add 3 to {_slot}
+      set {_slotskip} to 1
+
+    set {_limitedlore} to ""
+    if {_size} >= 3:
+      set {_limitedlore} to "\n&7A maximum of 3 categories\n&7can be set, remove one\n&7to select this category."
+
+    if {_currentcategories::%{_categoryname}%} is set:
+      set {_lore} to "&7Click here to remove this category\n&7from your world."
+      setguiitem({_player},{_slot}, {_enableditem},1, "&r%{_categoryname}%",{_lore},"changeSteemWorldSettingInMenu(""%{_world}%"" parsed as world, ""category"",""%{_categoryname}%"", ""%{_player}%"" parsed as player)")
+    else:
+      set {_lore} to "&7Click here to add this category\n&7to your world."
+      if {_size} >= 3:
+        setguiitem({_player},{_slot}, {_disableditem},1, "&r%{_categoryname}%","%{_lore}%%{_limitedlore}%","")
+      else:
+        setguiitem({_player},{_slot}, {_disableditem},1, "&r%{_categoryname}%","%{_lore}%%{_limitedlore}%","changeSteemWorldSettingInMenu(""%{_world}%"" parsed as world, ""category"",""%{_categoryname}%"", ""%{_player}%"" parsed as player)")
+
+    add 1 to {_time}
+
+    set {_backitem} to scswGetConfig("backitem")
+    setguiitem({_player},45, {_backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldSettingsMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
+
+#
+# > Function - waitSteemWorldmenu
+# > Opens a menu with a loading bar.
+# > Parameters:
+# > <player>the player who should see the loading bar
+# > <boolean>start loading bar = true, stop loading bar = false
+function waitSteemWorldmenu(player:player,start:boolean=true):
+  #
+  # > If the {_start} value is false, the wait menu stops.
+  if {_start} is false:
+    delete metadata value "waitSteemWorldmenu" of {_player}
+    stop
+
+  #
+  # > If the loading bar menu is not running, start it.
+  if metadata value "waitSteemWorldmenu" of {_player} is not true:
+
+    #
+    # > Open the gui and name it 'Please wait' to let the player know
+    # > that this is a loading process.
+    opengui({_player},27,"&lPlease wait...")
+    set metadata value "waitSteemWorldmenu" of {_player} to true
+
+    #
+    # > Create a background which prevents players from putting items into the menu.
+    set {_bgitem} to scswGetConfig("backgrounditem")
+    set {_loaditem} to scswGetConfig("loadingitem")
+    loop 27 times:
+      setguiitem({_player},loop-number - 1, {_bgitem},1, " ","")
+
+    #
+    # > To make it look better, the loading bar loop starts in the gui slot 10.
+    set {_startslot} to 10
+
+    #
+    # > For the loading bar loop, the previous slot is needed, create it here.
+    set {_currentslot} to {_startslot}
+    set {_previousslot} to {_currentslot} - 1
+
+    #
+    # > Run this loading bar loop as long as the metadata value
+    # > 'waitSteemWorldmenu' is true.
+    while metadata value "waitSteemWorldmenu" of {_player} is true:
+      #
+      # > This created a loading bar which is going to loop forever
+      # > until it is stopped or closed.
+      if {_previousslot} < {_startslot}:
+        set {_previousslot} to {_startslot} + 6
+      setguiitem({_player},{_previousslot}, {_bgitem},1, " ","")
+      setguiitem({_player},{_currentslot}, {_loaditem},1, " ","")
+      set {_previousslot} to {_currentslot}
+      add 1 to {_currentslot}
+      if {_currentslot} > {_startslot}+6:
+        set {_currentslot} to {_startslot}
+      wait 5 ticks
+
+#
+# > Event - on inventory close
+# > Removes the wait menu updates if the menu gets closed.
+on inventory close:
+  if metadata value "waitSteemWorldmenu" of player is set:
+    delete metadata value "waitSteemWorldmenu" of player
+
+#
+# > Function - changeSteemWorldSettingInMenu
+# > Changes settings like weather or time and is used in menues.
+# > Parameters:
+# > <world>the world which should be affected by the change
+# > <text>setting name which should be changed
+# > <any object>the value to which the setting should be set
+# > <player> the player who requested the change
+function changeSteemWorldSettingInMenu(world:world,setting:text,value:object,player:player):
+  #
+  # > Check if the player has the permission to execute this change.
+  if CheckSteemWorldPermission({_world},{_player},"settings") is true:
+    #
+    # > To store the now changed setting, we need the short name.
+    set {_name} to GetSteemWorldShortName({_world})
+
+    if {_setting} is "time":
+      set the time in {_world} to {_value}
+      if getGeneralStorageData("steemworlds",{_name},"doDaylightCycle") is "false":
+        saveGeneralStorageData("steemworlds",{_name},"time", "%{_value}%")
+
+    if {_setting} is "difficulty":
+      SetSteemWorldDifficulty({_world},{_value})
+      openSteemWorldSettingsMenu({_world},{_player})
+
+    if {_setting} is "weather":
+      SetSteemWorldWeather({_world},{_value})
+      close {_player}'s inventory
+      if getGeneralStorageData("steemworlds",{_name},"doWeatherCycle") is "false":
+        saveGeneralStorageData("steemworlds",{_name},"weather", {_value})
+
+    if {_setting} is "category":
+
+      #
+      # > Work with only lowercase strings, as this is how tags are used on steem.
+      set {_value} to {_value}.toLowerCase()
+
+      #
+      # > Get the categories (tags) from the storage of the server.
+      set {_currentcategories} to getGeneralStorageData("steemworlds",{_name},"categories")
+
+      #
+      # > The ObjectMapper is used to en- and decode json.
+      set {_mapper} to new ObjectMapper()
+
+      #
+	  # > If the json string is set, create a Skript list.
+      if {_currentcategories} is set:
+        set {_jsonNode} to try {_mapper}.readTree({_currentcategories})
+        set {_categoryloop::*} to ...try {_jsonNode}.get("categories")
+        if {_categoryloop::*} is set:
+          loop {_categoryloop::*}:
+            set {_currentcategories::%loop-value.textValue()%} to try loop-value.textValue()
+        set {_size} to try {_jsonNode}.get("categories").size()
+
+      #
+      # > If the size isn't set, set it to 0.
+      if {_size} is not set:
+        set {_size} to 0
+
+      #
+      # > If the category isn't set and the size less than 3,
+      # > save the category.
+      if {_currentcategories::%{_value}%} is not set:
+        if 3 > {_size}:
+          set {_currentcategories::%{_value}%} to {_value}
+
+      #
+      # > If the category is set, remove it.
+      else:
+        delete {_currentcategories::%{_value}%}
+
+      #
+      # > Save the categories back to storage by converting the Skript
+      # > list to a json string.
+      set {_currentcategories} to HashMap()
+      set {_params} to new ArrayList()
+
+      loop {_currentcategories::*}:
+        {_params}.add(loop-value)
+
+      {_currentcategories}.put("categories", {_params})
+
+      saveGeneralStorageData("steemworlds",{_name},"categories", {_mapper}.writeValueAsString({_currentcategories}))
+      openSteemWorldCategories({_world},{_player})
+
+#
+# > Function - changeSteemWorldGameruleInMenu
+# > Changes a gamerule of the specified world.
+# > Parameters:
+# > <world>the world which should be affected by the change
+# > <text>gamerule name which should be changed
+# > <any object>the value to which the setting should be set
+# > <player> the player who requested the change
+function changeSteemWorldGameruleInMenu(world:world,gamerule:text,value:object,player:player):
+  #
+  # > Check if the player has the permission to execute this change.
+  if CheckSteemWorldPermission({_world},{_player},"settings") is true:
+
+    #
+    # > Change the settings and then re-open the menu for settings.
+    SetSteemWorldGamerule({_world},{_gamerule},{_value})
+    openSteemWorldSettingsMenu({_world},{_player})
+
+#
+# > Function - openSteemWorldHistoryMenu
+# > Opens a menu which allows to view and load any version of the steem world.
+# > Parameters:
+# > <world>the world
+# > <number>the history menu site number
+# > <player>the player who wants to open this menu
+# > [<boolean>]initializing this menu will look for newer versions, default: true
+function openSteemWorldHistoryMenu(world:world,site:number,player:player,init:boolean=true):
+  #
+  # > Use the ObjectMapper to save and load data using JSON.
+  set {_objectMapper} to new ObjectMapper()
+
+  if {_init} is true:
+    set {_steemusername} to getGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"steemaccount")
+
+    set {_permlink} to "re-steemcraft-%{_world}%"
+
+    waitSteemWorldmenu({_player},true)
+	
+    #
+    # > Check if the world exists on Steem.
+    getSteemContent({_steemusername},{_permlink})
+
+    #
+    # > Wait until the Steem content response is no longer "wait".
+    while getSteemContentResponse({_steemusername},{_permlink}) is "wait":
+      wait 1 tick
+
+    #
+    # > Get the Steem content response.
+    set {_c} to getSteemContentResponse({_steemusername},{_permlink})
+
+    #
+    # > Only go and check for new history data, if the last update is not the same as the local one
+    # > and if no history data is available.
+    if {_c}.getLastUpdate().getDateTimeAsInt() is getGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"lastupdate"):
+      if getGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"history") is set:
+        set {_ok} to true
+
+    #
+    # > Outdated or no history has been found, get new history data and cache it.
+    if {_ok} is not true:
+
+      getSteemWorldHistory({_steemusername},"%{_world}%")
+
+      #
+      # > Getting the history data from steem can take some time, which is why it is done in a thread.
+      while getSteemWorldHistoryResult({_steemusername},"%{_world}%") is "wait":
+        wait 1 tick
+
+      saveGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"lastupdate", {_c}.getLastUpdate().getDateTimeAsInt())
+
+      #
+      # > The waiting is over, stop the waiting menu.
+      waitSteemWorldmenu({_player},false)
+
+      #
+      # > Get the result to then cache it sorted.
+      set {_t} to getSteemWorldHistoryResult({_steemusername},"%{_world}%")
+
+      #
+      # > To cache the data easily accessible and fast to read, use JSON.
+      set {_history} to {_objectMapper}.createObjectNode()
+      set {_saves::*} to sorted ...{_t}.keySet()
+
+      loop {_saves::*}:
+        {_history}.put("%loop-value%", "%{_t}.get(loop-value)%")
+
+      wait 1 tick
+
+      #
+      # > Save the retrieved data into the cache.
+      saveGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"history", {_history}.toString())
+      
+      #
+      # > Wait to allow the server to catch up.
+      wait 2 ticks
+
+  #
+  # > Get the cached data and parse it to display the data using ObjectMapper.
+  set {_history} to getGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"history")
+
+  set {_saves} to {_objectMapper}.readTree({_history})
+
+  #set {_saves::*} to ...{_saves}
+  set {_keys::*} to ...{_saves}.fieldNames()
+    
+  loop {_keys::*}:
+    add 1 to {_versions}
+    set {_time} to new Date("%{_saves}.get(loop-value).textValue()%" parsed as number * 1000)
+    set {_final::%loop-value%} to {_time}
+
+  #
+  # > Set the maximum amount of versions that should be displayed
+  # > per site. For a better look, use 21 versions per site.
+  # > These settings can be ajusted but will change the layout of
+  # > the world history menu a lot.
+  set {_sizelimit} to 21
+  set {_slot} to 9
+  set {_slotskipat} to 8
+  set {_slotskipamount} to 2
+
+  #
+  # > If the player is allowed to load the world, the menu will allow
+  # > to load different world versions directly from the menu.
+  if CheckSteemWorldPermission({_world},{_player},"load") is true:
+    set {_loadallowed} to true
+
+  opengui({_player},45,"&lWorld history")
+
+  #
+  # > Cover all inventory menu slots with a background item
+  # > to prevent item loss for players.
+  set {_bgitem} to scswGetConfig("backgrounditem")
+  loop 45 times:
+    setguiitem({_player},loop-number - 1, {_bgitem},1, " ","")
+
+  set {_enableditem} to scswGetConfig("enableditem")
+  set {_backwarditem} to scswGetConfig("backwarditem")
+  set {_backitem} to scswGetConfig("backitem")
+  set {_forwarditem} to scswGetConfig("forwarditem")
+  #
+  # > Loop through all world versions and create a viewable menu.
+  loop {_final::*}:
+
+    #
+    # > Count up for every world version.
+    add 1 to {_loopid}
+	
+    #
+    # > Depending on the current site, calculate at which entry the site ends.
+    set {_siteend} to {_sizelimit}*{_site}
+
+    #
+    # > Depending on the end of the site, calculate at which entry the site starts.
+    set {_sitestart} to {_siteend} - {_sizelimit}
+	
+    #
+    # > Only show entries that are higher than the site start variable
+    # > and equal or lower than the site end variable.
+    if {_loopid} > {_sitestart}:
+      if {_loopid} <= {_siteend}:
+
+        #
+        # > Skip some slots every predefined amount of slots for improve
+        # > the layout of the menu.
+        add 1 to {_nextslotskip}
+        if {_nextslotskip} is {_slotskipat}:
+          add {_slotskipamount} to {_slot}
+          set {_nextslotskip} to 1
+
+        #
+        # > To not overwrite any slots, increase the current slot always by 1.
+        add 1 to {_slot}
+
+        #
+        # > Create a different item with function if the player is allowed to load
+        # > the world. If not allowed, the lore (subtext of item) is changed.
+        if {_loadallowed} is true:
+          setguiitem({_player},{_slot}, {_enableditem},1, "&r&lWorld version %{_loopid}%","&7Block: %loop-index%\n&7Date: %loop-value%\n&7Click &6here&7 to load this version.","make ""%{_player}%"" parsed as player execute ""/sw load %loop-index%""",true)
+        else:
+          setguiitem({_player},{_slot}, {_enableditem},1, "&r&lWorld version %{_loopid}%","&7Block: %loop-index%\n&7Date: %loop-value%")
+
+      #
+      # > If the id of this entry is bigger than the site end variable,
+      # > we have to add a item which allows to go to the next page.
+      else:
+        setguiitem({_player},26, {_forwarditem},1, "&r&lSite %{_site}+1%","","openSteemWorldHistoryMenu(""%{_world}%"" parsed as world,%{_site}+1%,""%{_player}%"" parsed as player,false)")
+
+        #
+        # > Since we're done here, stop this loop.
+        stop loop
+
+  #
+  # > If we're on a site that is higher than 1, add a item
+  # > which allows to get back to the previous page (site).
+  if {_site} > 1:
+    setguiitem({_player},18, {_backwarditem},1, "&r&lSite %{_site}-1%","","openSteemWorldHistoryMenu(""%{_world}%"" parsed as world,%{_site}-1%,""%{_player}%"" parsed as player,false)")
+
+  #
+  # > Add a item which allows the player to get back to the
+  # > previous menu. In this case, the steem world main menu.
+  setguiitem({_player},36, {_backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldMainMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")

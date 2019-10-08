@@ -1,0 +1,171 @@
+#
+# ==============
+# LoadSteemWorld.sk
+# ==============
+# LoadSteemWorld.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  java.io.File
+  com.sk89q.worldedit.math.BlockVector3
+  com.sk89q.worldedit.bukkit.BukkitWorld
+  org.apache.commons.io.FileUtils
+  com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats
+
+#
+# > Function - LoadSteemWorld
+# > Prepares everything to load the speficied world in a thread.
+# > Parameters:
+# > <text> The steem username of the account which should be loaded.
+# > <text> The permlink of the world which should be loaded.
+# > <player> The player who should get informed about status messages.
+# > [<number>] The Block number of the world that should be loaded.
+function LoadSteemWorld(steemname:text,worldname:text,player:player,blockid:number=0):
+  set {_data} to HashMap()
+  {_data}.put("steemname",{_steemname})
+  {_data}.put("worldname",{_worldname})
+  {_data}.put("player",{_player})
+  {_data}.put("blockid",{_blockid})
+
+  while metadata value "SC|LoadSteemWorld" of getDummy() is set:
+    wait 1 tick
+
+  set metadata value "SC|LoadSteemWorld" of getDummy() to {_data}
+  $ thread
+  AsyncLoadSteemWorld(metadata value "SC|LoadSteemWorld" of getDummy())
+
+#
+# > Function - AsyncLoadSteemWorld
+# > Loads a world that has been prepared with the LoadSteemWorld function.
+# > Parameters:
+# > <HashMap> A HashMap that has been prepared by LoadSteemWorld.
+function AsyncLoadSteemWorld(data:object):
+  #
+  # > The function has been called with a global variable. Delete it here
+  # > to allow more calls of this function after it has been called.
+  delete metadata value "SC|LoadSteemWorld" of getDummy()
+  set {_steemname} to {_data}.get("steemname")
+  set {_worldname} to {_data}.get("worldname")
+  set {_player} to {_data}.get("player")
+  set {_blockid} to {_data}.get("blockid")
+
+  #
+  # > The steem name is needed, check if it is actually set.
+  if {_steemname} is set:
+    set {_steemname} to {_steemname}.toLowerCase()
+    #
+    # > Get the world parsed as a world.
+    set {_world} to "%{_worldname}%" parsed as world
+    set {_txid} to "%{_world}%"
+    set {_shortworld} to GetSteemWorldShortName({_world})
+
+    #
+    # > Tell the player that the world is now being loaded.
+    message "%getChatPrefix()% Loading %{_steemname}%'s world..." to {_player}
+
+    #
+    # > The bossbar is perfect to represent a loading bar, use it here.
+    set {_bossbar} to createBossBar("&lLoading world...","yellow","10")
+    set {_progress} to 0.0
+    {_bossbar}.setProgress({_progress})
+    {_bossbar}.addPlayer({_player})
+    {_bossbar}.setVisible(true)
+
+    # 
+    # > Load the world data using LoadSteemWorldData. By adding the bossbar
+    # > variable, the player gets informed about the loading progress.
+    set {_map} to LoadSteemWorldData({_steemname},{_worldname},{_bossbar},{_blockid})
+
+    #
+    # > The returned HashMap contains the response and the world. We need the
+    # > world.
+    set {_worlddata} to {_map}.get("world")
+
+    #
+    # > Get the size of the plotparts to give the player a loading bar.
+    set {_worlddataparts::*} to ...{_worlddata}.keySet()
+    set {_plotsize} to size of {_worlddataparts::*}
+    set {_pdone} to 100 / {_plotsize}
+
+    loop {_worlddataparts::*}:
+
+      #
+      # > Decompress the big chunk data, save it to file and load it.
+      set {_loop-value} to loop-value
+      set {_chunkcoord::*} to {_loop-value} split at "|"
+
+      #
+      # > The chunk coordinates are needed to load the chunks at the right
+      # > place.
+      set {_x} to "%{_chunkcoord::1}%" parsed as integer
+      set {_z} to "%{_chunkcoord::2}%" parsed as integer
+	  
+      #
+      # > Decompress and save the data to a schematic file to allow other programs
+      # > to load and insert it into the world of the server.
+      set {_body} to decompressBase64({_worlddata}.get({_loop-value}))
+      set {_newbytes} to Base64ToBytes({_body})
+      set {_file} to new File("tmp/%{_txid}%_%{_x}%_%{_z}%.schem")
+      FileUtils.writeByteArrayToFile({_file}, {_newbytes})
+
+      #
+      # > To place the chunk, a vector needs to be created, which has to be at the
+      # > 0-spot if the chunks. Get this point and create a usable vector.
+      set {_block} to {_world}.getChunkAt({_x},{_z}).getBlock(0,0,0)
+      set {_l} to location of {_block}
+      set {_x} to x-coord of {_l}
+      set {_z} to z-coord of {_l}
+
+      #
+      # > Deduct 0.5 from each vector to prevent incorrect rounding within
+      # > WorldEdit which can corrupt worlds.
+      set {_vector} to BlockVector3.at({_x}-0.5, 0, {_z}-0.5)
+
+      #
+      # > WorldEdit needs a BukkitWorld instead of a CraftWorld to work.
+      set {_bworld} to new BukkitWorld("%{_worldname}%" parsed as world)
+	  
+      #
+      # > Load the chunk schematic into the clipboard.
+      set {_clipboard} to ClipboardFormats.findByFile({_file})
+
+      #
+      # > Load the chunk from the clipboard and create a schematic.
+      set {_schematic} to {_clipboard}.load({_file})
+
+      #
+      # > Delete the loaded schematic now, since it is no longer needed.
+      {_file}.delete()
+
+      #
+      # > Tell the player about the current pasting status.
+      add 1 to {_partnumber}
+      {_bossbar}.setTitle("&lPasting chunks... [%{_pdone} * {_partnumber}%%%]")
+      set {_progress} to 0.75+(({_partnumber} * {_pdone})/100)/4
+      {_bossbar}.setProgress({_progress})
+
+      #
+      # > Paste the schematic with the chunk to the world at the speficied vector.
+      set {_session} to {_schematic}.paste({_bworld}, {_vector})
+
+    #
+    # > Tell the player that the loading process has been done successfully.
+    message "%getChatPrefix()% Successfully loaded %{_steemname}%'s world." to {_player}
+    {_bossbar}.setTitle("&lLoad successful.")
+
+    #
+    # > Remove the bossbar after one second.
+    wait 1 second
+
+	#
+    # > Remove all players from the bossbar to no longer display it
+    # > to the players, only deleting it is not enough.
+    {_bossbar}.removeAll()
+    delete {_bossbar}
+
+    #
+    # > Apply world settings to the loaded world.
+    set {_biome} to getGeneralStorageData("steemworlds",{_shortworld},"biome")
+    set {_size} to getGeneralStorageData("steemworlds",{_shortworld},"size")
+    SetSteemWorldBiome({_world},{_biome},null)
+    ApplySteemWorldSettings({_world})

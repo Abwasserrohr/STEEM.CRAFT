@@ -1,0 +1,554 @@
+#
+# ==============
+# SaveSteemWorld.sk
+# ==============
+# SaveSteemWorld.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > These options can be changed but it is suggested to leave them as is to
+# > allow the best experience, these settings will not change the layout or
+# > design of any in-game view.
+options:
+  #
+  # > The post prefix changes how the comment looks like on blog based Steem apps.
+  # > This could get changed in the future to link to a world explorer.
+  postprefix: <a href=""https://steemit.com/@steem.craft""><img src=""https://cdn.steemitimages.com/DQmUzWn7xJhLpPhGAczEpkcph4gNMrRdcCeTC5RVHnRQrjE/steemheader-left.png""></a>
+  #
+  # > The json id is used to identify STEEM.CRAFT world transactions.
+  jsonidplots: STEEM.CRAFT/worlds
+  #
+  # The app is used to know which app is responsible for the comments.
+  commentapp: STEEM.CRAFT
+  #
+  # > The format is used to detect the format of the comment.
+  commentformat: markdown
+  #
+  # > The tags can be used to query specific contents from the blockchain.
+  commenttags: ["steemcraft","steemworlds","sbi-skip"]
+  #
+  # > The title is used on almost all Steem based blog apps to see what
+  # > the comment is about.
+  commenttitle: "World - <world>"
+  #
+  # > The maximum length of json transactions may change. It is currently
+  # > set at a maximum length of 2000. To prevent exeeding this, it is
+  # > set at 1800 to prevent any problems by too long custom json.
+  customjsonlength: 1800
+  #
+  # > The time until a transaction is timed out and repeated in ticks.
+  timeoutticks: 800
+  #
+  # > The comment parent author is the author of the comments which hold
+  # > all the worlds. If this is changed, all already saved worlds can't
+  # > be loaded anymore.
+  commentparentauthor: steem.craft
+  #
+  # > The commennt parent permlink works the same way the parent author works.
+  # > If this is changed, you can't load worlds from other comment parent permlinks.
+  commentparentpermlink: w
+  #
+  # > Set the maximum amount of custom json transactions that are allowed per block.
+  maximumcustomjsontxperblock: 5
+
+import:
+  java.io.File
+  java.nio.file.Files
+  java.util.regex.Pattern
+  java.util.ArrayList
+  com.fasterxml.jackson.databind.ObjectMapper
+  com.boydti.fawe.object.schematic.Schematic
+  com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats
+  com.sk89q.worldedit.regions.CuboidRegion
+  com.sk89q.worldedit.bukkit.BukkitWorld
+  com.sk89q.worldedit.math.BlockVector3
+
+#
+# > Function - SaveSteemWorld:
+# > Saves the world of the player.
+# > Parameters:
+# > <player>the player who wants to save the own world.
+function SaveSteemWorld(player:player):
+  #
+  # > Only save the world if the player is online.
+  if {_player} is online:
+    #
+    # > Get the steem account of the player. Since the server
+    # > will broadcast transactions, the steem account needs 
+    # > to be synced with the server.
+    set {_steemname} to getSyncedAccount({_player})
+    if {_steemname} is false:
+      message "%getChatPrefix()% You have to sync your account first:" to {_player}
+      message "%getChatPrefix()% /steemconnect <steem username>" to {_player}
+      stop
+
+    #
+    # > Get the account in a thread to validate.
+    getAccount("%{_steemname}%",false)
+    
+    wait 1 tick
+
+    #
+    # > Set the response to a local usable variable.
+    set {_account} to getAccountResponse("%{_steemname}%")
+
+    #
+    # > Check if the account is valid and usable for broadcasting.
+    if validateSyncedSteemAccountUUID({_player},{_account}) is false:
+      message "%getChatPrefix()% Your Steem account UUID doesn't match with yours." to {_player}
+      message "%getChatPrefix()% /steemconnect <steem username>" to {_player}
+      stop
+    if validateSyncedSteemAccountAuths({_player},{_account}) is false:
+      message "%getChatPrefix()% The server has no authorisation to broadcast transactions for you." to {_player}
+      message "%getChatPrefix()% /steemconnect <steem username>" to {_player}
+      stop
+
+    set {_world} to {_player}'s world
+    set {_shortworld} to GetSteemWorldShortName({_player}'s world)
+
+    #
+    # > Get the size of the world to set the correct world coordinates.
+    set {_size} to getGeneralStorageData("steemworlds",{_shortworld},"size")
+
+    #
+    # > If the size is not set for some reason, set it to 1.
+    if {_size} is not set:
+      set {_size} to 1
+	
+    #
+    # > Calculate both x- and z-start and endcoordinates of the world.
+    set {_xstart} to (0 - ({_size} * 16)) + 1
+    set {_zstart} to (0 - ({_size} * 16)) + 1
+    set {_xend} to ({_size} * 16) - 1
+    set {_zend} to ({_size} * 16) - 1
+	
+    #
+    # > Loop through the coordinates and add all chunks of the world
+    # > to a list.
+    set {_x} to {_xstart}
+    while {_xdone} is not set:
+      delete {_zdone}
+      set {_z} to {_zstart}
+      while {_zdone} is not set:
+        add chunk at location {_x}, 0, {_z} in {_world} to {_chunks::*}
+        add 16 to {_z}
+        if {_z} > {_zend}:
+          set {_zdone} to true
+      add 16 to {_x}
+      if {_x} > {_xend}:
+        set {_xdone} to true
+
+    #
+    # > Tell the player that the process is working and how long it may take. 
+    # > It is estimated that every chunk takes at least 10 seconds to process.
+    message "%getChatPrefix()% Your world is now being saved. This will take at least %(size of {_chunks::*} * 10) + 70% seconds." to {_player}
+
+    #
+    # > The bossbar is perfect to represent a loading bar, use it here.
+    set {_bossbar} to createBossBar("&lSaving world...","yellow","10")
+    set {_progress} to 0.0
+    {_bossbar}.setProgress({_progress})
+    {_bossbar}.addPlayer({_player})
+    {_bossbar}.setVisible(true)
+
+    #
+    # > Since getting the block number of a transaction is currenttly not working for me,
+    # > the start block number is saved here. This is used to query the history of the account
+    # > and check only transactions that have been broadcasted after this block number.
+    set {_startHeadBlockNumber} to getHeadBlockNumber()
+
+    #
+    # > Set the plot size to allow the progress percentage later.
+    set {_plotsize} to size of {_chunks::*}
+    set {_pdone} to 100 / {_plotsize}
+
+    # 
+    # > Load the world data using LoadSteemWorldData.
+    set {_map} to LoadSteemWorldData({_steemname},"%{_world}%",null,0)
+
+    #
+    # > The returned HashMap contains the response and the world. We need the
+    # > world to check if there is a chunk that is already stored on the
+    # > Steem blockchain, which we do not need to broadcast again.
+    set {_worlddata} to {_map}.get("world")
+    set {_response} to {_map}.get("response")
+
+    #
+    # > Create a new ArrayNode which is used to add all necessary blocks of
+    # > the world to the final world comment.
+    set {_objectMapper} to new ObjectMapper()
+    set {_arraynode} to {_objectMapper}.createArrayNode()
+
+    #
+    # > Make sure that no player enters the area that is saved,
+    # > since the players would also get added and stored in the
+    # > file, which isn't wanted here.
+    loop all players in {_world}:
+      set {_playerlocations::%loop-player%} to location of loop-player
+      add 1000 to y-coord of {_playerlocations::%loop-player%}
+      teleport loop-player to {_playerlocations::%loop-player%}
+    wait 5 ticks
+
+    #
+	# > Save the world to take the current snapshot of it.
+    loop {_chunks::*}:
+      delete {_chunksplit::*}
+      add 1 to {_loopnumber}
+
+      set {_x1} to x-coord of loop-value.getBlock(0,0,0)
+      set {_x2} to x-coord of loop-value.getBlock(15,255,15)
+      set {_z1} to z-coord of loop-value.getBlock(0,0,0)
+      set {_z2} to z-coord of loop-value.getBlock(15,255,15)
+
+      #
+      # > The schematic files are stored in the "tmp" folder in the root folder of the
+      # > Minecraft server.
+      set {_file} to new File("tmp/steemworlds_%{_world}%_%loop-value.getX()%_%loop-value.getZ()%.schem")
+      set {_chunkx} to loop-value.getX()
+      set {_chunkz} to loop-value.getZ()
+
+      #
+      # > WorldEdit is maybe unsure how it should place the blocks if it is
+      # > exactly on 0.5, that's why 0.5 is deducted on x- and z-coords.
+      # > This is also done in the loading process to match this.
+      set {_b} to BlockVector3.at({_x1}-0.5, 0, {_z1}-0.5)
+      set {_t} to BlockVector3.at({_x2}-0.5, 255, {_z2}-0.5)
+
+      set {_bworld} to new BukkitWorld({_world})
+      set {_reg} to new CuboidRegion({_bworld}, {_b}, {_t})
+      set {_schem} to new Schematic({_reg})
+	  
+      #
+      # > Usually, ClipboardFormat.SPONGE_SCHEMATIC! schould be used,
+      # > but since this generates currently an error, a alternative
+      # > is used.
+      #set {_format} to ClipboardFormat.SPONGE_SCHEMATIC!
+      set {_format} to ClipboardFormats.findByAlias("schem")
+
+      {_schem}.save({_file},{_format})
+      delete {_file}
+
+    #
+    # > The world has been saved to file, teleport players back.
+    loop all players in {_world}:
+      remove 1000 from y-coord of {_playerlocations::%loop-player%}
+      apply resistance 5 to loop-player for 1 second
+      teleport loop-player to {_playerlocations::%loop-player%}
+      delete {_playerlocations::%loop-player%}
+
+    #
+    # > All chunks are now looped. A schematic file is created and splitted
+    # > into usable parts and encoded with base64.
+    delete {_loopnumber}
+    loop {_chunks::*}:
+      delete {_chunksplit::*}
+      add 1 to {_loopnumber}
+      #
+      # > The schematic files are stored in the "tmp" folder in the root folder of the
+      # > Minecraft server.
+      set {_file} to new File("tmp/steemworlds_%{_world}%_%loop-value.getX()%_%loop-value.getZ()%.schem")
+      set {_chunkx} to loop-value.getX()
+      set {_chunkz} to loop-value.getZ()
+
+      while {_file}.exists() is false:
+        wait 1 tick
+
+      set {_bytes} to Files.readAllBytes({_file}.toPath())
+
+      #
+      # > Delete the temporary created file again, since it was only
+      # > needed to get the bytes from it.
+      {_file}.delete()
+
+      #
+      # > The bytes of the schematic file now get converted to a base64 encoded string.
+      set {_base64} to BytesToBase64({_bytes})
+
+      #
+      # > Since a simple base64 encoded string could be compressed further, it
+      # > will be compressed with gzip and then again returned with base64.
+      # > Since schematic files hold some data, it will be always worth it.
+      set {_string} to compressBase64({_base64})
+
+      #
+      # > If the base64 encoded string matches with the already stored one, skip
+      # > broadcasting new transactions for this chunk and broadcast the already
+      # > stored block to the new comment.
+      if {_string} is {_worlddata}.get("%{_chunkx}%|%{_chunkz}%"):
+        #
+        # > Reading the json metadata of the content is done using ObjectMapper.
+        set {_jsonNode} to {_objectMapper}.readTree({_response}.getJsonMetadata())
+
+        #
+        # > Get the compressed and base64 encoded string of the duplicate chunk.
+        set {_plot} to {_jsonNode}.get("world").textValue()
+
+        #
+        # > Decompress and decode the base64 string.
+        set {_plot} to decompressBase64({_plot})
+
+        #
+        # > Since we now have a string, it can be loaded using jackson.
+        set {_plot} to {_objectMapper}.readTree({_plot})
+
+        #
+        # > Get all the block numbers for the duplicate chunk.
+        loop {_plot}.size().longValue() times:
+          set {_plotpart} to {_plot}.get(loop-number - 1)
+          #
+          # > Store the block numbers of the duplicate chunk.
+          set {_chunkpart} to {_objectMapper}.createObjectNode()
+          {_chunkpart}.put("x", {_plotpart}.get("x"))
+          {_chunkpart}.put("z", {_plotpart}.get("z"))
+          {_chunkpart}.put("i", {_plotpart}.get("i"))
+          {_chunkpart}.put("b", {_plotpart}.get("b").textValue())
+          {_arraynode}.add({_chunkpart})
+
+      #
+      # > If the chunk is not exactly the same, broadcast it again.
+      else:
+        #
+        # > Here, the compressed base64 encoded string is split into multiple, usable strings.
+        while {_done} is not set:
+          if length of {_string} > {@customjsonlength}:
+            add the first {@customjsonlength} character of {_string} to {_chunksplit::*}
+            set {_string} to {_string}.replaceFirst(Pattern.quote(the first {@customjsonlength} character of {_string}), "")
+          else:
+            add {_string} to {_chunksplit::*}
+            set {_done} to true
+        delete {_done}
+        delete {_partid}
+
+        #
+        # > Now, the splitted chunks are being looped through. Every splitted chunk
+        # > gets a custom json transaction, which is currently set by simply settings
+        # > a string.
+        loop {_chunksplit::*}:
+          add 1 to {_partid}
+          set {_txcontent} to "{""w"":""%{_shortworld}%"",""x"":%{_chunkx}%,""z"":%{_chunkz}%,""s"":%size of {_chunksplit::*}%,""i"":%{_partid}%,""data"":""%{_chunksplit::%{_partid}%}%""}"
+
+          #
+          # > Now, the custom json is broadcasted. The saving process will repeat the
+          # > process in case of any error.
+          while {_done} is not set:
+            set {_txuuid} to getRandomUUID()
+            set {_transactionhappened} to true
+            customJsonOperation({_txuuid},{_steemname},"{@jsonidplots}",{_txcontent})
+
+            #
+            # > Reset the timeout timer.
+            delete {_waittime}
+
+            while getSteemResponse({_txuuid}) is "wait":
+              #
+              # > Add 1 to the timeout timer, if it goes above 800, set the
+              # > repsonse to an error to repeat.
+              add 1 to {_waittime}
+              if {_waittime} > {@timeoutticks}:
+                set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "error"
+
+              wait 1 tick
+
+            if getSteemResponse({_txuuid}) is "done":
+              set {_done} to true
+
+            #
+		    # > If there has been a error, wait 1 second and repeat.
+            else:
+              log "%{_player}% - custom json tx errror: %getSteemResponse({_txuuid})%" to "steemworlds-errors"
+              set {_wait} to {@maximumcustomjsontxperblock}
+              set {_wait} to "%3 / {_wait}% seconds" parsed as timespan
+              wait {_wait}
+
+          delete {_done}
+
+          #
+          # > If there are still some splits to go, wait after one has been done.
+          if size of {_chunksplit::*} >= {_partid}:
+            #
+            # > Depending on the maximum amount of blocks that are allowed, wait more or less.
+            set {_wait} to {@maximumcustomjsontxperblock}
+            set {_wait} to "%3 / {_wait}% seconds" parsed as timespan
+            wait {_wait}
+
+      #
+      # > Tell the player about the current status of/ the world broadcasting.
+      {_bossbar}.setTitle("&lBroadcasting chunks...")
+      set {_progress} to (({_loopnumber} * {_pdone})/100)/1.1
+      {_bossbar}.setProgress({_progress})
+    set {_objectMapper} to new ObjectMapper()
+
+    {_bossbar}.setTitle("&lChecking chunks...")
+
+    wait 5 seconds
+    set {_doneheadblocknumber} to getHeadBlockNumber()
+    set {_loopblock} to {_startHeadBlockNumber}
+	
+
+    while {_searchdone} is not set:
+      if {_loopblock} is {_doneheadblocknumber}:
+        set {_searchdone} to true
+
+      set {_id} to getRawBlock({_loopblock})
+      while CustomSteemRequestResult({_id}) is "wait":
+        wait 1 tick
+      set {_block} to CustomSteemRequestResult({_id})
+      set {_transactions::*} to ...try {_block}.get("result").get("transactions")
+      if {_transactions::*} is set:
+        loop {_transactions::*}:
+          loop ...loop-value.get("operations"):
+            if loop-value-2.get(0).textValue() is "custom_json":
+              set {_json} to {_objectMapper}.readTree(loop-value-2.get(1).get("json").textValue())
+              if {_json}.get("w").textValue() is {_shortworld}:
+                set {_x} to {_json}.get("x")
+                set {_z} to {_json}.get("z")
+                set {_i} to {_json}.get("i")
+                #
+                # > Store the block numbers within the comment custom json.
+                set {_chunkpart} to {_objectMapper}.createObjectNode()
+                {_chunkpart}.put("x", {_x})
+                {_chunkpart}.put("z", {_z})
+                {_chunkpart}.put("i", {_i})
+                {_chunkpart}.put("b", "%{_loopblock}%")
+                {_arraynode}.add({_chunkpart})
+
+        #
+        # > Increase the block number only, if the transactions variable is set.
+        add 1 to {_loopblock}
+ 
+
+    set {_progress} to 0.90
+
+    #
+    # > Tell the player that the world is now being broadcasted.
+    {_bossbar}.setTitle("&lBroadcasting world...")
+    {_bossbar}.setProgress({_progress})
+
+    #
+    # > Once the chunk block numbers have been collected, 
+    # > add other custom json data to the json.
+    set {_finaljson} to {_objectMapper}.createObjectNode()
+    {_finaljson}.put("app", "{@commentapp}")
+
+    #
+    # > Get the categories (tags) from the local storage and add them to the tags.
+    set {_tags::*} to ...{@commenttags}
+    set {_tags} to {_objectMapper}.createArrayNode()
+    loop {_tags::*}:
+      {_tags}.add(loop-value)
+    set {_categories} to getGeneralStorageData("steemworlds",{_shortworld},"categories")
+    if {_categories} is set:
+      set {_jsonNode} to try {_objectMapper}.readTree({_categories})
+      set {_categoryloop::*} to ...try {_jsonNode}.get("categories")
+      if {_categoryloop::*} is set:
+        loop {_categoryloop::*}:
+          try {_tags}.add(loop-value.textValue())
+
+    {_finaljson}.put("tags", {_tags})
+    {_finaljson}.put("format", "{@commentformat}")
+
+    #
+    # > The world size is important to set the world size correctly on load.
+    {_finaljson}.put("size", {_size})
+
+    #
+    # > Set the spawn location to the string from the local storage.
+    set {_spawn} to getGeneralStorageData("steemworlds",{_shortworld},"spawn")
+    if {_spawn} is set:
+      {_finaljson}.put("spawn", {_spawn})
+
+    #
+    # > Get the biome from the local storage and add it to the json.
+    set {_biome} to getGeneralStorageData("steemworlds",{_shortworld},"biome")
+    if {_biome} is set:
+      {_finaljson}.put("biome", {_biome})
+
+    #
+    # > Get the difficulty from the local storage and add it to the json.
+    set {_difficulty} to getGeneralStorageData("steemworlds",{_shortworld},"difficulty")
+    if {_difficulty} is set:
+      {_finaljson}.put("difficulty", {_difficulty})
+
+    #
+    # > Get the doWeatherCycle gamerule from the local storage and add it to the json.
+    set {_weathercycle} to getGeneralStorageData("steemworlds",{_shortworld},"doWeatherCycle")
+    if {_weathercycle} is set:
+      {_finaljson}.put("doWeatherCycle", {_weathercycle})
+
+    #
+    # > Get the doDaylightCycle gamerule from the local storage and add it to the json.
+    set {_daylightcycle} to getGeneralStorageData("steemworlds",{_shortworld},"doDaylightCycle")
+    if {_daylightcycle} is set:
+      {_finaljson}.put("doDaylightCycle", {_daylightcycle})
+
+    #
+    # > Get the doMobSpawning gamerule from the local storage and add it to the json.
+    set {_mobspawning} to getGeneralStorageData("steemworlds",{_shortworld},"doMobSpawning")
+    if {_mobspawning} is set:
+      {_finaljson}.put("doMobSpawning", {_mobspawning})
+
+    #
+    # > Get the randomTickSpeed gamerule from the local storage and add it to the json.
+    set {_weathercycle} to getGeneralStorageData("steemworlds",{_shortworld},"randomTickSpeed")
+    if {_weathercycle} is set:
+      {_finaljson}.put("randomTickSpeed", {_weathercycle})
+
+    #
+    # > Get the weather from the local storage and add it to the json.
+    set {_weather} to getGeneralStorageData("steemworlds",{_shortworld},"weather")
+    if {_weather} is set:
+      {_finaljson}.put("weather", {_weather})
+
+    #
+    # > Get the time from the local storage and add it to the json.
+    set {_time} to getGeneralStorageData("steemworlds",{_shortworld},"time")
+    if {_time} is set:
+      {_finaljson}.put("time", {_time})
+
+    #
+    # > To shrink down the chunk reference parts, this data is being
+    # > compressed and encoded into base64.
+    {_finaljson}.put("world", compressBase64({_arraynode}.toString()))
+
+    set {_txid} to "%{_world}%"
+    set {_txuuid} to "%{_txid}.toLowerCase()%"
+    set {_comment} to "{@postprefix}"
+    set {_title} to {@commenttitle}
+    replace all "<world>" with "%{_shortworld}%" in {_title}	
+
+    #
+    # > The createComment function is going to create a comment.
+    createComment({_txuuid},{_steemname},{_comment},"{@commentparentauthor}","{@commentparentpermlink}",{@commenttags},{_title},{_finaljson}.toString())
+
+    #
+    # > Set the loading bossbar to 100% and the title to a success message
+    # > to tell the player that everything worked.
+    {_bossbar}.setTitle("&lWaiting for approval.")
+    {_bossbar}.setProgress(0.95)
+    #
+    # > The comment is going to be created in a separate thread, to catch
+    # > if everything worked, we can wait here until the response is no longer
+    # > "wait".
+    while getSteemResponse({_txuuid}) is "wait":
+      wait 1 tick
+
+    if getSteemResponse({_txuuid}) is "done":
+      message "%getChatPrefix()% Your world has been saved sucessfully." to {_player}
+      #
+      # > Set the loading bossbar to 100% and the title to a success message
+      # > to tell the player that everything worked.
+      {_bossbar}.setTitle("&lWorld sucessfully saved.")
+      {_bossbar}.setProgress(1.0)
+    else:
+      message "%getChatPrefix()% A error occured." to {_player}
+      message "%getChatPrefix()% %getSteemResponse({_txuuid})%" to {_player}
+
+    #
+    # > Remove the bossbar after one second.
+    wait 1 second
+
+    #
+    # > Remove all players from the bossbar to no longer display it
+    # > to the players, only deleting it is not enough.
+    {_bossbar}.removeAll()
+    delete {_bossbar}
