@@ -21,6 +21,9 @@ command /steem [<text>] [<text>] [<text>] [<text>]:
       make player execute "/sk reload STEEM.CRAFT/"
 
     if arg-1 is "vote":
+      if arg-3 or arg-2 is not set:
+        message "%getChatPrefix()% /steem vote <author> <permlink>"
+        stop
       openSteemVoteMenu(player,arg-2,arg-3)
 
     if arg-1 is "comment":
@@ -39,4 +42,10 @@ command /steem [<text>] [<text>] [<text>] [<text>]:
       if arg-3 or arg-2 is not set:
         message "%getChatPrefix()% /steem replies <author> <permlink>"
         stop
-      ViewSteemCommentReplies(player,arg-2,arg-3,1)	  
+      ViewSteemCommentReplies(player,arg-2,arg-3,1)
+
+    if arg-1 is "votes":
+      if arg-3 or arg-2 is not set:
+        message "%getChatPrefix()% /steem votes <author> <permlink>"
+        stop
+      ViewSteemVotes(player,arg-2,arg-3,1)
