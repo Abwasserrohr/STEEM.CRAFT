@@ -1,0 +1,88 @@
+#
+# ==============
+# SteemCreatePlayWorld.sk
+# ==============
+# SteemCreatePlayWorld.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  org.apache.commons.io.FileUtils
+  java.io.File
+  org.bukkit.Bukkit
+  org.bukkit.WorldCreator
+  org.bukkit.World$Environment
+  org.bukkit.WorldType
+  org.bukkit.event.world.WorldInitEvent
+
+#
+# > Function - SteemCreatePlayWorld
+# > Creates a new world that can be used to
+# > load a SteemWorld into it to be played.
+# > Returns:
+# > <text> UUID of this world that can be used to retrieve it.
+function SteemCreatePlayWorld() :: text:
+
+  #
+  # > Create a random uuid to save the new game world.
+  set {_worldid} to getRandomUUID()
+
+  #
+  # > Create a world name string for the world name.
+  set {_worldname} to "SteemPlayWorld-%{_worldid}%"
+
+  #
+  # > Use preloaded chunk worlds for faster loading.
+  if "%Bukkit.getVersion()%" contains "1.13.2":
+    set {_version} to "1.13.2"
+  else:
+    broadcast "%Bukkit.getVersion()% has no prepared chunks for faster loading."
+
+  if {_version} is set:
+    #
+    # > Get the world folder of the server to copy the game world into the world folder.
+    set {_home} to Bukkit.getServer().getWorldContainer().getCanonicalFile()
+
+    #
+    # > Get the source of the needed world from the game maps folder.
+    set {_source} to new File("%{_home}%/plugins/Skript/scripts/STEEM.CRAFT/addons/steemplay/maps/%{_version}%")
+
+    #
+    # > Create a File instance for the copy process.
+    set {_destination} to new File("%{_home}%/%{_worldname}%")
+
+    #
+    # > Copy the prepared map to the game world.
+    FileUtils.copyDirectory({_source}, {_destination})
+
+  #
+  # > To create a new world, the WorldCreator is very useful,
+  # > it allows to set the world type, environment, and generator
+  # > settings before actually creating it.
+  set {_world} to new WorldCreator({_worldname})
+  {_world}.environment(Environment.NORMAL!)
+  {_world}.type(WorldType.FLAT!)
+
+  #
+  # > Disable any villages from spawning in.
+  {_world}.generateStructures(false)
+
+  #
+  # > Remove any not necessary block layers from the world to reduce size.
+  {_world}.generatorSettings("{""biome"":""minecraft:plains"",""layers"":[{""block"":""minecraft:air"",""height"":1}],structures:{""village"":{}}}")
+
+  #
+  # > The world is created after all settings from the WorldCreator have
+  # > been done.
+  set {_finalworld} to Bukkit.createWorld({_world})
+  if metadata value "SteemPlayWorld|Worlds" of getDummy() is not set:
+    set metadata value "SteemPlayWorld|Worlds" of getDummy() to HashMap()
+  (metadata value "SteemPlayWorld|Worlds" of getDummy()).put({_worldid},{_finalworld})
+
+  return {_worldid}
+
+#
+# > Event - WorldInitEvent
+# > If a new world is initialized, the CurrentWorld value is changed to that world.
+on WorldInitEvent with priority HIGHEST:
+  if "%event.getWorld()%" contains "SteemPlayWorld-":
+    event.getWorld().setKeepSpawnInMemory(false)

@@ -1,0 +1,54 @@
+#
+# ==============
+# SteemDeleteAllPlayWorlds.sk
+# ==============
+# SteemDeleteAllPlayWorlds.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  org.apache.commons.io.FileUtils
+  java.io.File
+  org.bukkit.Bukkit
+
+#
+# > Function - SteemDeleteAllPlayWorlds
+# > Deletes all playworlds and teleports players out of them.
+function SteemDeleteAllPlayWorlds():
+  set {_worlds} to metadata value "SteemPlayWorld|Worlds" of getDummy()
+  if metadata value "SteemPlayWorld|Worlds" of getDummy() is not set:
+    stop
+
+  set {_worlds} to metadata value "SteemPlayWorld|Worlds" of getDummy()
+  delete metadata value "SteemPlayWorld|Worlds" of getDummy()
+  set {_block} to getDummy()
+
+  loop ...{_worlds}.keySet():
+    set {_world} to {_worlds}.get(loop-value)
+
+    #
+    # > Teleports all players of this world out of it.
+    teleport all players in {_world} to location(0, 0, 0, {_block}'s world)
+
+    #
+    # > Loops through all loaded chunks of the world and unloads them without saving.
+    loop ...{_world}.getLoadedChunks():
+      loop-value-2.unload(true)
+
+    #
+    # > Unload the world.
+    Bukkit.getServer().unloadWorld({_world}, true)
+
+    #
+    # > Delete the world.
+    set {_home} to Bukkit.getServer().getWorldContainer().getCanonicalFile()
+
+    set {_destination} to new File("%{_home}%/%{_world}%/")
+    FileUtils.deleteDirectory({_destination})
+
+  #
+  # > Delete any left over SteemPlayWorld folders.
+  set {_home} to Bukkit.getServer().getWorldContainer().getCanonicalFile()
+  loop ...{_home}.listFiles():
+    if loop-value.isDirectory() is true:
+      if "%loop-value%" contains "SteemPlayWorld-":
+        FileUtils.deleteDirectory(loop-value)

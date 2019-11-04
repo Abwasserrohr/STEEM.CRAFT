@@ -1,0 +1,10 @@
+#
+# ==============
+# onskriptload.sk
+# ==============
+# onskriptload.sk is part of the MINIGAMES.SK library.
+# ==============
+
+on skript load:
+  wait 1 tick
+  SteemDeleteAllPlayWorlds()

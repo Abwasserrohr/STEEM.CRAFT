@@ -50,7 +50,9 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
 
   #
   # > The shortworld is used for short storage names.
-  set {_shortworld} to GetSteemWorldShortName({_worldname} parsed as world)
+  set {_shortworld} to {_worldname}
+  replace all "steemworlds-" with "" in {_shortworld}
+
 
   #
   # > Store new world data only if it is a world loading process with

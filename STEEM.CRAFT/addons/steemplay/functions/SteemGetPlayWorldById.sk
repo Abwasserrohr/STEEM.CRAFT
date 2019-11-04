@@ -1,0 +1,19 @@
+#
+# ==============
+# SteemGetPlayWorldById.sk
+# ==============
+# SteemGetPlayWorldById.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemGetPlayWorldById
+# > Returns the world of the given world id.
+# > Parameters:
+# > <text> The world to which the specified world id matches.
+# > Returns:
+# > <world|boolean(false)> Returns the world or false, if the world isn't loaded. 
+function SteemGetPlayWorldById(worldid:text) :: object:
+  if metadata value "SteemPlayWorld|Worlds" of getDummy() is set:
+    if (metadata value "SteemPlayWorld|Worlds" of getDummy()).get({_worldid}) is set:
+      return (metadata value "SteemPlayWorld|Worlds" of getDummy()).get({_worldid})
+  return false
