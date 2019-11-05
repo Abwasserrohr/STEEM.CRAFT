@@ -1,6 +1,6 @@
 #
 # ==============
-# steemworlds/gui.sk v0.0.12
+# steemworlds/gui.sk v0.0.13
 # ==============
 # steemworlds/gui.sk is part of the STEEM.CRAFT addons.
 # ==============
@@ -225,12 +225,37 @@ function openSteemWorldSettingsMenu(world:world,player:player):
   # > This part of the menu will open another sub menu to
   # > change the categories of the world.
 
-  #
-  # > Set the lore and add the current time to it.
   set {_lore} to "&7Click here to set the categories\n&7of this world."
 
   set {_enableditem} to scswGetConfig("enableditem")
   setguiitem({_player},20, {_enableditem},1, "&rCategories ",{_lore},"openSteemWorldCategories(""%{_world}%"" parsed as world,""%{_player}%"" parsed as player)")
+
+  #
+  # > Menu part - Games
+  # > This part of the menu will open another sub menu to
+  # > change the game that is being used for this world.
+
+  set {_lore} to "&7Click here to set the game\n&7for this world in play mode."
+
+  set {_enableditem} to scswGetConfig("enableditem")
+  setguiitem({_player},21, {_enableditem},1, "&rGames",{_lore},"openSteemWorldGames(""%{_world}%"" parsed as world,""%{_player}%"" parsed as player)")
+
+  #
+  # > Menu part - Game configuration
+  # > This part of the menu will open another sub menu to
+  # > change the game configuration, it redirects to a function
+  # > that is outside of steemworlds.
+
+  set {_lore} to "&7Click here to change the\n&7special configuration of the\n&7current game of this world."
+  set {_game} to getGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"game")
+  if {_game} is not set:
+    set {_game} to "creative"
+
+  set {_enableditem} to scswGetConfig("enableditem")
+  set {_permlink} to "re-steemcraft-%{_world}%"
+  set {_author} to getGeneralStorageData("steemworlds",GetSteemWorldShortName({_world}),"steemaccount")
+
+  setguiitem({_player},22, {_enableditem},1, "&rGame configuration",{_lore},"SteemPlay%{_game}%OpenConfig(""%{_player}%"" parsed as player,""%{_author}%"",""%{_permlink}%"")")
 
   set {_backitem} to scswGetConfig("backitem")
   setguiitem({_player},27, {_backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldMainMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
@@ -364,6 +389,64 @@ function openSteemWorldCategories(world:world,player:player):
         setguiitem({_player},{_slot}, {_disableditem},1, "&r%{_categoryname}%","%{_lore}%%{_limitedlore}%","")
       else:
         setguiitem({_player},{_slot}, {_disableditem},1, "&r%{_categoryname}%","%{_lore}%%{_limitedlore}%","changeSteemWorldSettingInMenu(""%{_world}%"" parsed as world, ""category"",""%{_categoryname}%"", ""%{_player}%"" parsed as player)")
+
+    add 1 to {_time}
+
+    set {_backitem} to scswGetConfig("backitem")
+    setguiitem({_player},45, {_backitem},1, "&rBack","&7Click here to get\n&7back to the\n&7previous menu.","openSteemWorldSettingsMenu(""%{_world}%"" parsed as world, ""%{_player}%"" parsed as player)")
+
+#
+# > Function - openSteemWorldGames
+# > Opens a menu in which the games can be set.
+# > Parameters:
+# > <world> The world which should have a game change.
+# > <player> The player who wants to change the game.
+function openSteemWorldGames(world:world,player:player):
+  #
+  # > Opens a big menu named settings.
+  opengui({_player},54,"&lGames")
+  #
+  # > Create a background item for every slot to prevent the player
+  # > from putting items into there.
+  set {_bgitem} to scswGetConfig("backgrounditem")
+  loop 54 times:
+    setguiitem({_player},loop-number - 1, {_bgitem},1, " ","")
+
+  #
+  # > Create a menu which allows to select every hour of the day.
+  # > Could also simply create 24 times the setguiitem function,
+  # > but this is with just 16 lines smaller and faster to load.
+  set {_slot} to 10
+  set {_time} to 0
+  set {_enableditem} to scswGetConfig("enableditem")
+  set {_disableditem} to scswGetConfig("disableditem")
+  set {_categories} to scswGetConfig("worldcategories")
+  set {_games::*} to SteemPlayGetGames()
+  
+  set {_worldname} to GetSteemWorldShortName({_world})
+
+  set {_currentgame} to getGeneralStorageData("steemworlds",{_worldname},"game")
+  if {_currentgame} is not set:
+    set {_currentgame} to "creative"
+
+  loop {_games::*}:
+    add 1 to {_slot}
+    add 1 to {_slotskip}
+    set {_gamename} to loop-value
+
+    #
+    # > To make the menu look better, skip 3 slots every 7 slots.
+    if {_slotskip} is 7:
+      add 3 to {_slot}
+      set {_slotskip} to 1
+
+
+    if loop-value is {_currentgame}:
+      set {_lore} to "&7This game is the current game."
+      setguiitem({_player},{_slot}, {_enableditem},1, "&r%{_gamename}%",{_lore})
+    else:
+      set {_lore} to "&7Click here to set the game\n&7of this world to this."
+      setguiitem({_player},{_slot}, {_disableditem},1, "&r%{_gamename}%","%{_lore}%","changeSteemWorldSettingInMenu(""%{_world}%"" parsed as world, ""game"",""%{_gamename}%"", ""%{_player}%"" parsed as player)")
 
     add 1 to {_time}
 
@@ -518,6 +601,11 @@ function changeSteemWorldSettingInMenu(world:world,setting:text,value:object,pla
 
       saveGeneralStorageData("steemworlds",{_name},"categories", {_mapper}.writeValueAsString({_currentcategories}))
       openSteemWorldCategories({_world},{_player})
+
+    if {_setting} is "game":
+
+      saveGeneralStorageData("steemworlds",{_name},"game", {_value})
+      openSteemWorldGames({_world},{_player})
 
 #
 # > Function - changeSteemWorldGameruleInMenu

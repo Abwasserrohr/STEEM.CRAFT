@@ -45,13 +45,12 @@ function AsyncLoadSteemPlayWorld(data:object):
   set {_worldid} to {_data}.get("worldid")
   set {_player} to {_data}.get("player")
   set {_blockid} to {_data}.get("blockid")
-  broadcast "%{_data}%"
-  broadcast "1"
+
   #
   # > The steem name is needed, check if it is actually set.
   if {_steemname} is set:
     set {_steemname} to {_steemname}.toLowerCase()
-    broadcast "2"
+
     #
     # > Get the world parsed as a world.
     set {_world} to SteemGetPlayWorldById({_worldid})
@@ -59,6 +58,10 @@ function AsyncLoadSteemPlayWorld(data:object):
     set {_txid} to {_worldname}
     set {_shortworld} to {_worldname}
     replace all "steemworlds-" with "" in {_shortworld}
+
+    if metadata value "SteemPlayWorld|WorldNames" of getDummy() is not set:
+      set metadata value "SteemPlayWorld|WorldNames" of getDummy() to HashMap()
+    (metadata value "SteemPlayWorld|WorldNames" of getDummy()).put({_worldid},{_worldname})
 
     #
     # > Tell the player that the world is now being loaded.
@@ -84,7 +87,6 @@ function AsyncLoadSteemPlayWorld(data:object):
     # > The returned HashMap contains the response and the world. We need the
     # > world.
     set {_worlddata} to {_map}.get("world")
-    broadcast "%{_worlddata}%"
 
     #
     # > Get the size of the plotparts to give the player a loading bar.

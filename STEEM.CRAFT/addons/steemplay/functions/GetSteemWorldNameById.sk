@@ -1,0 +1,19 @@
+#
+# ==============
+# GetSteemWorldNameById.sk
+# ==============
+# GetSteemWorldNameById.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - GetSteemWorldNameById
+# > Returns the SteemWorld name by id of the steemplay world.
+# > Parameters:
+# > <text> The world id to which the steemworld name is wanted.
+# > Returns:
+# > <text|boolean(false)> Returns the world name or false, if no name is found. 
+function GetSteemWorldNameById(worldid:text) :: object:
+  if metadata value "SteemPlayWorld|WorldNames" of getDummy() is set:
+    if (metadata value "SteemPlayWorld|WorldNames" of getDummy()).get({_worldid}) is set:
+      return (metadata value "SteemPlayWorld|WorldNames" of getDummy()).get({_worldid})
+  return false

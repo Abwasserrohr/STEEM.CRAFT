@@ -1,0 +1,7 @@
+
+
+
+
+
+function SteemPlaycreativeOpenConfig(player:player,author:text,permlink:text):
+  message "There is no configuration for creative at the moment." to {_player}

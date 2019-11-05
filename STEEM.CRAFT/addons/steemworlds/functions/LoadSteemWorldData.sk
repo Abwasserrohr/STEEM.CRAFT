@@ -96,6 +96,16 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
       saveGeneralStorageData("steemworlds",{_shortworld},"weather",{_weather})
 
     #
+    # > Get the game and store it.
+    set {_game} to {_jsonNode}.get("game").textValue()
+
+    #
+    # > If no game is set, fallback to "creative".
+    if {_game} is not set:
+      set {_game} to "creative"
+    saveGeneralStorageData("steemworlds",{_shortworld},"game",{_game})
+
+    #
     # > Get the doDaylightCycle gamerule and store it.
     set {_doDaylightCycle} to {_jsonNode}.get("doDaylightCycle").textValue()
     if {_doDaylightCycle} is set:

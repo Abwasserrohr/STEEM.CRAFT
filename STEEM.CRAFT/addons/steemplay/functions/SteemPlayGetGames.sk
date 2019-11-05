@@ -1,0 +1,22 @@
+#
+# ==============
+# SteemPlayGetGames.sk
+# ==============
+# SteemPlayGetGames.sk is part of the STEEM.CRAFT core scripts.
+# ==============
+
+import:
+  java.io.File
+  org.bukkit.Bukkit
+
+#
+# > Function - SteemPlayGetGames
+# > Returns the list of games as strings.
+function SteemPlayGetGames() :: objects:
+  set {_home} to Bukkit.getServer().getWorldContainer().getCanonicalFile()
+
+  set {_games} to new File("%{_home}%/plugins/Skript/scripts/STEEM.CRAFT/addons/steemplay/games/")
+  loop ...{_games}.list():
+    if new File("%{_home}%/plugins/Skript/scripts/STEEM.CRAFT/addons/steemplay/games/%loop-value%").isDirectory() is true:
+      add loop-value to {_games::*}
+  return {_games::*}

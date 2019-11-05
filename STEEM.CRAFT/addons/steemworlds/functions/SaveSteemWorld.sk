@@ -500,6 +500,16 @@ function SaveSteemWorld(player:player):
       {_finaljson}.put("weather", {_weather})
 
     #
+    # > Get the game from the local storage and add it to the json.
+    set {_game} to getGeneralStorageData("steemworlds",{_shortworld},"game")
+
+    #
+    # > If no game is set, fallback to "creative".
+    if {_game} is not set:
+      set {_game} to "creative"
+    {_finaljson}.put("game", {_game})
+
+    #
     # > Get the time from the local storage and add it to the json.
     set {_time} to getGeneralStorageData("steemworlds",{_shortworld},"time")
     if {_time} is set:

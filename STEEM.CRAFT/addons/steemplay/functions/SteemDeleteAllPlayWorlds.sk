@@ -19,7 +19,10 @@ function SteemDeleteAllPlayWorlds():
     stop
 
   set {_worlds} to metadata value "SteemPlayWorld|Worlds" of getDummy()
+
   delete metadata value "SteemPlayWorld|Worlds" of getDummy()
+  delete metadata value "SteemPlayWorld|WorldNames" of getDummy()
+
   set {_block} to getDummy()
 
   loop ...{_worlds}.keySet():
