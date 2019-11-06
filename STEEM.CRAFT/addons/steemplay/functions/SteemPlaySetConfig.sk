@@ -1,0 +1,54 @@
+#
+# ==============
+# SteemPlaySetConfig.sk
+# ==============
+# SteemPlaySetConfig.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+
+#
+# > Function - SteemPlaySetConfig
+# > Saves the configuration that has been retrieved using
+# > SteemPlayGetConfig back to file.
+# > Parameters:
+# > <text> The author of the world that the config is wanted.
+# > <text> The permlink of the world.
+# > <ObjectMapper> The configuration of the game.
+function SteemPlaySetConfig(author:text,permlink:text,config:object) :: object:
+  while metadata value "SteemPlayConfigSetRequest" of getDummy() is set:
+    wait 1 tick
+  set {_request} to HashMap()
+  {_request}.put("author",{_author})
+  {_request}.put("permlink",{_permlink})
+  {_request}.put("config",{_config})
+  set metadata value "SteemPlayConfigSetRequest" of getDummy() to {_request}
+
+  $ thread
+  SteemPlaySetConfigAsync(metadata value "SteemPlayConfigSetRequest" of getDummy())
+
+#
+# > Function - SteemPlaySetConfigAsync
+# > Sets the configuration to file.
+# > an usable object.
+# > Parameters:
+# > <HashMap> {"author":author,"permlink":permlink,"config":configuration (ObjectMapper)}
+function SteemPlaySetConfigAsync(request:object):
+  delete metadata value "SteemPlayConfigSetRequest" of getDummy()
+  
+  set {_author} to {_request}.get("author")
+  set {_permlink} to {_request}.get("permlink")
+  set {_config} to {_request}.get("config")
+  set {_shortworld} to {_permlink}
+  replace all "re-steemcraft-steemworlds-" with "" in {_shortworld}
+  set {_game} to getGeneralStorageData("steemworlds",{_shortworld},"game")
+
+  #
+  # > If no game is set, default it to "creative".
+  if {_game} is not set:
+    set {_game} to "creative"
+
+  #
+  # > With the game, we can save the game specic configuration to file.
+  saveGeneralStorageData("steemworlds",{_shortworld},"%{_game}%gameconfig",{_config}.toString())

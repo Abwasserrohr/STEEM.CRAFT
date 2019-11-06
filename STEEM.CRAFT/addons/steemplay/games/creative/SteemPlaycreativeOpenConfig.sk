@@ -1,7 +1,58 @@
+#
+# ==============
+# SteemPlaycreativeOpenConfig.sk
+# ==============
+# SteemPlaycreativeOpenConfig.sk is part of the STEEM.CRAFT addons.
+# ==============
 
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
 
-
-
-
+#
+# > Function - SteemPlaycreativeOpenConfig
+# > Opens a configuration menu for this game.
+# > Parameters:
+# > <player> The player who wants to change the game config.
+# > <text> The author (Steem account) who wants to change the config.
+# > <text> The permlink of the world that should have a config changed.
 function SteemPlaycreativeOpenConfig(player:player,author:text,permlink:text):
+  #
+  # > Creative worlds don't have a configuration at the moment.
   message "There is no configuration for creative at the moment." to {_player}
+  stop
+
+  #
+  # > This part is an example how to read and write configuration for games.
+
+  #
+  # > Retrieve the configuration from file.
+  while SteemPlayGetConfig({_author},{_permlink}) is "wait":
+    wait 1 tick
+  wait 1 tick
+  set {_config} to SteemPlayGetConfig({_author},{_permlink})
+
+  #
+  # > Add a key value "testkey" with the value 123 to the configuration.
+  {_config}.put("testkey",123)
+
+  #
+  # > Send the testkey key value to the player.
+  set {_testkey} to {_config}.get("testkey")
+  message "%{_testkey}%" to {_player}
+
+  #
+  # > Send the entire configuration to the player.
+  message "%{_config}%" to {_player}
+
+  #
+  # > Save the configuration back to file.
+  SteemPlaySetConfig({_author},{_permlink},{_config})
+command /steemplaytest:
+  trigger:
+    set {_author} to "immanuel94"
+    set {_permlink} to "re-steemcraft-steemworlds-immanuel94-mine"
+    while SteemPlayGetConfig({_author},{_permlink}) is "wait":
+      wait 1 tick
+    wait 1 tick
+    set {_config} to SteemPlayGetConfig({_author},{_permlink})
+    message "%{_config}%"

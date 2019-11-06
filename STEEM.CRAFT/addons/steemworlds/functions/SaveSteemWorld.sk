@@ -68,7 +68,7 @@ import:
 # > Saves the world of the player.
 # > Parameters:
 # > <player>the player who wants to save the own world.
-function SaveSteemWorld(player:player):
+function SaveSteemWorld(player:player,publish:boolean=false):
   #
   # > Only save the world if the player is online.
   if {_player} is online:
@@ -106,6 +106,37 @@ function SaveSteemWorld(player:player):
     set {_world} to {_player}'s world
     set {_shortworld} to GetSteemWorldShortName({_player}'s world)
 
+    #
+    # > If the player wants to publish the world to SteemPlay, check if
+    # > the function of the game accepts that publish or not.
+    if {_publish} is true:
+      #
+      # > A unique function is called for every game, for that, we need the game name.
+      set {_game} to getGeneralStorageData("steemworlds",{_shortworld},"game")
+
+      #
+      # > If no game name is set, default it to "creative".
+      if {_game} is not set:
+        set {_game} to "creative"
+
+      set {_permlink} to "re-steemcraft-%{_world}%"
+      #
+      # > Parse a custom function to be evaluated using SkQuery.
+      evaluate "SteemPlaycreativePublishCheck(""%{_player}%"" parsed as player,""%{_steemname}%"",""%{_permlink}%"")"
+
+	  #
+	  # > Wait until we have a response from the custom function.
+      while metadata value "SteemPlay-%{_steemname}%-%{_permlink}%" of {_player} is not set:
+        wait 1 tick
+
+      set {_publishable} to metadata value "SteemPlay-%{_steemname}%-%{_permlink}%" of {_player}
+      delete metadata value "SteemPlay-%{_steemname}%-%{_permlink}%" of {_player}
+
+      if {_publishable} is false:
+        message "%getChatPrefix()% There are some settings missing from publishing" to {_player}
+        message "%getChatPrefix()% your world to SteemPlay. To save your world without" to {_player}
+        message "%getChatPrefix()% publishing it, use /sw save." to {_player}
+        stop
     #
     # > Get the size of the world to set the correct world coordinates.
     set {_size} to getGeneralStorageData("steemworlds",{_shortworld},"size")
@@ -514,6 +545,16 @@ function SaveSteemWorld(player:player):
     set {_time} to getGeneralStorageData("steemworlds",{_shortworld},"time")
     if {_time} is set:
       {_finaljson}.put("time", {_time})
+
+    set {_permlink} to "re-steemcraft-%{_world}%"
+
+    #
+    # > Get the game config from the local storage and add it to the json.
+    while SteemPlayGetConfig({_steemname},{_permlink}) is "wait":
+      wait 1 tick
+    wait 1 tick
+    set {_config} to SteemPlayGetConfig({_steemname},{_permlink})
+    {_finaljson}.put("gameconfig", {_config}.toString())
 
     #
     # > To shrink down the chunk reference parts, this data is being
