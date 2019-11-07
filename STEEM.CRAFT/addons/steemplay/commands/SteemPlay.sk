@@ -42,9 +42,9 @@ command /steemplay [<text>] [<text>] [<text>]:
     if arg-1 is "clearworlds":
       SteemDeleteAllPlayWorlds()
     if arg-1 is "play":
-      set {_worldid} to SteemCreatePlayWorld()
-      SteemLoadPlayWorld({_worldid},arg-2, arg-3,player)
+      SteemLoadPlayWorld(arg-2, arg-3,player)
       while metadata value "SteemPlayWorld|Wait" of player is set:
+        set {_worldid} to metadata value "SteemPlayWorld|Wait" of player
         wait 1 tick
       set {_world} to SteemGetPlayWorldById({_worldid})
       set {_loc} to location(0,100,0,{_world})

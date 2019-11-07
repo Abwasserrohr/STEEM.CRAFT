@@ -44,9 +44,12 @@ options:
   # > be loaded anymore.
   commentparentauthor: steem.craft
   #
-  # > The commennt parent permlink works the same way the parent author works.
+  # > The comment parent permlink works the same way the parent author works.
   # > If this is changed, you can't load worlds from other comment parent permlinks.
   commentparentpermlink: w
+  #
+  # > The comment parent permlink for published worlds goes here.
+  publishedcommentparentpermlink: game-<game>
   #
   # > Set the maximum amount of custom json transactions that are allowed per block.
   maximumcustomjsontxperblock: 5
@@ -134,8 +137,8 @@ function SaveSteemWorld(player:player,publish:boolean=false):
 
       if {_publishable} is false:
         message "%getChatPrefix()% There are some settings missing from publishing" to {_player}
-        message "%getChatPrefix()% your world to SteemPlay. To save your world without" to {_player}
-        message "%getChatPrefix()% publishing it, use /sw save." to {_player}
+        message "%getChatPrefix()% your world to SteemPlay, check your settings using /sw." to {_player}
+        message "%getChatPrefix()% To save your world without publishing it, use /sw save." to {_player}
         stop
     #
     # > Get the size of the world to set the correct world coordinates.
@@ -172,7 +175,7 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     #
     # > Tell the player that the process is working and how long it may take. 
     # > It is estimated that every chunk takes at least 10 seconds to process.
-    message "%getChatPrefix()% Your world is now being saved. This will take at least %(size of {_chunks::*} * 10) + 70% seconds." to {_player}
+    message "%getChatPrefix()% Your world is now being saved. This may take up to %(size of {_chunks::*} * 10) + 70% seconds." to {_player}
 
     #
     # > The bossbar is perfect to represent a loading bar, use it here.
@@ -593,6 +596,42 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     else:
       message "%getChatPrefix()% A error occured." to {_player}
       message "%getChatPrefix()% %getSteemResponse({_txuuid})%" to {_player}
+      {_bossbar}.removeAll()
+      delete {_bossbar}
+      stop
+    if {_publish} is true:
+      wait 6 seconds
+      set {_txid} to "%{_world}%"
+      set {_txuuid} to "publish-%{_txid}.toLowerCase()%"
+      set {_parentpermlink} to "{@publishedcommentparentpermlink}"
+      replace all "<game>" with "%{_game}%" in {_parentpermlink}
+
+      #
+      # > The createComment function is going to create a comment to publish the world.
+      createComment({_txuuid},{_steemname},{_comment},"{@commentparentauthor}",{_parentpermlink},{@commenttags},{_title},{_finaljson}.toString())
+
+      #
+      # > Set the loading bossbar to 100% and the title to a success message
+      # > to tell the player that everything worked.
+      {_bossbar}.setTitle("&lPublishing world...")
+      {_bossbar}.setProgress(1.00)
+      #
+      # > The comment is going to be created in a separate thread, to catch
+      # > if everything worked, we can wait here until the response is no longer
+      # > "wait".
+      while getSteemResponse({_txuuid}) is "wait":
+        wait 1 tick
+
+      if getSteemResponse({_txuuid}) is "done":
+        message "%getChatPrefix()% Your world has been published sucessfully." to {_player}
+        #
+        # > Set the loading bossbar to 100% and the title to a success message
+        # > to tell the player that everything worked.
+        {_bossbar}.setTitle("&lWorld sucessfully published.")
+        {_bossbar}.setProgress(1.0)
+      else:
+        message "%getChatPrefix()% A error occured." to {_player}
+        message "%getChatPrefix()% %getSteemResponse({_txuuid})%" to {_player}
 
     #
     # > Remove the bossbar after one second.

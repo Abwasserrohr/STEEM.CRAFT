@@ -235,7 +235,7 @@ function openSteemWorldSettingsMenu(world:world,player:player):
   # > This part of the menu will open another sub menu to
   # > change the game that is being used for this world.
 
-  set {_lore} to "&7Click here to set the game\n&7for this world in play mode."
+  set {_lore} to "&7Click here to set the game\n&7for this world in play mode.\n&7&lYou can't change the\n&7&lgame once your map\n&7&lhas been published."
 
   set {_enableditem} to scswGetConfig("enableditem")
   setguiitem({_player},21, {_enableditem},1, "&rGames",{_lore},"openSteemWorldGames(""%{_world}%"" parsed as world,""%{_player}%"" parsed as player)")

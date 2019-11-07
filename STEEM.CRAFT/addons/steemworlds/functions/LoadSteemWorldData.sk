@@ -19,16 +19,28 @@ import:
 # > [<BossBar>] a Bukkit bossbar to update the current progress
 # > Returns:
 # > <Hashmap>["response",SteemJ response],["world",<HashMap>["chunkid","base64 string"]]
-function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid:number=0) :: object:
+function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid:number=0,steemplay:boolean=false) :: object:
   #
-  # > Set the permlink to allow getting the comment content.
-  set {_permlink} to "re-steemcraft-%{_worldname}%"
+  # > If the world should be loaded for SteemPlay, load it
+  # > from the published worlds area and not from the
+  # > steemworlds storage location.
+  if {_steemplay} is true:
+    #
+    # > Set the permlink to allow getting the comment content.
+    set {_permlink} to "re-steemcraft-publish-%{_worldname}%"
+    #
+    # > Always load the latest version for SteemPlay.
+    set {_blockid} to 0
+  else:
+    #
+    # > Set the permlink to allow getting the comment content.
+    set {_permlink} to "re-steemcraft-%{_worldname}%"
 
   #
   # > Load the content using getSteemContent without thread,
   # > since we're already in a thread.
   getSteemContent({_steemname},{_permlink},false,{_blockid})
-	
+
   #
   # > Create a HashMap which stores all the data.
   set {_map} to HashMap()
@@ -53,6 +65,13 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
   set {_shortworld} to {_worldname}
   replace all "steemworlds-" with "" in {_shortworld}
 
+  #
+  # > Depending on why the world is loaded, save the world
+  # > data into separate folders.
+  if {_steemplay} is true:
+    set {_storagefolder} to "steemplay"
+  else:
+    set {_storagefolder} to "steemworlds"
 
   #
   # > Store new world data only if it is a world loading process with
@@ -63,37 +82,37 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
     # > Get the serialized location and save it to the storage.
     set {_spawn} to {_jsonNode}.get("spawn").textValue()
     if {_spawn} is set:
-      saveGeneralStorageData("steemworlds",{_shortworld},"spawn",{_spawn})
+      saveGeneralStorageData({_storagefolder},{_shortworld},"spawn",{_spawn})
 
     #
     # > Get the biome and store it.
     set {_biome} to {_jsonNode}.get("biome").textValue()
     if {_biome} is set:
-      saveGeneralStorageData("steemworlds",{_shortworld},"biome",{_biome})
+      saveGeneralStorageData({_storagefolder},{_shortworld},"biome",{_biome})
 
     #
     # > Get the difficulty and store it.
     set {_difficulty} to {_jsonNode}.get("difficulty").textValue()
     if {_difficulty} is set:
-      saveGeneralStorageData("steemworlds",{_shortworld},"difficulty",{_difficulty})
+      saveGeneralStorageData({_storagefolder},{_shortworld},"difficulty",{_difficulty})
 
     #
     # > Get the doWeatherCycle gamerule and store it.
     set {_weatherCycle} to {_jsonNode}.get("doWeatherCycle").textValue()
     if {_weatherCycle} is set:
-      saveGeneralStorageData("steemworlds",{_shortworld},"doWeatherCycle",{_weatherCycle})
+      saveGeneralStorageData({_storagefolder},{_shortworld},"doWeatherCycle",{_weatherCycle})
 
     #
     # > Get the randomTickSpeed gamerule and store it.
     set {_randomTickSpeed} to {_jsonNode}.get("randomTickSpeed").textValue()
     if {_randomTickSpeed} is set:
-      saveGeneralStorageData("steemworlds",{_shortworld},"randomTickSpeed",{_randomTickSpeed})
+      saveGeneralStorageData({_storagefolder},{_shortworld},"randomTickSpeed",{_randomTickSpeed})
 
     #
     # > Get the weather and store it.
     set {_weather} to {_jsonNode}.get("weather").textValue()
     if {_weather} is set:
-      saveGeneralStorageData("steemworlds",{_shortworld},"weather",{_weather})
+      saveGeneralStorageData({_storagefolder},{_shortworld},"weather",{_weather})
 
     #
     # > Get the game and store it.
@@ -103,33 +122,33 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
     # > If no game is set, fallback to "creative".
     if {_game} is not set:
       set {_game} to "creative"
-    saveGeneralStorageData("steemworlds",{_shortworld},"game",{_game})
+    saveGeneralStorageData({_storagefolder},{_shortworld},"game",{_game})
 
     #
     # > Get the game config and store it.
     set {_gameconfig} to {_jsonNode}.get("gameconfig").textValue()
     if {_gameconfig} is not set:
       set {_gameconfig} to "{}"
-    saveGeneralStorageData("steemworlds",{_shortworld},"%{_game}%gameconfig",{_gameconfig})
+    saveGeneralStorageData({_storagefolder},{_shortworld},"%{_game}%gameconfig",{_gameconfig})
 
 
     #
     # > Get the doDaylightCycle gamerule and store it.
     set {_doDaylightCycle} to {_jsonNode}.get("doDaylightCycle").textValue()
     if {_doDaylightCycle} is set:
-      saveGeneralStorageData("steemworlds",{_shortworld},"doDaylightCycle",{_doDaylightCycle})
+      saveGeneralStorageData({_storagefolder},{_shortworld},"doDaylightCycle",{_doDaylightCycle})
 
     #
     # > Get the doMobSpawning gamerule and store it.
     set {_doMobSpawning} to {_jsonNode}.get("doMobSpawning").textValue()
     if {_doMobSpawning} is set:
-      saveGeneralStorageData("steemworlds",{_shortworld},"doMobSpawning",{_doMobSpawning})
+      saveGeneralStorageData({_storagefolder},{_shortworld},"doMobSpawning",{_doMobSpawning})
 
     #
     # > Get the time and store it.
     set {_time} to {_jsonNode}.get("time").textValue()
     if {_time} is set:
-      saveGeneralStorageData("steemworlds",{_shortworld},"time",{_time})
+      saveGeneralStorageData({_storagefolder},{_shortworld},"time",{_time})
 
     #
     # > Get the tags and store valid categories.
@@ -148,13 +167,13 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
 	
     set {_currentcategories} to HashMap()
     {_currentcategories}.put("categories", {_usedtags})
-    saveGeneralStorageData("steemworlds",{_shortworld},"categories", {_objectMapper}.writeValueAsString({_currentcategories}))
+    saveGeneralStorageData({_storagefolder},{_shortworld},"categories", {_objectMapper}.writeValueAsString({_currentcategories}))
 
     #
     # > Set the world size to the defined size in the Steem comment.
     set {_size} to {_jsonNode}.get("size").doubleValue()
     if {_size} is set:
-      saveGeneralStorageData("steemworlds",{_shortworld},"size",{_size})
+      saveGeneralStorageData({_storagefolder},{_shortworld},"size",{_size})
 
     set {_size} to {_size}*32
     set {_wb} to {_world}.getWorldBorder()

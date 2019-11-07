@@ -55,6 +55,12 @@ command /steemworlds [<text>] [<text>] [<text>]:
         $ thread
         SaveSteemWorld(player)
         stop
+    # > == Save & Publish World
+    if arg-1 is "publish":
+      if CheckSteemWorldPermission(player's world,player,"onlyowner",true) is true:
+        $ thread
+        SaveSteemWorld(player,true)
+        stop
     # > == Load World
     if arg-1 is "load":
       if CheckSteemWorldPermission(player's world,player,"onlyowner",true) is true:

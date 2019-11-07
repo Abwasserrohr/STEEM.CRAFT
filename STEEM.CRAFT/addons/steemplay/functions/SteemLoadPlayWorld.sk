@@ -14,15 +14,13 @@ import:
 #
 # > Function - SteemLoadPlayWorld
 # > Loads data into the SteemPlayWorld using FAWE.
-function SteemLoadPlayWorld(worldid:text,author:text,permlink:text,player:player,blockid:number=0):
+function SteemLoadPlayWorld(author:text,permlink:text,player:player,blockid:number=0):
   set metadata value "SteemPlayWorld|Wait" of {_player} to true
   set {_data} to HashMap()
   {_data}.put("author",{_author})
   {_data}.put("permlink",{_permlink})
-  {_data}.put("worldid",{_worldid})
   {_data}.put("player",{_player})
   {_data}.put("blockid",{_blockid})
-
   while metadata value "SC|LoadSteemWorld" of getDummy() is set:
     wait 1 tick
 
@@ -42,7 +40,6 @@ function AsyncLoadSteemPlayWorld(data:object):
   delete metadata value "SC|LoadSteemWorld" of getDummy()
   set {_steemname} to {_data}.get("author")
   set {_permlink} to {_data}.get("permlink")
-  set {_worldid} to {_data}.get("worldid")
   set {_player} to {_data}.get("player")
   set {_blockid} to {_data}.get("blockid")
 
@@ -51,24 +48,15 @@ function AsyncLoadSteemPlayWorld(data:object):
   if {_steemname} is set:
     set {_steemname} to {_steemname}.toLowerCase()
 
-    #
-    # > Get the world parsed as a world.
-    set {_world} to SteemGetPlayWorldById({_worldid})
+    # 
+    # > Load the world data using LoadSteemWorldData. By adding the bossbar
+    # > variable, the player gets informed about the loading progress.
     set {_worldname} to "steemworlds-%{_steemname}%-%{_permlink}%"
-    set {_txid} to {_worldname}
-    set {_shortworld} to {_worldname}
-    replace all "steemworlds-" with "" in {_shortworld}
+    set {_map} to LoadSteemWorldData({_steemname},{_worldname},{_bossbar},{_blockid},true)
 
-    if metadata value "SteemPlayWorld|WorldNames" of getDummy() is not set:
-      set metadata value "SteemPlayWorld|WorldNames" of getDummy() to HashMap()
-    (metadata value "SteemPlayWorld|WorldNames" of getDummy()).put({_worldid},{_worldname})
-
-    #
-    # > Tell the player that the world is now being loaded.
-    message "%getChatPrefix()% Author %{_steemname}%" to {_player}
-    message "%getChatPrefix()% Permlink %{_permlink}%" to {_player}
-    message "%getChatPrefix()% World %{_worldname}%" to {_player}
-    message "%getChatPrefix()% Blockid %{_blockid}%" to {_player}
+    if {_map} is not set:
+      message "%getChatPrefix()% This world has not been published yet." to {_player}
+      stop
 
     #
     # > The bossbar is perfect to represent a loading bar, use it here.
@@ -78,10 +66,19 @@ function AsyncLoadSteemPlayWorld(data:object):
     {_bossbar}.addPlayer({_player})
     {_bossbar}.setVisible(true)
 
-    # 
-    # > Load the world data using LoadSteemWorldData. By adding the bossbar
-    # > variable, the player gets informed about the loading progress.
-    set {_map} to LoadSteemWorldData({_steemname},{_worldname},{_bossbar},{_blockid})
+    set {_worldid} to SteemCreatePlayWorld()
+    set metadata value "SteemPlayWorld|Wait" of {_player} to {_worldid}
+
+    #
+    # > Get the world parsed as a world.
+    set {_world} to SteemGetPlayWorldById({_worldid})
+    set {_txid} to {_worldname}
+    set {_shortworld} to {_worldname}
+    replace all "steemworlds-" with "" in {_shortworld}
+
+    if metadata value "SteemPlayWorld|WorldNames" of getDummy() is not set:
+      set metadata value "SteemPlayWorld|WorldNames" of getDummy() to HashMap()
+    (metadata value "SteemPlayWorld|WorldNames" of getDummy()).put({_worldid},{_worldname})
 
     #
     # > The returned HashMap contains the response and the world. We need the
