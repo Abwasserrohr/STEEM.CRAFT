@@ -1,0 +1,79 @@
+
+import: 
+  org.bukkit.Bukkit
+
+option nms:
+  get: 
+    set {_nms version} to Bukkit.getServer().getClass().getPackage().getName().split("\.")[3]
+    return "net.minecraft.server.%{_nms version}%"
+
+option bukkitv:
+  get:
+    return Bukkit.getServer().getClass().getPackage().getName().split("\.")[3]
+
+import:
+  org.bukkit.craftbukkit.{@bukkitv}.inventory.CraftItemStack
+  {@nms}.MojangsonParser
+  {@nms}.NBTTagCompound
+  {@nms}.NBTTagString
+  org.bukkit.entity.EntityType
+  org.bukkit.World
+  org.bukkit.Material
+  org.bukkit.inventory.ItemStack
+  org.bukkit.util.EulerAngle
+  org.bukkit.event.player.PlayerInteractAtEntityEvent
+  org.bukkit.Particle
+  org.bukkit.Effect
+  org.bukkit.Color
+
+
+#
+# > Function - getnbtvalue
+# > Parameters: <item>item with the nbt value, <text>the nbt tag data which is needed
+# > Actions:
+# > Loads nbt value for the parameter tag and return the value.
+function getnbtvalue(item:item,tag:text) :: object:
+  set {_item} to 1 of {_item}
+  set {_CraftItemStack} to CraftItemStack.asNMSCopy({_item})
+  set {_NBTTagCompound} to {_CraftItemStack}.getTag()
+  if {_NBTTagCompound}.hasKey("%{_tag}%") is not set:
+    return false
+  else:
+    set {_value} to {_NBTTagCompound}.getString("%{_tag}%")
+    return {_value}
+
+#
+# > Function - setnbtvalue
+# > Parameters: <item>item to set the nbt value on, <text>the tag which should be set, <text>the value which should be set
+# > Actions:
+# > Sets the tag to the value and return the item with the new nbt data.
+function setnbtvalue(item:item,tag:text,value:text) :: item:
+  #
+  # > Setting 1 of the item parameter turns it into a valid Bukkit item which can be used.
+  set {_item} to 1 of {_item}
+  #
+  # > Set the Bukkit ItemStack into a nms CraftItemStack.
+  set {_CraftItemStack} to CraftItemStack.asNMSCopy({_item})
+  #
+  # > Get the nbt Tag data from the nms CraftItemStack.
+  set {_NBTTagCompound} to {_CraftItemStack}.getTag()
+  #
+  # > If the item has no nbt Tag data, create a new one.
+  if {_NBTTagCompound} is not set:
+    set {_NBTTagCompound} to new NBTTagCompound()
+  #
+  # > Set the new tag with the value to the nbt Tag data of the item.
+  {_NBTTagCompound}.set("%{_tag}%", new NBTTagString("%{_value}%"))
+  #
+  # > Render the new nbt Tag compound as nbt using the Mojangson Parser Java class.
+  set {_nbt} to MojangsonParser.parse("%{_NBTTagCompound}%")
+  #
+  # > Set the nbt Tag data back to the nms CraftItemStack.
+  {_CraftItemStack}.setTag({_nbt})
+  #
+  # > Set the nms CraftItemStack back to a Bukkit ItemStack.
+  set {_item1} to CraftItemStack.asBukkitCopy({_CraftItemStack})
+  #
+  # > Return the new item with the new NBT data.
+  return {_item1}
+#
