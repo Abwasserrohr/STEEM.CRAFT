@@ -1,0 +1,25 @@
+#
+# ==============
+# SteemPlayParkourLoadConfig.sk
+# ==============
+# SteemPlayParkourLoadConfig.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+options:
+  defaultstartblock: "yellow concrete"
+  defaultcheckpointblock: "yellow concrete"
+  defaultendblock: "yellow concrete"
+  configpath: "plugins/Skript/scripts/STEEM.CRAFT/addons/steemplay/config/parkour.yml"
+
+#
+# > Function - SteemPlayParkourLoadConfig
+# > Load the configuration of parkour.
+function SteemPlayParkourLoadConfig():
+  loadyamlconfig({@configpath},"parkour")
+  if getyamlconfigobject("parkour","startblock") is not set:
+    setyamlconfigobject("parkour","startblock",{@defaultstartblock})
+  if getyamlconfigobject("parkour","checkpointblock") is not set:
+    setyamlconfigobject("parkour","checkpointblock",{@defaultcheckpointblock})
+  if getyamlconfigobject("parkour","endblock") is not set:
+    setyamlconfigobject("parkour","endblock",{@defaultendblock})
+  saveyamlconfig({@configpath},"parkour")

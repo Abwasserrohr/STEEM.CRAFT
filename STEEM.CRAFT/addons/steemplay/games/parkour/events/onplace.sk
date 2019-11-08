@@ -1,0 +1,12 @@
+#
+# ==============
+# onplace.sk
+# ==============
+# onplace.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+on place:
+  if "%player's world%" contains "steemworlds-":
+    if CheckSteemWorldPermission(player's world,player,"build",true) is true:
+      if getnbtvalue(event.getItemInHand(),"parkour") is set:
+        SteemPlayParkourHandleBlockPlace(player,event)

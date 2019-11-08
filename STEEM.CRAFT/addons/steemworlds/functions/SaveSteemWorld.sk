@@ -123,6 +123,7 @@ function SaveSteemWorld(player:player,publish:boolean=false):
         set {_game} to "creative"
 
       set {_permlink} to "re-steemcraft-%{_world}%"
+
       #
       # > Parse a custom function to be evaluated using SkQuery.
       evaluate "SteemPlaycreativePublishCheck(""%{_player}%"" parsed as player,""%{_steemname}%"",""%{_permlink}%"")"

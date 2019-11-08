@@ -1,0 +1,16 @@
+#
+# ==============
+# GetSteemWorldAuthor.sk
+# ==============
+# GetSteemWorldAuthor.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - GetSteemWorldAuthor
+# > Returns the author of the world.
+# > Parameters:
+# > <object> The world to which author should be returned.
+function GetSteemWorldAuthor(world:object) :: text:
+  set {_name} to "%{_world}%"
+  set {_nameparts::*} to {_name} split at "-"
+  return {_nameparts::2}

@@ -1,0 +1,10 @@
+#
+# ==============
+# every1minute.sk
+# ==============
+# every1minute.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+every 1 minute:
+  $ thread
+  SteemPlayWorldInactiveCheck()

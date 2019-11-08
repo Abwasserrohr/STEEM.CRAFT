@@ -22,6 +22,7 @@ function SteemDeleteAllPlayWorlds():
 
   delete metadata value "SteemPlayWorld|Worlds" of getDummy()
   delete metadata value "SteemPlayWorld|WorldNames" of getDummy()
+  delete metadata value "SteemPlayWorld|WorldsLastActive" of getDummy()
 
   set {_block} to getDummy()
 

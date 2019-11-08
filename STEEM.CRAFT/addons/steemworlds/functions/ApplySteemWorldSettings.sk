@@ -67,3 +67,9 @@ function ApplySteemWorldSettings(world:world):
     if {_time} is set:
       set {_setting} to {_time} parsed as time
       set the time in {_world} to {_setting}
+
+  #
+  # > Apply a custom biome to the world, if one is set.
+  set {_biome} to getGeneralStorageData({_storagefolder},{_name},"biome")
+  if {_biome} is set:
+    SetSteemWorldBiome({_world},{_biome},null)

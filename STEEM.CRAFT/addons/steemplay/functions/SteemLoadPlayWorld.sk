@@ -157,9 +157,6 @@ function AsyncLoadSteemPlayWorld(data:object):
 
     #
     # > Apply world settings to the loaded world.
-    set {_biome} to getGeneralStorageData("steemworlds",{_shortworld},"biome")
-    if {_biome} is set:
-      SetSteemWorldBiome({_world},{_biome},null)
     ApplySteemWorldSettings({_world})
 
     #

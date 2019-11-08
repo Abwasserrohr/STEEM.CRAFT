@@ -1,0 +1,12 @@
+#
+# ==============
+# onbreak.sk
+# ==============
+# onbreak.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+on break:
+  if "%player's world%" contains "steemworlds-":
+    if CheckSteemWorldPermission(player's world,player,"build",true) is true:
+      $ thread
+      SteemPlayParkourHandleBlockBreak(player,event)

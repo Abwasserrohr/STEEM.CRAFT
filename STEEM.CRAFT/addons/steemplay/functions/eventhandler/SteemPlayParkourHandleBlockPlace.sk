@@ -1,0 +1,56 @@
+#
+# ==============
+# SteemPlayParkourHandleBlockPlace.sk
+# ==============
+# SteemPlayParkourHandleBlockPlace.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlayParkourHandleBlockPlace
+# > This function should be called by a on place event.
+# > Works in a thread.
+# > Parameters:
+# > <player> The player who triggered the event.
+# > <event> The event itself that has been triggered.
+function SteemPlayParkourHandleBlockPlace(player:player,event:object):
+  set {_parkourblock} to getnbtvalue({_event}.getItemInHand(),"parkour")
+  if {_parkourblock} is "startblock":
+    message "%getChatPrefix()% You placed the start of the parkour." to {_player}
+    remove 1 of {_event}.getItemInHand() from {_player}'s inventory
+  if {_parkourblock} is "checkpointblock":
+    message "%getChatPrefix()% You placed a checkpoint." to {_player}
+  if {_parkourblock} is "endblock":
+    message "%getChatPrefix()% You placed the end of the parkour." to {_player}
+    remove 1 of {_event}.getItemInHand() from {_player}'s inventory
+  if {_parkourblock} is "startblock" or "checkpointblock" or "endblock":
+    set {_author} to GetSteemWorldAuthor({_player}'s world)
+    set {_permlink} to GetSteemWorldPermlink({_player}'s world)
+    while SteemPlayGetConfig({_author},{_permlink}) is "wait":
+      wait 1 tick
+    wait 1 tick
+    set {_config} to SteemPlayGetConfig({_author},{_permlink})
+    if {_parkourblock} is "startblock" or "endblock":
+      if {_config}.get({_parkourblock}) is set:
+        set {_x} to {_config}.get({_parkourblock}).get("x").doubleValue()
+        set {_y} to {_config}.get({_parkourblock}).get("y").doubleValue()
+        set {_z} to {_config}.get({_parkourblock}).get("z").doubleValue()
+        set {_loc} to location at {_x}, {_y}, {_z} in {_player}'s world
+        set block at {_loc} to air
+      set {_loc} to JsonNode()
+      {_loc}.put("x", x-coord of {_event}.getBlock())
+      {_loc}.put("y", y-coord of {_event}.getBlock())
+      {_loc}.put("z", z-coord of {_event}.getBlock())
+      {_config}.set({_parkourblock},{_loc})
+      SteemPlaySetConfig({_author},{_permlink},{_config})
+    else if {_parkourblock} is "checkpointblock":
+      if {_config}.get({_parkourblock}) is not set:
+        set {_ArrayNode} to ArrayNode()
+      else:
+        set {_ArrayNode} to {_config}.get({_parkourblock})
+      set {_loc} to JsonNode()
+      {_loc}.put("x", x-coord of {_event}.getBlock())
+      {_loc}.put("y", y-coord of {_event}.getBlock())
+      {_loc}.put("z", z-coord of {_event}.getBlock())
+      {_ArrayNode}.add({_loc})
+      {_config}.set({_parkourblock},{_ArrayNode})
+      SteemPlaySetConfig({_author},{_permlink},{_config})

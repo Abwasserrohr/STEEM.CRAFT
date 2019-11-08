@@ -1,0 +1,64 @@
+#
+# ==============
+# SteemPlayparkourOpenConfig.sk
+# ==============
+# SteemPlayparkourOpenConfig.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+
+#
+# > Function - SteemPlayparkourOpenConfig
+# > Opens a configuration menu for this game.
+# > Parameters:
+# > <player> The player who wants to change the game config.
+# > <text> The author (Steem account) who wants to change the config.
+# > <text> The permlink of the world that should have a config changed.
+function SteemPlayparkourOpenConfig(player:player,author:text,permlink:text):
+
+  opengui({_player},27,"&lParkour")
+  #
+  # > Cover all slots to prevent item loss, since players could put items into empty slots.
+  set {_bgitem} to scswGetConfig("backgrounditem")
+  loop 27 times:
+    setguiitem({_player},loop-number - 1, {_bgitem},1, " ","")
+
+  set {_startblock} to getyamlconfigobject("parkour","startblock")
+  set {_checkpointblock} to getyamlconfigobject("parkour","checkpointblock")
+  set {_endblock} to getyamlconfigobject("parkour","endblock")
+
+  setguiitem({_player},10, {_startblock} parsed as item,1, "&r&lStart Block","&7Click here to get a\n&7block that starts the\n&7parkour once a player runs\n&7over it.","SteemPlayParkourMenuClick(""%{_player}%"" parsed as player,""startblock"")")
+  setguiitem({_player},11, {_checkpointblock} parsed as item,1, "&r&lCheckpoint Block","&7Click here to get a\n&7block that saves the\n&7progress the player\n&7when a player\n&7runs over it.","SteemPlayParkourMenuClick(""%{_player}%"" parsed as player,""checkpointblock"")")
+  setguiitem({_player},12, {_endblock} parsed as item,1, "&r&lEnd Block","&7Click here to get a\n&7block that ends the\n&7parkour the player\n&7once a player runs over it.","SteemPlayParkourMenuClick(""%{_player}%"" parsed as player,""endblock"")")
+
+  set {_worldname} to "%{_author}%-%{_permlink}%"
+  set {_goalblock} to getGeneralStorageData("steemworlds",{_worldname},"difficulty")
+
+  #
+  # > This part is an example how to read and write configuration for games.
+  stop
+  #
+  # > Retrieve the configuration from file.
+  while SteemPlayGetConfig({_author},{_permlink}) is "wait":
+    wait 1 tick
+  wait 1 tick
+  set {_config} to SteemPlayGetConfig({_author},{_permlink})
+
+  #
+  # > Add a key value "testkey" with the value 123 to the configuration.
+  {_config}.put("testkey",123)
+
+  #
+  # > Send the testkey key value to the player.
+  set {_testkey} to {_config}.get("testkey")
+  message "%{_testkey}%" to {_player}
+
+  #
+  # > Send the entire configuration to the player.
+  message "%{_config}%" to {_player}
+
+  #
+  # > Save the configuration back to file.
+  SteemPlaySetConfig({_author},{_permlink},{_config})
+

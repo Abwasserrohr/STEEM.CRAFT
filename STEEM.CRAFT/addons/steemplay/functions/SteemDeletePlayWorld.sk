@@ -43,6 +43,11 @@ function SteemDeletePlayWorld(world:world):
     (metadata value "SteemPlayWorld|WorldNames" of getDummy()).remove(SteemGetPlayWorldId({_world}))
 
   #
+  # > Remove the world name from the WorldsLastActive list.
+  if metadata value "SteemPlayWorld|WorldsLastActive" of getDummy() is set:
+    (metadata value "SteemPlayWorld|WorldsLastActive" of getDummy()).remove(SteemGetPlayWorldId({_world}))
+
+  #
   # > Loops through all loaded chunks of the world and unloads them without saving.
   loop ...{_world}.getLoadedChunks():
     loop-value.unload(true)
