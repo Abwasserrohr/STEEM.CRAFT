@@ -48,6 +48,11 @@ function SteemDeletePlayWorld(world:world):
     (metadata value "SteemPlayWorld|WorldsLastActive" of getDummy()).remove(SteemGetPlayWorldId({_world}))
 
   #
+  # > Delete temporary data that has been saved for this world.
+  if metadata value "SteemPlayWorld|TempData" of {_world} is set:
+    delete metadata value "SteemPlayWorld|TempData" of {_world}
+
+  #
   # > Loops through all loaded chunks of the world and unloads them without saving.
   loop ...{_world}.getLoadedChunks():
     loop-value.unload(true)

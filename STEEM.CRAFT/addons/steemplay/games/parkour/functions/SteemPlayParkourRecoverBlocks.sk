@@ -47,11 +47,16 @@ function SteemPlayParkourRecoverBlocks(object:object):
       set {_loc} to location at {_x}, {_y}, {_z} in {_world}
       if block at {_loc} is not {_%loop-value%}:
         set block at {_loc} to {_%loop-value%}
+      SteemPlaySetTempCache({_world},"%{_x}%_%{_y}%_%{_z}%",loop-value)
 
   #
   # > Check all checkpoint blocks and place them if they're not there.
   if {_config}.get("checkpointblock") is set:
     loop ...{_config}.get("checkpointblock"):
-      set {_loc} to location at loop-value.get("x").doubleValue(), loop-value.get("y").doubleValue(), loop-value.get("z").doubleValue() in {_world}
+      set {_x} to loop-value.get("x").doubleValue()
+      set {_y} to loop-value.get("y").doubleValue()
+      set {_z} to loop-value.get("z").doubleValue()
+      set {_loc} to location at {_x}, {_y}, {_z} in {_world}
       if block at {_loc} is not {_checkpointblock}:
         set block at {_loc} to {_checkpointblock}
+      SteemPlaySetTempCache({_world},"%{_x}%_%{_y}%_%{_z}%","checkpointblock")

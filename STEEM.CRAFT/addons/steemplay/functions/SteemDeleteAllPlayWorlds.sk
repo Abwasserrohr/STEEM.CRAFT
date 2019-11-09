@@ -30,6 +30,11 @@ function SteemDeleteAllPlayWorlds():
     set {_world} to {_worlds}.get(loop-value)
 
     #
+    # > Delete any temporary data of the world.
+    if metadata value "SteemPlayWorld|TempData" of {_world} is set:
+      delete metadata value "SteemPlayWorld|TempData" of {_world}
+
+    #
     # > Teleports all players of this world out of it.
     teleport all players in {_world} to location(0, 0, 0, {_block}'s world)
 
