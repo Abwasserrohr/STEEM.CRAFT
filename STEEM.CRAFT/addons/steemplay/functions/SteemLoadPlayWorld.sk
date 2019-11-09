@@ -160,6 +160,13 @@ function AsyncLoadSteemPlayWorld(data:object):
     ApplySteemWorldSettings({_world})
 
     #
+    # > Execute a game based function that will initialize the game.
+    set {_game} to {_map}.get("game")
+    if {_game} is not set:
+      set {_game} to "creative"
+    evaluate "SteemPlay%{_game}%InitGame(""%{_world}%"" parsed as world)"
+
+    #
     # > Remove the bossbar after one second.
     wait 1 second
 

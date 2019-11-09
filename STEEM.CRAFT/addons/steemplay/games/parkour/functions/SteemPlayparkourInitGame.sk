@@ -1,0 +1,18 @@
+#
+# ==============
+# SteemPlayparkourInitGame.sk
+# ==============
+# SteemPlayparkourInitGame.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlayparkourInitGame
+# > Should be called when the game is initialized. Prepares everything
+# > necessary to run the game.
+# > Parameters:
+# > <world> The world of the game.
+function SteemPlayparkourInitGame(world:world):
+  #
+  # > Recover all parkour blocks to be sure they match with
+  # > the blocks of the configuration of the server.
+  SteemPlayParkourRecoverBlocks({_world})

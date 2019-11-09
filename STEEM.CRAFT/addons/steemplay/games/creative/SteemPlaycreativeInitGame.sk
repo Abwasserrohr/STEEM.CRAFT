@@ -1,0 +1,17 @@
+#
+# ==============
+# SteemPlaycreativeInitGame.sk
+# ==============
+# SteemPlaycreativeInitGame.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlaycreativeInitGame
+# > Should be called when the game is initialized. Prepares everything
+# > necessary to run the game.
+# > Parameters:
+# > <world> The world of the game.
+function SteemPlaycreativeInitGame(world:world):
+  #
+  # > Creative worlds don't initialize anything at the moment.
+  set {_init} to true

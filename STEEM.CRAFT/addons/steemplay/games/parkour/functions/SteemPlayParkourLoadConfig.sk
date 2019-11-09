@@ -9,6 +9,7 @@ options:
   defaultstartblock: "yellow concrete"
   defaultcheckpointblock: "yellow concrete"
   defaultendblock: "yellow concrete"
+  recoverblocksitem: "music disc strad"
   configpath: "plugins/Skript/scripts/STEEM.CRAFT/addons/steemplay/config/parkour.yml"
 
 #
@@ -22,4 +23,6 @@ function SteemPlayParkourLoadConfig():
     setyamlconfigobject("parkour","checkpointblock",{@defaultcheckpointblock})
   if getyamlconfigobject("parkour","endblock") is not set:
     setyamlconfigobject("parkour","endblock",{@defaultendblock})
+  if getyamlconfigobject("parkour","recoverblocksitem") is not set:
+    setyamlconfigobject("parkour","recoverblocksitem",{@recoverblocksitem})
   saveyamlconfig({@configpath},"parkour")

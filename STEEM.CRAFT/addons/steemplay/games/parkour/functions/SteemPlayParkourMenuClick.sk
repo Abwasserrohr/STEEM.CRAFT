@@ -23,3 +23,5 @@ function SteemPlayParkourMenuClick(player:player,clicked:text):
       set {_item}'s name to "&r&lEnd Block"
     set {_item} to setnbtvalue({_item},"parkour",{_clicked})
     give 1 of {_item} to {_player}
+  if {_clicked} is "recoverparkourblocks":
+    SteemPlayParkourRecoverBlocks({_player})

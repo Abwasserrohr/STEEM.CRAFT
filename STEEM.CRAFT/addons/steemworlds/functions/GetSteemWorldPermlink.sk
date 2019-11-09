@@ -11,6 +11,10 @@
 # > Parameters:
 # > <object> The world to which the short name should be returned.
 function GetSteemWorldPermlink(world:object) :: text:
-  set {_name} to "%{_world}%"
+  if SteemGetPlayWorldId({_world}) is false:
+    set {_name} to "%{_world}%"
+  else:
+    set {_id} to SteemGetPlayWorldId({_world})
+    set {_name} to GetSteemWorldNameById({_id})
   set {_permlink} to "re-steemcraft-%{_world}%"
   return {_permlink}

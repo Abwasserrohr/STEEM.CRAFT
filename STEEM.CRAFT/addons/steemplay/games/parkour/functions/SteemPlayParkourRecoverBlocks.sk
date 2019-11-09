@@ -1,0 +1,57 @@
+#
+# ==============
+# SteemPlayParkourRecoverBlocks.sk
+# ==============
+# SteemPlayParkourRecoverBlocks.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlayParkourRecoverBlocks
+# > Recovers parkour blocks that are in the configuration but
+# > not present in the world itself.
+# > Parameters:
+# > <player/world> The player or a world in which the blocks should be recovered.
+function SteemPlayParkourRecoverBlocks(object:object):
+  #
+  # > Set the world depending on the given input.
+  if {_object} is a player:
+    set {_world} to {_object}'s world
+  else:
+    set {_world} to {_object}
+  set {_author} to GetSteemWorldAuthor({_world})
+  set {_permlink} to GetSteemWorldPermlink({_world})
+  while SteemPlayGetConfig({_author},{_permlink}) is "wait":
+    wait 1 tick
+  wait 1 tick
+  set {_config} to SteemPlayGetConfig({_author},{_permlink})
+
+  #
+  # > Get the parkour blocks and parse them as item to place them later.
+  set {_startblock} to getyamlconfigobject("parkour","startblock")
+  set {_checkpointblock} to getyamlconfigobject("parkour","checkpointblock")
+  set {_endblock} to getyamlconfigobject("parkour","endblock")
+
+  set {_startblock} to {_startblock} parsed as item
+  set {_checkpointblock} to {_checkpointblock} parsed as item
+  set {_endblock} to {_endblock} parsed as item
+
+  #
+  # > Check for the start- or endblock and place them if they're not there.
+  add "startblock", "endblock" to {_checkblocks::*}
+  loop {_checkblocks::*}:
+    if {_config}.get(loop-value) is set:
+      set {_x} to {_config}.get(loop-value).get("x").doubleValue()
+      set {_y} to {_config}.get(loop-value).get("y").doubleValue()
+      set {_z} to {_config}.get(loop-value).get("z").doubleValue()
+
+      set {_loc} to location at {_x}, {_y}, {_z} in {_world}
+      if block at {_loc} is not {_%loop-value%}:
+        set block at {_loc} to {_%loop-value%}
+
+  #
+  # > Check all checkpoint blocks and place them if they're not there.
+  if {_config}.get("checkpointblock") is set:
+    loop ...{_config}.get("checkpointblock"):
+      set {_loc} to location at loop-value.get("x").doubleValue(), loop-value.get("y").doubleValue(), loop-value.get("z").doubleValue() in {_world}
+      if block at {_loc} is not {_checkpointblock}:
+        set block at {_loc} to {_checkpointblock}
