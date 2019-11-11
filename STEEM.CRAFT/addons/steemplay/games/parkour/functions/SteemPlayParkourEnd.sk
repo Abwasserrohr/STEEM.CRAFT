@@ -1,0 +1,16 @@
+#
+# ==============
+# SteemPlayParkourEnd.sk
+# ==============
+# SteemPlayParkourEnd.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlayParkourEnd
+# > Called when a player runs over a end block.
+# > Parameters:
+# > <player> The who triggered the parkour end.
+function SteemPlayParkourEnd(player:player):
+  set {_world} to {_player}'s world
+  heal {_player}
+  feed {_player}

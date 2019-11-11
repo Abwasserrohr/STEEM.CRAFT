@@ -1,0 +1,29 @@
+#
+# ==============
+# SteemPlayParkourHandleMovement.sk
+# ==============
+# SteemPlayParkourHandleMovement.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlayParkourHandleMovement
+# > This function is called on movements that are
+# > valid for SteemPlay. Can also be called within a thread.
+# > Parameters:
+# > <player> The player who triggered the event.
+# > <block> The block the player stepped on.
+function SteemPlayParkourHandleMovement(player:player,block:block):
+  set {_x} to {_block}.getLocation().getX()
+  set {_y} to {_block}.getLocation().getY()
+  set {_z} to {_block}.getLocation().getZ()
+  set {_blocktype} to SteemPlayGetTempCache({_block}'s world,"%{_x}%_%{_y}%_%{_z}%")
+  if {_blocktype} is not set:
+    SteemPlayParkourRecoverBlocks({_block}'s world)
+    SteemPlayGetTempCache({_block}'s world,"%{_x}%_%{_y}%_%{_z}%")
+  if {_blocktype} is "startblock":
+    SteemPlayParkourStart({_player})
+  if {_blocktype} is "checkpointblock":
+    SteemPlayParkourCheckpoint({_player})
+  if {_blocktype} is "endblock":
+    SteemPlayParkourEnd({_player})
+

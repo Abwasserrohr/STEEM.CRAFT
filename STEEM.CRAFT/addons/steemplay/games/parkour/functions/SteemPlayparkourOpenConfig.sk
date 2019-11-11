@@ -28,11 +28,13 @@ function SteemPlayparkourOpenConfig(player:player,author:text,permlink:text):
   set {_checkpointblock} to getyamlconfigobject("parkour","checkpointblock")
   set {_endblock} to getyamlconfigobject("parkour","endblock")
   set {_recoverblocksitem} to getyamlconfigobject("parkour","recoverblocksitem")
+  set {_testrunitem} to getyamlconfigobject("parkour","testrunitem")
 
   setguiitem({_player},10, {_startblock} parsed as item,1, "&r&lStart Block","&7Click here to get a\n&7block that starts the\n&7parkour once a player runs\n&7over it.","SteemPlayParkourMenuClick(""%{_player}%"" parsed as player,""startblock"")")
   setguiitem({_player},11, {_checkpointblock} parsed as item,1, "&r&lCheckpoint Block","&7Click here to get a\n&7block that saves the\n&7progress the player\n&7when a player\n&7runs over it.","SteemPlayParkourMenuClick(""%{_player}%"" parsed as player,""checkpointblock"")")
   setguiitem({_player},12, {_endblock} parsed as item,1, "&r&lEnd Block","&7Click here to get a\n&7block that ends the\n&7parkour the player\n&7once a player runs over it.","SteemPlayParkourMenuClick(""%{_player}%"" parsed as player,""endblock"")")
   setguiitem({_player},13, {_recoverblocksitem} parsed as item,1, "&r&lRecover parkour blocks","&7Click here to recover\n&7parkour blocks if some\n&7disappeared for some reason.","SteemPlayParkourMenuClick(""%{_player}%"" parsed as player,""recoverparkourblocks"")")
+  setguiitem({_player},14, {_testrunitem} parsed as item,1, "&r&lStart testrun","&7Click here to test\n&7your parkour to allow\n&7it being published.","SteemPlayParkourMenuClick(""%{_player}%"" parsed as player,""recoverparkourblocks"")")
    
 
   

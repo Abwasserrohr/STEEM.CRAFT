@@ -1,0 +1,17 @@
+#
+# ==============
+# SteemPlayParkourCheckpoint.sk
+# ==============
+# SteemPlayParkourCheckpoint.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlayParkourCheckpoint
+# > Called when a player runs over a checkpoint block.
+# > Parameters:
+# > <player> The who triggered the checkpoint.
+function SteemPlayParkourCheckpoint(player:player):
+  set {_world} to {_player}'s world
+  set metadata value "SteemPlayParkour|Checkpoint" of {_player} to location of block at {_player}'s location
+  heal {_player}
+  feed {_player}

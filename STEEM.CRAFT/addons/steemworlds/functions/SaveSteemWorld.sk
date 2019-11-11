@@ -149,6 +149,95 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     # > If the size is not set for some reason, set it to 1.
     if {_size} is not set:
       set {_size} to 1
+	  
+    #
+    # > Get configuration into local variables to prevent the player
+    # > from modifiying any data that shouldn't be changed now.
+	  
+    #
+    # > Once the chunk block numbers have been collected, 
+    # > add other custom json data to the json.
+    set {_finaljson} to {_objectMapper}.createObjectNode()
+    {_finaljson}.put("app", "{@commentapp}")
+
+    #
+    # > Get the categories (tags) from the local storage and add them to the tags.
+    set {_tags::*} to ...{@commenttags}
+    set {_tags} to {_objectMapper}.createArrayNode()
+    loop {_tags::*}:
+      {_tags}.add(loop-value)
+    set {_categories} to getGeneralStorageData("steemworlds",{_shortworld},"categories")
+    if {_categories} is set:
+      set {_jsonNode} to try {_objectMapper}.readTree({_categories})
+      set {_categoryloop::*} to ...try {_jsonNode}.get("categories")
+      if {_categoryloop::*} is set:
+        loop {_categoryloop::*}:
+          try {_tags}.add(loop-value.textValue())
+
+    {_finaljson}.put("tags", {_tags})
+    {_finaljson}.put("format", "{@commentformat}")
+
+    #
+    # > The world size is important to set the world size correctly on load.
+    {_finaljson}.put("size", {_size})
+
+    #
+    # > Set the spawn location to the string from the local storage.
+    set {_spawn} to getGeneralStorageData("steemworlds",{_shortworld},"spawn")
+    if {_spawn} is set:
+      {_finaljson}.put("spawn", {_spawn})
+
+    #
+    # > Get the biome from the local storage and add it to the json.
+    set {_biome} to getGeneralStorageData("steemworlds",{_shortworld},"biome")
+    if {_biome} is set:
+      {_finaljson}.put("biome", {_biome})
+
+    #
+    # > Get the difficulty from the local storage and add it to the json.
+    set {_difficulty} to getGeneralStorageData("steemworlds",{_shortworld},"difficulty")
+    if {_difficulty} is set:
+      {_finaljson}.put("difficulty", {_difficulty})
+
+    #
+    # > Get the doWeatherCycle gamerule from the local storage and add it to the json.
+    set {_weathercycle} to getGeneralStorageData("steemworlds",{_shortworld},"doWeatherCycle")
+    if {_weathercycle} is set:
+      {_finaljson}.put("doWeatherCycle", {_weathercycle})
+
+    #
+    # > Get the doDaylightCycle gamerule from the local storage and add it to the json.
+    set {_daylightcycle} to getGeneralStorageData("steemworlds",{_shortworld},"doDaylightCycle")
+    if {_daylightcycle} is set:
+      {_finaljson}.put("doDaylightCycle", {_daylightcycle})
+
+    #
+    # > Get the doMobSpawning gamerule from the local storage and add it to the json.
+    set {_mobspawning} to getGeneralStorageData("steemworlds",{_shortworld},"doMobSpawning")
+    if {_mobspawning} is set:
+      {_finaljson}.put("doMobSpawning", {_mobspawning})
+
+    #
+    # > Get the randomTickSpeed gamerule from the local storage and add it to the json.
+    set {_weathercycle} to getGeneralStorageData("steemworlds",{_shortworld},"randomTickSpeed")
+    if {_weathercycle} is set:
+      {_finaljson}.put("randomTickSpeed", {_weathercycle})
+
+    #
+    # > Get the weather from the local storage and add it to the json.
+    set {_weather} to getGeneralStorageData("steemworlds",{_shortworld},"weather")
+    if {_weather} is set:
+      {_finaljson}.put("weather", {_weather})
+
+    #
+    # > Get the game from the local storage and add it to the json.
+    set {_game} to getGeneralStorageData("steemworlds",{_shortworld},"game")
+
+    #
+    # > If no game is set, fallback to "creative".
+    if {_game} is not set:
+      set {_game} to "creative"
+    {_finaljson}.put("game", {_game})
 	
     #
     # > Calculate both x- and z-start and endcoordinates of the world.
@@ -458,91 +547,6 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     # > Tell the player that the world is now being broadcasted.
     {_bossbar}.setTitle("&lBroadcasting world...")
     {_bossbar}.setProgress({_progress})
-
-    #
-    # > Once the chunk block numbers have been collected, 
-    # > add other custom json data to the json.
-    set {_finaljson} to {_objectMapper}.createObjectNode()
-    {_finaljson}.put("app", "{@commentapp}")
-
-    #
-    # > Get the categories (tags) from the local storage and add them to the tags.
-    set {_tags::*} to ...{@commenttags}
-    set {_tags} to {_objectMapper}.createArrayNode()
-    loop {_tags::*}:
-      {_tags}.add(loop-value)
-    set {_categories} to getGeneralStorageData("steemworlds",{_shortworld},"categories")
-    if {_categories} is set:
-      set {_jsonNode} to try {_objectMapper}.readTree({_categories})
-      set {_categoryloop::*} to ...try {_jsonNode}.get("categories")
-      if {_categoryloop::*} is set:
-        loop {_categoryloop::*}:
-          try {_tags}.add(loop-value.textValue())
-
-    {_finaljson}.put("tags", {_tags})
-    {_finaljson}.put("format", "{@commentformat}")
-
-    #
-    # > The world size is important to set the world size correctly on load.
-    {_finaljson}.put("size", {_size})
-
-    #
-    # > Set the spawn location to the string from the local storage.
-    set {_spawn} to getGeneralStorageData("steemworlds",{_shortworld},"spawn")
-    if {_spawn} is set:
-      {_finaljson}.put("spawn", {_spawn})
-
-    #
-    # > Get the biome from the local storage and add it to the json.
-    set {_biome} to getGeneralStorageData("steemworlds",{_shortworld},"biome")
-    if {_biome} is set:
-      {_finaljson}.put("biome", {_biome})
-
-    #
-    # > Get the difficulty from the local storage and add it to the json.
-    set {_difficulty} to getGeneralStorageData("steemworlds",{_shortworld},"difficulty")
-    if {_difficulty} is set:
-      {_finaljson}.put("difficulty", {_difficulty})
-
-    #
-    # > Get the doWeatherCycle gamerule from the local storage and add it to the json.
-    set {_weathercycle} to getGeneralStorageData("steemworlds",{_shortworld},"doWeatherCycle")
-    if {_weathercycle} is set:
-      {_finaljson}.put("doWeatherCycle", {_weathercycle})
-
-    #
-    # > Get the doDaylightCycle gamerule from the local storage and add it to the json.
-    set {_daylightcycle} to getGeneralStorageData("steemworlds",{_shortworld},"doDaylightCycle")
-    if {_daylightcycle} is set:
-      {_finaljson}.put("doDaylightCycle", {_daylightcycle})
-
-    #
-    # > Get the doMobSpawning gamerule from the local storage and add it to the json.
-    set {_mobspawning} to getGeneralStorageData("steemworlds",{_shortworld},"doMobSpawning")
-    if {_mobspawning} is set:
-      {_finaljson}.put("doMobSpawning", {_mobspawning})
-
-    #
-    # > Get the randomTickSpeed gamerule from the local storage and add it to the json.
-    set {_weathercycle} to getGeneralStorageData("steemworlds",{_shortworld},"randomTickSpeed")
-    if {_weathercycle} is set:
-      {_finaljson}.put("randomTickSpeed", {_weathercycle})
-
-    #
-    # > Get the weather from the local storage and add it to the json.
-    set {_weather} to getGeneralStorageData("steemworlds",{_shortworld},"weather")
-    if {_weather} is set:
-      {_finaljson}.put("weather", {_weather})
-
-    #
-    # > Get the game from the local storage and add it to the json.
-    set {_game} to getGeneralStorageData("steemworlds",{_shortworld},"game")
-
-    #
-    # > If no game is set, fallback to "creative".
-    if {_game} is not set:
-      set {_game} to "creative"
-    {_finaljson}.put("game", {_game})
 
     #
     # > Get the time from the local storage and add it to the json.

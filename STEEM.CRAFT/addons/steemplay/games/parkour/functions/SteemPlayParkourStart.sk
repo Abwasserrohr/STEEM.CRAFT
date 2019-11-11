@@ -1,0 +1,51 @@
+#
+# ==============
+# SteemPlayParkourStart.sk
+# ==============
+# SteemPlayParkourStart.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  java.util.Date
+  org.bukkit.GameMode
+
+#
+# > Function - SteemPlayParkourStart
+# > Called when a player starts a parkour.
+# > Parameters:
+# > <player> The who triggered the parkour to start.
+function SteemPlayParkourStart(player:player):
+  set {_world} to {_player}'s world
+  {_player}.setGameMode(GameMode.ADVENTURE!)
+  heal {_player}
+  feed {_player}
+  clear {_player}'s inventory
+  
+  
+  set {_restart} to getyamlconfigobject("parkour","restartitem")
+  set {_checkpoint} to getyamlconfigobject("parkour","checkpointitem")
+  set {_exit} to getyamlconfigobject("parkour","exititem")
+  set {_restart} to {_restart} parsed as item named "&rRestart"
+  set {_checkpoint} to {_checkpoint} parsed as item named "&rCheckpoint"
+  set {_exit} to {_exit} parsed as item named "&rExit"
+  
+  
+  set slot 0 of {_player}'s inventory to {_checkpoint}
+  set slot 4 of {_player}'s inventory to {_restart}
+  set slot 8 of {_player}'s inventory to {_exit}
+
+  #
+  # > By giving this run a uuid, we prevent multiple runs at
+  # > a time by just stopping once the run uuid of the player changes.
+  set {_runid} to getRandomUUID()
+  set metadata value "SteemPlayParkour|Game" of {_player} to {_runid}
+  set {_start} to new Date()
+  
+  while metadata value "SteemPlayParkour|Game" of {_player} is {_runid}:
+    if {_player}'s gamemode is not adventure:
+      delete metadata value "SteemPlayParkour|Game" of {_player}
+    if {_player}'s world is not {_world}:
+      delete metadata value "SteemPlayParkour|Game" of {_player}
+
+    send action bar "&7[Parkour] Timer: %SteemPlayParkourTime({_start}, new Date())%" to {_player}
+    wait 1 tick

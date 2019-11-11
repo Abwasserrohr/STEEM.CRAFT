@@ -1,0 +1,15 @@
+#
+# ==============
+# PlayerMoveEvent.sk
+# ==============
+# PlayerMoveEvent.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  org.bukkit.event.player.PlayerMoveEvent
+
+on PlayerMoveEvent:
+  if "%event.getTo().getWorld()%" contains "SteemPlayWorld" or "steemworlds-":
+    if event.getFrom().getBlock() is not event.getTo().getBlock():
+      if "%block 1 below event.getTo().getBlock()%" is "%{SteemPlay::checkpointblock}%" or "%{SteemPlay::startblock}%" or "%{SteemPlay::endblock}%":
+        SteemPlayParkourHandleMovement(event.getPlayer(),block 1 below event.getTo().getBlock())

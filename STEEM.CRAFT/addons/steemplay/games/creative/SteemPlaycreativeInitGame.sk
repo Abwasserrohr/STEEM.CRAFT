@@ -15,9 +15,3 @@ function SteemPlaycreativeInitGame(world:world):
   #
   # > Creative worlds don't initialize anything at the moment.
   set {_init} to true
-
-command /tmptest1:
-  trigger:
-    SteemPlaySetTempCache(player's world,"test1","HelloWorld")
-    set {_value} to SteemPlayGetTempCache(player's world,"test1")
-    message "%{_value}%"

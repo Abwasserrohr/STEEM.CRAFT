@@ -13,6 +13,13 @@
 # > <player> The player who triggered the event.
 # > <event> The event itself that has been triggered.
 function SteemPlayParkourHandleBlockPlace(player:player,event:object):
+
+  #
+  # > Something changed, make sure the player makes a new testrun before
+  # > allowing it being published.
+  set {_shortworld} to GetSteemWorldShortName({_player}'s world)
+  saveGeneralStorageData("steemworlds",{_shortworld},"parkourtestrun",false)
+
   set {_parkourblock} to getnbtvalue({_event}.getItemInHand(),"parkour")
   if {_parkourblock} is "startblock":
     message "%getChatPrefix()% You placed the start of the parkour." to {_player}
@@ -37,9 +44,9 @@ function SteemPlayParkourHandleBlockPlace(player:player,event:object):
         set {_loc} to location at {_x}, {_y}, {_z} in {_player}'s world
         set block at {_loc} to air
       set {_loc} to JsonNode()
-      {_loc}.put("x", x-coord of {_event}.getBlock())
-      {_loc}.put("y", y-coord of {_event}.getBlock())
-      {_loc}.put("z", z-coord of {_event}.getBlock())
+      {_loc}.put("x", {_event}.getBlock().getLocation().getX())
+      {_loc}.put("y", {_event}.getBlock().getLocation().getY())
+      {_loc}.put("z", {_event}.getBlock().getLocation().getZ())
       {_config}.set({_parkourblock},{_loc})
       SteemPlaySetConfig({_author},{_permlink},{_config})
     else if {_parkourblock} is "checkpointblock":
@@ -48,9 +55,9 @@ function SteemPlayParkourHandleBlockPlace(player:player,event:object):
       else:
         set {_ArrayNode} to {_config}.get({_parkourblock})
       set {_loc} to JsonNode()
-      {_loc}.put("x", x-coord of {_event}.getBlock())
-      {_loc}.put("y", y-coord of {_event}.getBlock())
-      {_loc}.put("z", z-coord of {_event}.getBlock())
+      {_loc}.put("x", {_event}.getBlock().getLocation().getX())
+      {_loc}.put("y", {_event}.getBlock().getLocation().getY())
+      {_loc}.put("z", {_event}.getBlock().getLocation().getZ())
       {_ArrayNode}.add({_loc})
       {_config}.set({_parkourblock},{_ArrayNode})
       SteemPlaySetConfig({_author},{_permlink},{_config})
