@@ -89,3 +89,6 @@ function SteemPlayParkourStart(player:player,block:object):
       send action bar "&8&l[&6&lParkour&8&l]&f Current Run: %SteemPlayParkourTime({_start}, new Date())% &8&l|&f PB: - &8&l|&f WR: - &8&l|" to {_player}
       wait 1 tick
   send action bar " " to {_player}
+  if metadata value "SteemPlayParkour|GameEnd" of {_player} is set:
+    delete metadata value "SteemPlayParkour|GameEnd" of {_player}
+    message "%getChatPrefix()% You solved the parkour in %SteemPlayParkourTime({_start}, new Date())% seconds." to {_player}

@@ -16,5 +16,5 @@ function GetSteemWorldPermlink(world:object) :: text:
   else:
     set {_id} to SteemGetPlayWorldId({_world})
     set {_name} to GetSteemWorldNameById({_id})
-  set {_permlink} to "re-steemcraft-%{_world}%"
+  set {_permlink} to "re-steemcraft-%{_name}%"
   return {_permlink}

@@ -54,6 +54,9 @@ function SteemCreatePlayWorld() :: text:
     # > Copy the prepared map to the game world.
     FileUtils.copyDirectory({_source}, {_destination})
 
+    delete {_destination}
+    delete {_source}
+
   #
   # > To create a new world, the WorldCreator is very useful,
   # > it allows to set the world type, environment, and generator
@@ -76,6 +79,9 @@ function SteemCreatePlayWorld() :: text:
   set {_finalworld} to Bukkit.createWorld({_world})
   if metadata value "SteemPlayWorld|Worlds" of getDummy() is not set:
     set metadata value "SteemPlayWorld|Worlds" of getDummy() to HashMap()
+	
+  set metadata value "SteemPlayWorld|TempData" of {_finalworld} to HashMap()
+
   (metadata value "SteemPlayWorld|Worlds" of getDummy()).put({_worldid},{_finalworld})
 
   return {_worldid}

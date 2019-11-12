@@ -21,7 +21,7 @@ function SteemPlayParkourEnd(player:player):
       message "%getChatPrefix()% the command: &f/sw publish" to {_player}
       set {_shortworld} to GetSteemWorldShortName({_player}'s world)
       saveGeneralStorageData("steemworlds",{_shortworld},"parkourtestrun",true)
-
+    set metadata value "SteemPlayParkour|GameEnd" of {_player} to true
     delete metadata value "SteemPlayParkour|Game" of {_player}
     clear {_player}'s inventory
     heal {_player}

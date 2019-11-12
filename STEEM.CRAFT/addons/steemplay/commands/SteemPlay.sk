@@ -47,5 +47,5 @@ command /steemplay [<text>] [<text>] [<text>]:
         set {_worldid} to metadata value "SteemPlayWorld|Wait" of player
         wait 1 tick
       set {_world} to SteemGetPlayWorldById({_worldid})
-      set {_loc} to location(0,100,0,{_world})
+      set {_loc} to SteemPlayWorldSpawn({_world})
       teleport player to {_loc}

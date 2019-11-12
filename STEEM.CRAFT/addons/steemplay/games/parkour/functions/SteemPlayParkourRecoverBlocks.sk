@@ -18,6 +18,7 @@ function SteemPlayParkourRecoverBlocks(object:object):
     set {_world} to {_object}'s world
   else:
     set {_world} to {_object}
+	
   set {_author} to GetSteemWorldAuthor({_world})
   set {_permlink} to GetSteemWorldPermlink({_world})
   while SteemPlayGetConfig({_author},{_permlink}) is "wait":

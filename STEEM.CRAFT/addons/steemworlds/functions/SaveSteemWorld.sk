@@ -114,6 +114,11 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     set {_game} to getGeneralStorageData("steemworlds",{_shortworld},"game")
 
     #
+    # > Create a json string using ObjectMapper.
+    set {_objectMapper} to new ObjectMapper()
+    set {_finaljson} to {_objectMapper}.createObjectNode()
+
+    #
     # > If no game is set, fallback to "creative".
     if {_game} is not set:
       set {_game} to "creative"
@@ -170,8 +175,6 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     #
     # > Once the chunk block numbers have been collected, 
     # > add other custom json data to the json.
-    set {_objectMapper} to new ObjectMapper()
-    set {_finaljson} to {_objectMapper}.createObjectNode()
     {_finaljson}.put("app", "{@commentapp}")
 
     #

@@ -15,6 +15,7 @@ options:
   checkpointitem: "floor sign"
   exititem: "oak door"
   exitcommand: "/lobby"
+  checkpointsound: "entity.experience_orb.pickup"
   configpath: "plugins/STEEM.CRAFT/SteemPlay/parkour.yml"
 
 #
@@ -40,6 +41,8 @@ function SteemPlayParkourLoadConfig():
     setyamlconfigobject("parkour","exititem",{@exititem})
   if getyamlconfigobject("parkour","exitcommand") is not set:
     setyamlconfigobject("parkour","exitcommand",{@exitcommand})
+  if getyamlconfigobject("parkour","checkpointsound") is not set:
+    setyamlconfigobject("parkour","checkpointsound",{@checkpointsound})
   saveyamlconfig({@configpath},"parkour")
   
   set {SteemPlay::startblock} to getyamlconfigobject("parkour","startblock")

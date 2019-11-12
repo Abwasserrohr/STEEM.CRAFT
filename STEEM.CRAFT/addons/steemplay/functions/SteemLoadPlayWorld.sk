@@ -11,6 +11,8 @@ import:
   com.sk89q.worldedit.bukkit.BukkitWorld
   org.apache.commons.io.FileUtils
   com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats
+  com.fasterxml.jackson.databind.ObjectMapper
+
 #
 # > Function - SteemLoadPlayWorld
 # > Loads data into the SteemPlayWorld using FAWE.
@@ -52,12 +54,7 @@ function AsyncLoadSteemPlayWorld(data:object):
     # > Load the world data using LoadSteemWorldData. By adding the bossbar
     # > variable, the player gets informed about the loading progress.
     set {_worldname} to "steemworlds-%{_steemname}%-%{_permlink}%"
-    set {_map} to LoadSteemWorldData({_steemname},{_worldname},{_bossbar},{_blockid},true)
-
-    if {_map} is not set:
-      message "%getChatPrefix()% This world has not been published yet." to {_player}
-      stop
-
+	
     #
     # > The bossbar is perfect to represent a loading bar, use it here.
     set {_bossbar} to createBossBar("&lLoading world...","yellow","10")
@@ -65,6 +62,15 @@ function AsyncLoadSteemPlayWorld(data:object):
     {_bossbar}.setProgress({_progress})
     {_bossbar}.addPlayer({_player})
     {_bossbar}.setVisible(true)
+
+    set {_map} to LoadSteemWorldData({_steemname},{_worldname},{_bossbar},{_blockid},true)
+
+    if {_map} is not set:
+      message "%getChatPrefix()% This world has not been published yet." to {_player}
+      {_bossbar}.removeAll()
+      delete {_bossbar}
+      stop
+
 
     set {_worldid} to SteemCreatePlayWorld()
     set metadata value "SteemPlayWorld|Wait" of {_player} to {_worldid}
@@ -161,7 +167,11 @@ function AsyncLoadSteemPlayWorld(data:object):
 
     #
     # > Execute a game based function that will initialize the game.
-    set {_game} to {_map}.get("game")
+    set {_objectMapper} to new ObjectMapper()    
+    set {_jsonNode} to {_objectMapper}.readTree({_map}.get("response").getJsonMetadata())
+    if {_jsonNode}.get("game") is set:
+      set {_game} to {_jsonNode}.get("game").textValue()
+
     if {_game} is not set:
       set {_game} to "creative"
     evaluate "SteemPlay%{_game}%InitGame(""%{_world}%"" parsed as world)"
