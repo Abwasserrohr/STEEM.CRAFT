@@ -27,9 +27,14 @@ function SteemPlayParkourStart(player:player,block:object):
     set {_testrun} to true
     if CheckSteemWorldPermission({_world},{_player},"onlyowner",true) is false:
       stop
+
+    #
+    # > If the world doesn't have a spawn location, tell the player
+    # > to do that before the testrun.
     if GetSteemWorldSpawn({_world}) is not set:
       message "%getChatPrefix()% Set a spawn location first:" to {_player}
       message "%getChatPrefix()% /sw set spawn" to {_player}
+      stop
     else:
       teleport {_player} to GetSteemWorldSpawn({_world})
 
