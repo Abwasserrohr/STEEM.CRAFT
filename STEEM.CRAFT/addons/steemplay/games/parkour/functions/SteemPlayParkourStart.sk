@@ -14,8 +14,25 @@ import:
 # > Called when a player starts a parkour.
 # > Parameters:
 # > <player> The who triggered the parkour to start.
-function SteemPlayParkourStart(player:player):
+# > <block> The block which has triggered the start.
+function SteemPlayParkourStart(player:player,block:object):
   set {_world} to {_player}'s world
+  if "%{_world}%" contains "steemworlds-":
+    #
+    # > If the testrun is already active, then prevent it from
+    # > restarting, since the player is teleported to the world
+    # > spawn on start in the testrun.
+    if metadata value "SteemPlayParkour|Game" of {_player} is set:
+      stop
+    set {_testrun} to true
+    if CheckSteemWorldPermission({_world},{_player},"onlyowner",true) is false:
+      stop
+    if GetSteemWorldSpawn({_world}) is not set:
+      message "%getChatPrefix()% Set a spawn location first:" to {_player}
+      message "%getChatPrefix()% /sw set spawn" to {_player}
+    else:
+      teleport {_player} to GetSteemWorldSpawn({_world})
+
   {_player}.setGameMode(GameMode.ADVENTURE!)
   heal {_player}
   feed {_player}
@@ -39,13 +56,36 @@ function SteemPlayParkourStart(player:player):
   # > a time by just stopping once the run uuid of the player changes.
   set {_runid} to getRandomUUID()
   set metadata value "SteemPlayParkour|Game" of {_player} to {_runid}
-  set {_start} to new Date()
-  
-  while metadata value "SteemPlayParkour|Game" of {_player} is {_runid}:
-    if {_player}'s gamemode is not adventure:
-      delete metadata value "SteemPlayParkour|Game" of {_player}
-    if {_player}'s world is not {_world}:
-      delete metadata value "SteemPlayParkour|Game" of {_player}
 
-    send action bar "&7[Parkour] Timer: %SteemPlayParkourTime({_start}, new Date())%" to {_player}
-    wait 1 tick
+  #
+  # > Use the location of the block and increase it by 0.5 on the y-coordinate
+  # > to allow a good experience. Save the current yaw and pitch from the player
+  # > for faster gameplay and better orientation.
+  if {_testrun} is set:
+    set {_loc} to GetSteemWorldSpawn({_world})
+  else:
+    set {_loc} to {_block}'s location
+    add 0.5 to y-coord of {_loc}
+    set {_loc}'s yaw to {_player}'s yaw
+    set {_loc}'s pitch to {_player}'s pitch
+
+  set metadata value "SteemPlayParkour|StartLocation" of {_player} to {_loc}
+  set metadata value "SteemPlayParkour|Checkpoint" of {_player} to {_loc}
+  set {_start} to new Date()
+  if {_testrun} is true:
+    while metadata value "SteemPlayParkour|Game" of {_player} is {_runid}:
+      if {_player}'s gamemode is not adventure:
+        delete metadata value "SteemPlayParkour|Game" of {_player}
+      if {_player}'s world is not {_world}:
+        delete metadata value "SteemPlayParkour|Game" of {_player}
+      send action bar "&8&l[&6&lTestrun&8&l]&f Solve your parkour to make it publishable." to {_player}
+      wait 1 tick
+  else:
+    while metadata value "SteemPlayParkour|Game" of {_player} is {_runid}:
+      if {_player}'s gamemode is not adventure:
+        delete metadata value "SteemPlayParkour|Game" of {_player}
+      if {_player}'s world is not {_world}:
+        delete metadata value "SteemPlayParkour|Game" of {_player}
+      send action bar "&8&l[&6&lParkour&8&l]&f Current Run: %SteemPlayParkourTime({_start}, new Date())% &8&l|&f PB: - &8&l|&f WR: - &8&l|" to {_player}
+      wait 1 tick
+  send action bar " " to {_player}

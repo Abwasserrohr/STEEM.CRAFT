@@ -21,9 +21,9 @@ function SteemPlayParkourHandleMovement(player:player,block:block):
     SteemPlayParkourRecoverBlocks({_block}'s world)
     SteemPlayGetTempCache({_block}'s world,"%{_x}%_%{_y}%_%{_z}%")
   if {_blocktype} is "startblock":
-    SteemPlayParkourStart({_player})
+    SteemPlayParkourStart({_player},{_block})
   if {_blocktype} is "checkpointblock":
-    SteemPlayParkourCheckpoint({_player})
+    SteemPlayParkourCheckpoint({_player},{_block})
   if {_blocktype} is "endblock":
     SteemPlayParkourEnd({_player})
 

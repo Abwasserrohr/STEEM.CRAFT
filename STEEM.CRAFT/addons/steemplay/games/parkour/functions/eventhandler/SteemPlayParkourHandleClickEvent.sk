@@ -1,0 +1,32 @@
+#
+# ==============
+# SteemPlayParkourHandleClickEvent.sk
+# ==============
+# SteemPlayParkourHandleClickEvent.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlayParkourHandleClickEvent
+# > This function is called with the on click event.
+# > Parameters:
+# > <player> The player who triggered the event.
+# > <event> The event that has been triggered.
+function SteemPlayParkourHandleClickEvent(player:player,event:object):
+  if metadata value "SteemPlayParkour|Game" of {_player} is set:
+    heal {_player}
+    feed {_player}
+    if {_event}.getItem().getType() is {SteemPlay::restartitem}.getType():
+      teleport {_player} to metadata value "SteemPlayParkour|StartLocation" of {_player}
+      set {_loc} to metadata value "SteemPlayParkour|StartLocation" of {_player}
+      remove 0.5 from y-coord of {_loc}
+      SteemPlayParkourStart({_player},{_loc})
+    if {_event}.getItem().getType() is {SteemPlay::checkpointitem}.getType():
+      teleport {_player} to metadata value "SteemPlayParkour|Checkpoint" of {_player}
+      if metadata value "SteemPlayParkour|StartLocation" of {_player} is metadata value "SteemPlayParkour|Checkpoint" of {_player}:
+        set {_loc} to metadata value "SteemPlayParkour|StartLocation" of {_player}
+        remove 0.5 from y-coord of {_loc}
+        SteemPlayParkourStart({_player},{_loc})
+    if {_event}.getItem().getType() is {SteemPlay::exititem}.getType():
+      delete metadata value "SteemPlayParkour|Game" of {_player}
+      clear {_player}'s inventory
+      make {_player} execute "%getyamlconfigobject(""parkour"",""exitcommand"")%"

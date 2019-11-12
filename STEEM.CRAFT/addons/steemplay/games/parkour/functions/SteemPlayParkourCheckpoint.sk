@@ -10,8 +10,18 @@
 # > Called when a player runs over a checkpoint block.
 # > Parameters:
 # > <player> The who triggered the checkpoint.
-function SteemPlayParkourCheckpoint(player:player):
-  set {_world} to {_player}'s world
-  set metadata value "SteemPlayParkour|Checkpoint" of {_player} to location of block at {_player}'s location
+# > <block> The block which has triggered the checkpoint.
+function SteemPlayParkourCheckpoint(player:player,block:object):
+
+  #
+  # > Use the location of the block and increase it by 0.5 on the y-coordinate
+  # > to allow a good experience. Save the current yaw and pitch from the player
+  # > for faster gameplay and better orientation.
+  set {_loc} to {_block}'s location
+  add 0.5 to y-coord of {_loc}
+  set {_loc}'s yaw to {_player}'s yaw
+  set {_loc}'s pitch to {_player}'s pitch
+
+  set metadata value "SteemPlayParkour|Checkpoint" of {_player} to {_loc}
   heal {_player}
   feed {_player}

@@ -14,6 +14,7 @@ options:
   restartitem: "heart of the sea"
   checkpointitem: "floor sign"
   exititem: "oak door"
+  exitcommand: "/lobby"
   configpath: "plugins/STEEM.CRAFT/SteemPlay/parkour.yml"
 
 #
@@ -37,11 +38,19 @@ function SteemPlayParkourLoadConfig():
     setyamlconfigobject("parkour","checkpointitem",{@checkpointitem})
   if getyamlconfigobject("parkour","exititem") is not set:
     setyamlconfigobject("parkour","exititem",{@exititem})
+  if getyamlconfigobject("parkour","exitcommand") is not set:
+    setyamlconfigobject("parkour","exitcommand",{@exitcommand})
   saveyamlconfig({@configpath},"parkour")
   
   set {SteemPlay::startblock} to getyamlconfigobject("parkour","startblock")
   set {SteemPlay::checkpointblock} to getyamlconfigobject("parkour","checkpointblock")
   set {SteemPlay::endblock} to getyamlconfigobject("parkour","endblock")
+  set {SteemPlay::restartitem} to getyamlconfigobject("parkour","restartitem")
+  set {SteemPlay::checkpointitem} to getyamlconfigobject("parkour","checkpointitem")
+  set {SteemPlay::exititem} to getyamlconfigobject("parkour","exititem")
   set {SteemPlay::startblock} to {SteemPlay::startblock} parsed as item
   set {SteemPlay::checkpointblock} to {SteemPlay::checkpointblock} parsed as item
   set {SteemPlay::endblock} to {SteemPlay::endblock} parsed as item
+  set {SteemPlay::restartitem} to {SteemPlay::restartitem} parsed as item
+  set {SteemPlay::checkpointitem} to {SteemPlay::checkpointitem} parsed as item
+  set {SteemPlay::exititem} to {SteemPlay::exititem} parsed as item

@@ -110,6 +110,16 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     set {_shortworld} to GetSteemWorldShortName({_player}'s world)
 
     #
+    # > Get the game from the local storage and add it to the json.
+    set {_game} to getGeneralStorageData("steemworlds",{_shortworld},"game")
+
+    #
+    # > If no game is set, fallback to "creative".
+    if {_game} is not set:
+      set {_game} to "creative"
+    {_finaljson}.put("game", {_game})
+
+    #
     # > If the player wants to publish the world to SteemPlay, check if
     # > the function of the game accepts that publish or not.
     if {_publish} is true:
@@ -124,9 +134,10 @@ function SaveSteemWorld(player:player,publish:boolean=false):
 
       set {_permlink} to "re-steemcraft-%{_world}%"
 
+      delete metadata value "SteemPlay-%{_steemname}%-%{_permlink}%" of {_player}
       #
       # > Parse a custom function to be evaluated using SkQuery.
-      evaluate "SteemPlaycreativePublishCheck(""%{_player}%"" parsed as player,""%{_steemname}%"",""%{_permlink}%"")"
+      evaluate "SteemPlay%{_game}%PublishCheck(""%{_player}%"" parsed as player,""%{_steemname}%"",""%{_permlink}%"")"
 
 	  #
 	  # > Wait until we have a response from the custom function.
@@ -135,12 +146,14 @@ function SaveSteemWorld(player:player,publish:boolean=false):
 
       set {_publishable} to metadata value "SteemPlay-%{_steemname}%-%{_permlink}%" of {_player}
       delete metadata value "SteemPlay-%{_steemname}%-%{_permlink}%" of {_player}
-
       if {_publishable} is false:
-        message "%getChatPrefix()% There are some settings missing from publishing" to {_player}
-        message "%getChatPrefix()% your world to SteemPlay, check your settings using /sw." to {_player}
-        message "%getChatPrefix()% To save your world without publishing it, use /sw save." to {_player}
+        message "%getChatPrefix()% The game you selected prevents you" to {_player}
+        message "%getChatPrefix()% from publishing this world to Steem." to {_player}
+        message "%getChatPrefix()% Check the game settings in the /sw menu." to {_player}
+        message "%getChatPrefix()% To save the world without publishing it," to {_player}
+        message "%getChatPrefix()% use the command /sw save." to {_player}
         stop
+
     #
     # > Get the size of the world to set the correct world coordinates.
     set {_size} to getGeneralStorageData("steemworlds",{_shortworld},"size")
@@ -157,6 +170,7 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     #
     # > Once the chunk block numbers have been collected, 
     # > add other custom json data to the json.
+    set {_objectMapper} to new ObjectMapper()
     set {_finaljson} to {_objectMapper}.createObjectNode()
     {_finaljson}.put("app", "{@commentapp}")
 
@@ -229,15 +243,6 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     if {_weather} is set:
       {_finaljson}.put("weather", {_weather})
 
-    #
-    # > Get the game from the local storage and add it to the json.
-    set {_game} to getGeneralStorageData("steemworlds",{_shortworld},"game")
-
-    #
-    # > If no game is set, fallback to "creative".
-    if {_game} is not set:
-      set {_game} to "creative"
-    {_finaljson}.put("game", {_game})
 	
     #
     # > Calculate both x- and z-start and endcoordinates of the world.

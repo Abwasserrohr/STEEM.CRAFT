@@ -12,7 +12,7 @@
 # > <Date>a date from the past
 # > Actions:
 # > Creates a string (text) which looks like a stopwatch and returns it.
-# > Example: 00:00.000
+# > Example: seconds.milliseconds
 function SteemPlayParkourTime(now:object,past:object) :: text:
   #
   # > Get the time difference in milliseconds.
@@ -45,9 +45,7 @@ function SteemPlayParkourTime(now:object,past:object) :: text:
     else:
       set {_timer} to "%{_timer}%0"
     #
-    # > Depending on the loops, add a ":" or a ".".
-    if {_loops} is 6:
-      set {_timer} to "%{_timer}%:"
+    # > Depending on the loops, add a ".".
     if {_loops} is 4:
       set {_timer} to "%{_timer}%."
     #
