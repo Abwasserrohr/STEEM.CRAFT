@@ -76,4 +76,3 @@ function setnbtvalue(item:item,tag:text,value:text) :: item:
   #
   # > Return the new item with the new NBT data.
   return {_item1}
-#
