@@ -77,6 +77,7 @@ function SteemPlayParkourStart(player:player,block:object):
   set metadata value "SteemPlayParkour|StartLocation" of {_player} to {_loc}
   set metadata value "SteemPlayParkour|Checkpoint" of {_player} to {_loc}
   set {_start} to new Date()
+  
   if {_testrun} is true:
     while metadata value "SteemPlayParkour|Game" of {_player} is {_runid}:
       if {_player}'s gamemode is not adventure:
@@ -86,14 +87,38 @@ function SteemPlayParkourStart(player:player,block:object):
       send action bar "&8&l[&6&lTestrun&8&l]&f Solve your parkour to make it publishable." to {_player}
       wait 1 tick
   else:
+    SteemPlayParkourBroadcastStart({_player},{_world},{_runid},{_start})
+    set {_steemname} to getSyncedAccount({_player})
+    if {_steemname} is not false:
+      set {_permlink} to GetSteemWorldPermlink({_world})
+      set {_author} to GetSteemWorldAuthor({_world})
+      set {_txuuid} to "pb-%{_permlink}%"
+      set {_pbpermlink} to "re-%{_author}%-%{_txuuid}%"
+      SteemPlayParkourGetPB({_steemname},{_pbpermlink})
+
     while metadata value "SteemPlayParkour|Game" of {_player} is {_runid}:
+      if {_pb} is not set:
+        if SteemPlayParkourRetrievePB({_steemname},{_pbpermlink}) is not "wait":
+          set {_pb} to SteemPlayParkourRetrievePB({_steemname},{_pbpermlink})
+          if {_pb} is 0:
+            set {_pb} to "-"
+          else if {_pb} is not set:
+            set {_pb} to "-"
+          else:
+            set {_pb} to "%{_pb}%ms"
+	
       if {_player}'s gamemode is not adventure:
         delete metadata value "SteemPlayParkour|Game" of {_player}
       if {_player}'s world is not {_world}:
         delete metadata value "SteemPlayParkour|Game" of {_player}
-      send action bar "&8&l[&6&lParkour&8&l]&f Current Run: %SteemPlayParkourTime({_start}, new Date())% &8&l|&f PB: - &8&l|&f WR: - &8&l|" to {_player}
+      if {_pb} is set:
+        send action bar "&8&l[&6&lParkour&8&l]&f Current Run: %SteemPlayParkourTime({_start}, new Date())% &8&l|&f PB: %{_pb}% &8&l|&f WR: - &8&l|" to {_player}
+      else:
+        send action bar "&8&l[&6&lParkour&8&l]&f Current Run: %SteemPlayParkourTime({_start}, new Date())% &8&l|&f PB: - &8&l|&f WR: - &8&l|" to {_player}
+
       wait 1 tick
   send action bar " " to {_player}
   if metadata value "SteemPlayParkour|GameEnd" of {_player} is set:
     delete metadata value "SteemPlayParkour|GameEnd" of {_player}
+    SteemPlayParkourBroadcastEnd({_player},{_world},{_runid},{_start},new Date())
     message "%getChatPrefix()% You solved the parkour in %SteemPlayParkourTime({_start}, new Date())% seconds." to {_player}

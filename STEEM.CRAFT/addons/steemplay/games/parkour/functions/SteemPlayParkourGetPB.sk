@@ -1,0 +1,41 @@
+#
+# ==============
+# SteemPlayParkourGetPB.sk
+# ==============
+# SteemPlayParkourGetPB.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+
+#
+# > Function - SteemPlayParkourGetPB
+# > Gets the personal best score for the given user and permlink.
+# > Parameters:
+# > <text> The name of the Steem user to which the pb is needed
+# > <text> The permlink to the pb of the Steem user
+function SteemPlayParkourGetPB(steemname:text,pbpermlink:text):
+  set metadata value "SteemPlayParkour|RetrievePB|%{_steemname}%|%{_pbpermlink}%" of getDummy() to "wait"
+  set {_objectMapper} to new ObjectMapper()
+  getSteemContent({_steemname},{_pbpermlink})
+  set {_requestid} to getRawSteemContent({_steemname},{_pbpermlink})
+  while CustomSteemRequestResult({_requestid}) is "wait":
+    wait 1 tick
+  set {_pb} to CustomSteemRequestResult({_requestid})
+
+  set {_jsonNode} to {_objectMapper}.readTree({_pb}.get("result").get("json_metadata").textValue())
+  set {_pbstart} to {_jsonNode}.get("start").doubleValue()
+  set {_pbend} to {_jsonNode}.get("end").doubleValue()
+  set {_pb} to {_pbend} - {_pbstart}
+  set metadata value "SteemPlayParkour|RetrievePB|%{_steemname}%|%{_pbpermlink}%" of getDummy() to {_pb}
+  wait 1 second
+  delete metadata value "SteemPlayParkour|RetrievePB|%{_steemname}%|%{_pbpermlink}%" of getDummy()
+
+#
+# > Function - SteemPlayParkourGetPB
+# > Retrieves the requested personal best score for the given user and permlink.
+# > Parameters:
+# > <text> The name of the Steem user to which the pb is needed
+# > <text> The permlink to the pb of the Steem user
+function SteemPlayParkourRetrievePB(steemname:text,pbpermlink:text) :: object:
+  return metadata value "SteemPlayParkour|RetrievePB|%{_steemname}%|%{_pbpermlink}%" of getDummy()

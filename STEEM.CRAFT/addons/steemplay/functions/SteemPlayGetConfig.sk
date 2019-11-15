@@ -17,6 +17,7 @@ import:
 # > <text> The author of the world that the config is wanted.
 # > <text> The permlink of the world.
 function SteemPlayGetConfig(author:text,permlink:text) :: object:
+  replace all "re-steemcraft-publish-" with "" in {_permlink}
   replace all "re-steemcraft-" with "" in {_permlink}
   replace all "steemworlds-" with "" in {_permlink}
   if metadata value "SteemPlayGetConfig-%{_author}%-%{_permlink}%" of getDummy() is not set:
