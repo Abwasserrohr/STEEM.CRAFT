@@ -1,0 +1,72 @@
+#
+# ==============
+# SteemPlayParkourGetRunToplist.sk
+# ==============
+# SteemPlayParkourGetRunToplist.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+  java.util.ArrayList
+
+#
+# > Function - SteemPlayParkourGetRunToplist
+# > Requests the toplist of all runs of the defined map.
+# > Parameters:
+# > <text> The author of the map.
+# > <text> The permlink of the map.
+function SteemPlayParkourGetRunToplist(author:text,permlink:text):
+  set metadata value "SteemPlayParkour|RetrieveToplist|%{_author}%|%{_permlink}%" of getDummy() to "wait"
+  set {_requestid} to getRawSteemContentReplies({_author},{_permlink})
+  while CustomSteemRequestResult({_requestid}) is "wait":
+    wait 1 tick
+  set {_result} to CustomSteemRequestResult({_requestid})
+  set {_objectMapper} to new ObjectMapper()
+  set {_replies} to {_result}.get("result").size()
+  loop {_replies} times:
+    set {_i} to loop-number - 1
+    set {_metadata} to {_result}.get("result").get({_i}).get("json_metadata").textValue()
+    set {_metadata} to {_objectMapper}.readTree({_metadata})
+    if {_metadata}.get("runid") is set:
+      if {_metadata}.get("start") is set:
+        if {_metadata}.get("end") is set:
+          set {_start} to {_metadata}.get("start").doubleValue()
+          set {_end} to {_metadata}.get("end").doubleValue()
+          set {_time} to {_end} - {_start}
+          set {_runner} to {_result}.get("result").get({_i}).get("author").textValue()
+          set {_list::%{_runner}%} to {_time}
+  #
+  # > Start sorting the timings list: low to high.
+  loop {_list::*}:
+    add 1 to {_size}
+    if {_top::%loop-value%} is not set:
+      set {_top::%loop-value%} to loop-index
+    else:
+      set {_n} to 0
+      loop {_size} times:
+        add 1 to {_n}
+        if {_top::%loop-value-1%.%{_n}%} is not set:
+          set {_top::%loop-value-1%.%{_n}%} to loop-index
+          stop loop
+  set {_toplist} to new ArrayList()
+  loop {_top::*}:
+    add 1 to {_rank}
+    set {_time::*} to loop-index split at "."
+    set {_entry} to HashMap()
+    {_entry}.put("player",loop-value)
+    {_entry}.put("time",{_time::1})
+    {_toplist}.add({_entry})
+  set metadata value "SteemPlayParkour|RetrieveToplist|%{_author}%|%{_permlink}%" of getDummy() to {_toplist}
+  wait 1 second
+  delete metadata value "SteemPlayParkour|RetrieveToplist|%{_author}%|%{_permlink}%" of getDummy()
+
+#
+# > Function - SteemPlayParkourRetrieveRunToplist
+# > Retrieves the requested run toplist.
+# > Parameters:
+# > <text> The author of the map.
+# > <text> The permlink of the map.
+# > Returns:
+# > <ArrayList[HashMap]> A ArrayList that contains a HashMap which contains the time and the steem name of the runner.
+function SteemPlayParkourRetrieveRunToplist(author:text,permlink:text) :: object:
+  return metadata value "SteemPlayParkour|RetrieveToplist|%{_author}%|%{_permlink}%" of getDummy()

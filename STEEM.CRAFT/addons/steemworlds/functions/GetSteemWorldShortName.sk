@@ -12,5 +12,6 @@
 # > <object> The world to which the short name should be returned.
 function GetSteemWorldShortName(world:object) :: text:
   set {_name} to "%{_world}%"
+  replace all "steemworlds-publish" with "" in {_name}
   replace all "steemworlds-" with "" in {_name}
   return {_name}

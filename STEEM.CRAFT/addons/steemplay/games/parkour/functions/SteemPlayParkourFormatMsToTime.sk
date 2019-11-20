@@ -1,0 +1,52 @@
+#
+# ==============
+# SteemPlayParkourFormatMsToTime.sk
+# ==============
+# SteemPlayParkourFormatMsToTime.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlayParkourFormatMsToTime
+# > Converts milliseconds to a proper time format.
+# > Parameters:
+# > <text/number> A number or a text of milliseconds
+function SteemPlayParkourFormatMsToTime(ms:object) :: text:
+  #
+  # > Get the time difference in milliseconds.
+  set {_difft} to "%{_ms}%"
+  #
+  # > Get the time difference in milliseconds as a text.
+  #
+  # > Get the length of the text to format the stopwatch.
+  set {_length} to length of {_difft}
+  #
+  # > Split everything into a list.
+  set {_difft::*} to {_difft} split at ""
+  #
+  # > Set the timer which later gets returned.
+  set {_timer} to ""
+  #
+  # > This defines how long the stopwatch timer should be,
+  # > 7 allows to display 7 digits.
+  set {_loops} to 7
+  #
+  # > Loop and create the stopwatch like timer.
+  while {_done} is not set:
+    #
+    # > As long as the loops are equal or smaller than the length of the text based
+    # > time difference, display a 0.
+    if {_loops} <= {_length}:
+      add 1 to {_i}
+      set {_timer} to "%{_timer}%%{_difft::%{_i}%}%"
+    #
+    # > Depending on the loops, add a ".".
+    if {_loops} is 4:
+      set {_timer} to "%{_timer}%."
+    #
+	# > Remove 1 from the loops and stop this while loop once we reached 0 loops.
+    remove 1 from {_loops}
+    if {_loops} < 1:
+      set {_done} to true
+  #
+  # > Return the stopwatch like timer as a text.
+  return {_timer}

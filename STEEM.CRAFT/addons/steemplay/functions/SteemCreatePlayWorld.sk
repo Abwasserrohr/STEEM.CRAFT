@@ -13,6 +13,7 @@ import:
   org.bukkit.World$Environment
   org.bukkit.WorldType
   org.bukkit.event.world.WorldInitEvent
+  org.bukkit.event.world.WorldLoadEvent
 
 #
 # > Function - SteemCreatePlayWorld
@@ -77,6 +78,7 @@ function SteemCreatePlayWorld() :: text:
   # > The world is created after all settings from the WorldCreator have
   # > been done.
   set {_finalworld} to Bukkit.createWorld({_world})
+  {_finalworld}.setKeepSpawnInMemory(false)
   if metadata value "SteemPlayWorld|Worlds" of getDummy() is not set:
     set metadata value "SteemPlayWorld|Worlds" of getDummy() to HashMap()
 	
@@ -88,7 +90,14 @@ function SteemCreatePlayWorld() :: text:
 
 #
 # > Event - WorldInitEvent
-# > If a new world is initialized, the CurrentWorld value is changed to that world.
+# > If a new world is initialized, prevent it from loading the spawn area.
 on WorldInitEvent with priority HIGHEST:
   if "%event.getWorld()%" contains "SteemPlayWorld-":
+    event.getWorld().setKeepSpawnInMemory(false)
+
+
+#
+# > Event - WorldLoadEvent
+# > If a world is loaded, prevent it from loading the spawn area.
+on WorldLoadEvent with priority HIGHEST:
     event.getWorld().setKeepSpawnInMemory(false)

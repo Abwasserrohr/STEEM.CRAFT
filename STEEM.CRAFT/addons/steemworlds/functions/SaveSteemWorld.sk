@@ -14,6 +14,7 @@ options:
   # > The post prefix changes how the comment looks like on blog based Steem apps.
   # > This could get changed in the future to link to a world explorer.
   postprefix: <a href=""https://steemit.com/@steem.craft""><img src=""https://cdn.steemitimages.com/DQmUzWn7xJhLpPhGAczEpkcph4gNMrRdcCeTC5RVHnRQrjE/steemheader-left.png""></a>
+  postprefixpublish: <center><h1>worldname</h1>Play this world:<br><code>/steemplay play steemuser permlink</code></center><div class=""pull-right""><sub>Submitted using <a href=""https://github.com/Abwasserrohr/STEEM.CRAFT"">STEEM.CRAFT</a></sub></div>
   #
   # > The json id is used to identify STEEM.CRAFT world transactions.
   jsonidplots: STEEM.CRAFT/worlds
@@ -566,10 +567,10 @@ function SaveSteemWorld(player:player,publish:boolean=false):
 
     #
     # > Get the game config from the local storage and add it to the json.
-    while SteemPlayGetConfig({_steemname},{_permlink}) is "wait":
+    while SteemPlayGetConfig({_steemname},{_permlink},true) is "wait":
       wait 1 tick
     wait 1 tick
-    set {_config} to SteemPlayGetConfig({_steemname},{_permlink})
+    set {_config} to SteemPlayGetConfig({_steemname},{_permlink},true)
     {_finaljson}.put("gameconfig", {_config}.toString())
 
     #
@@ -613,11 +614,18 @@ function SaveSteemWorld(player:player,publish:boolean=false):
       delete {_bossbar}
       stop
     if {_publish} is true:
-      wait 6 seconds
+      wait 8 seconds
       set {_txid} to "%{_world}%"
       set {_txuuid} to "publish-%{_txid}.toLowerCase()%"
       set {_parentpermlink} to "{@publishedcommentparentpermlink}"
       replace all "<game>" with "%{_game}%" in {_parentpermlink}
+
+      set {_comment} to "{@postprefixpublish}"
+      replace all "steemuser" with "%{_steemname}%" in {_comment}
+      set {_worldlinkname} to "%{_world}%"
+      set {_worldlinkname} to {_worldlinkname}.replaceFirst("steemworlds-%{_steemname}%-", "")
+      replace all "permlink" with "%{_worldlinkname}%" in {_comment}
+      replace all "worldname" with "%{_worldlinkname}%" in {_comment}
 
       #
       # > The createComment function is going to create a comment to publish the world.

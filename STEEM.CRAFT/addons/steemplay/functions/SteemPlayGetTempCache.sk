@@ -13,4 +13,5 @@
 # > <text> The key to which the value has been stored.
 function SteemPlayGetTempCache(world:world,key:text) :: object:
   if metadata value "SteemPlayWorld|TempData" of {_world} is set:
+    set {_value} to (metadata value "SteemPlayWorld|TempData" of {_world}).get({_key})
     return (metadata value "SteemPlayWorld|TempData" of {_world}).get({_key})

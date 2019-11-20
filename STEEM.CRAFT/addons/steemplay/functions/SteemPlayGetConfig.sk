@@ -16,7 +16,7 @@ import:
 # > Parameters:
 # > <text> The author of the world that the config is wanted.
 # > <text> The permlink of the world.
-function SteemPlayGetConfig(author:text,permlink:text) :: object:
+function SteemPlayGetConfig(author:text,permlink:text,testrun:boolean=false) :: object:
   replace all "re-steemcraft-publish-" with "" in {_permlink}
   replace all "re-steemcraft-" with "" in {_permlink}
   replace all "steemworlds-" with "" in {_permlink}
@@ -26,6 +26,7 @@ function SteemPlayGetConfig(author:text,permlink:text) :: object:
     set {_request} to HashMap()
     {_request}.put("author",{_author})
     {_request}.put("permlink",{_permlink})
+    {_request}.put("testrun",{_testrun})
     set metadata value "SteemPlayConfigRequest" of getDummy() to {_request}
 
     $ thread
@@ -46,9 +47,13 @@ function SteemPlayGetConfigAsync(request:object):
 
   set {_author} to {_request}.get("author")
   set {_permlink} to {_request}.get("permlink")
+  set {_testrun} to {_request}.get("testrun")
   set {_shortworld} to {_permlink}
   replace all "re-steemcraft-steemworlds-" with "" in {_shortworld}
-  set {_game} to getGeneralStorageData("steemworlds",{_shortworld},"game")
+  if {_testrun} is true:
+    set {_game} to getGeneralStorageData("steemworlds",{_shortworld},"game")
+  else:
+    set {_game} to getGeneralStorageData("steemplay",{_shortworld},"game")
 
   #
   # > If no game is set, default it to "creative".
@@ -57,7 +62,10 @@ function SteemPlayGetConfigAsync(request:object):
 
   #
   # > With the game, we can get the game specic configuration values.
-  set {_gameconfig} to getGeneralStorageData("steemworlds",{_shortworld},"%{_game}%gameconfig")
+  if {_testrun} is true:
+    set {_gameconfig} to getGeneralStorageData("steemworlds",{_shortworld},"%{_game}%gameconfig")
+  else:
+    set {_gameconfig} to getGeneralStorageData("steemplay",{_shortworld},"%{_game}%gameconfig")
 
   #
   # > If no configuration is set, make a empty json string.
@@ -78,5 +86,5 @@ function SteemPlayGetConfigAsync(request:object):
   # > Save the result into metadata for 10 ticks.
   set metadata value "SteemPlayGetConfig-%{_author}%-%{_permlink}%" of getDummy() to {_jsonNode}
 
-  wait 10 ticks
+  wait 1 second
   delete metadata value "SteemPlayGetConfig-%{_author}%-%{_permlink}%" of getDummy()

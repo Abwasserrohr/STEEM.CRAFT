@@ -19,13 +19,17 @@ function SteemPlayParkourRecoverBlocks(object:object):
   else:
     set {_world} to {_object}
 	
+  if "%{_world}%" contains "steemworlds-":
+    set {_testrun} to true
+  else:
+    set {_testrun} to false
+
   set {_author} to GetSteemWorldAuthor({_world})
   set {_permlink} to GetSteemWorldPermlink({_world})
-  while SteemPlayGetConfig({_author},{_permlink}) is "wait":
+  while SteemPlayGetConfig({_author},{_permlink},{_testrun}) is "wait":
     wait 1 tick
   wait 1 tick
-  set {_config} to SteemPlayGetConfig({_author},{_permlink})
-
+  set {_config} to SteemPlayGetConfig({_author},{_permlink},{_testrun})
   #
   # > Get the parkour blocks and parse them as item to place them later.
   set {_startblock} to getyamlconfigobject("parkour","startblock")

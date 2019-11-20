@@ -1,0 +1,9 @@
+
+
+import:
+  org.bukkit.event.player.PlayerInteractEvent
+
+on PlayerInteractEvent:
+  if IsSteemWorld(event.getPlayer().getWorld()) is true:
+    if CheckSteemWorldPermission(event.getPlayer().getWorld(),event.getPlayer(),"build",true) is false:
+      event.setCancelled(true)

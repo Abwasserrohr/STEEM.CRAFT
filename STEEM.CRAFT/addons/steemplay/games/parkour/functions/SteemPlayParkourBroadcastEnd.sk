@@ -27,9 +27,10 @@ function SteemPlayParkourBroadcastEnd(player:player,world:object,runid:text,star
 
     #
     # > Get the account in a thread to validate.
-    getAccount("%{_steemname}%",false)
+    getAccount("%{_steemname}%",true)
     
-    wait 1 tick
+    while getAccountResponse("%{_steemname}%") is "wait":
+      wait 1 tick
 
     #
     # > Set the response to a local usable variable.
@@ -65,11 +66,13 @@ function SteemPlayParkourBroadcastEnd(player:player,world:object,runid:text,star
 
         if getSteemResponse({_txuuid}) is "done":
           set {_done} to true
+        else:
+          log "%getSteemResponse({_txuuid})%" to "steemerrors"
+      if {_done} is not true:
+        wait 60 seconds
 
-      wait 1 second
     delete {_done}
     while {_done} is not true:
-
 	
       set {_comment} to "You finished this parkour in %SteemPlayParkourTime({_startdate}, {_enddate})% seconds."
       set {_author} to GetSteemWorldAuthor({_world})
@@ -80,13 +83,18 @@ function SteemPlayParkourBroadcastEnd(player:player,world:object,runid:text,star
       while SteemPlayParkourRetrievePB({_steemname},{_pbpermlink}) is "wait":
         wait 1 tick
       set {_pb} to SteemPlayParkourRetrievePB({_steemname},{_pbpermlink})
-      set {_runtime} to {_enddate}.getTime() - {_startdate}.getTime()
+	  
+      set {_endtime} to {_enddate}.getTime()
+      set {_starttime} to {_startdate}.getTime()
+      set {_runtime} to {_endtime} - {_starttime}
       if {_pb} is 0:
         set {_pb} to 9999999999999
       if {_pb} is bigger than {_runtime}:
-        set {_comment} to "You have improved your personal best time!"
+        message "%getChatPrefix()% You have set a new personal best record." to {_player}
 
-        createComment({_txuuid},{_steemname},{_comment},{_author},{_permlink},["steemcraft","sbi-skip","parkour","battle","steem-ace","palnet"],"Parkour run","{""runid"":""%{_runid}%"",""start"":%{_startdate}.getTime()%,""end"":%{_enddate}.getTime()%}")
+        set {_comment} to "I have improved my personal best time: %SteemPlayParkourTime({_startdate}, {_enddate})% seconds"
+
+        createComment({_txuuid},{_steemname},{_comment},{_author},{_permlink},["steemcraft","sbi-skip","parkour","battle","steem-ace"],"Parkour run","{""runid"":""%{_runid}%"",""start"":%{_startdate}.getTime()%,""end"":%{_enddate}.getTime()%}")
 
         while getSteemResponse({_txuuid}) is "wait":
           wait 1 tick
@@ -96,4 +104,4 @@ function SteemPlayParkourBroadcastEnd(player:player,world:object,runid:text,star
         else:
           log "%getSteemResponse({_txuuid})%" to "steemerrors"
         wait 1 tick
-
+      wait 60 seconds

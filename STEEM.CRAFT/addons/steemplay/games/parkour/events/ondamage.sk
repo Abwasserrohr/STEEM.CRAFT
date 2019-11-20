@@ -1,0 +1,15 @@
+
+
+on damage:
+  if victim is a player:
+    if event.getFinalDamage() >= victim's health:
+      if metadata value "SteemPlayParkour|Game" of victim is set:
+        set {_cp} to metadata value "SteemPlayParkour|Checkpoint" of victim
+        victim.teleport({_cp})
+        heal victim
+        feed victim
+        if metadata value "SteemPlayParkour|StartLocation" of victim is metadata value "SteemPlayParkour|Checkpoint" of victim:
+          set {_loc} to metadata value "SteemPlayParkour|StartLocation" of victim
+          remove 0.5 from y-coord of {_loc}
+          SteemPlayParkourStart(victim,{_loc})
+        cancel event

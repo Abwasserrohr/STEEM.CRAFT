@@ -52,7 +52,7 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
   {_map}.put("response",{_c})
 
   #
-  # > Reading the json metadata of the content is done using ObjectMapper.
+  # > Reading the json metadata of the content which is done using ObjectMapper.
   set {_objectMapper} to new ObjectMapper()    
   set {_jsonNode} to {_objectMapper}.readTree({_c}.getJsonMetadata())
 
@@ -218,41 +218,44 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
 
     #
     # > Get the operations of a block.
-    set {_ops} to getOpsInBlock(loop-value,false)
+    set {_ops} to getRawOpsInBlock(loop-value,false,false)
 
     loop {_ops}.size() times:
       set {_tx} to loop-number - 1
       #
       # > Only go forward if the operation contains json.
-      if {_ops}.get({_tx}).getOp() is instance of CustomJsonOperation:
+      if {_ops}.get({_tx}).get("op").get(0).textValue() is "custom_json":
         #
         # > Only go forward of the required posting auths match with the requested steem username.
-        set {_auths} to try {_ops}.get({_tx}).getOp().getRequiredPostingAuths()
-        if {_auths} is not {_emptylist}:
-          if {_ops}.get({_tx}).getOp().getRequiredPostingAuths().get(0).getName() is {_steemname}:
-            if {_bossbar} is not null:
-              #
-              # > Tell the player how the loading process is doing.
-              {_bossbar}.setTitle("&lLoading... [%{_partnumber} * {_pdone}%%%]")
-              set {_progress} to (({_partnumber} * {_pdone})/100)/1.5
-              {_bossbar}.setProgress({_progress})
-            #
-            # > Get the json Metadata as a string and check if the world matches with the
-            # > world which should be loaded.
-            set {_objectMapper} to new ObjectMapper()
-            set {_json} to "%{_ops}.get({_tx}).getOp().getJson()%"
-            set {_jsonNode} to {_objectMapper}.readTree({_json})
-            if {_jsonNode}.get("w").textValue() is {_shortworld}:
-              set {_x} to {_jsonNode}.get("x")
-              set {_z} to {_jsonNode}.get("z")
-              set {_i} to {_jsonNode}.get("i")
-              set {_data} to {_jsonNode}.get("data").textValue()
+        set {_auths} to try {_ops}.get({_tx}).get("op").get(1).get("required_posting_auths")
 
+        if {_auths}.size() is not 0:
+          if {_ops}.get({_tx}).get("op").get(1).get("required_posting_auths").get(0).textValue() is {_steemname}:
+            if {_ops}.get({_tx}).get("op").get(1).get("id").textValue() is "STEEM.CRAFT/worlds":
+              if {_bossbar} is not null:
+                #
+                # > Tell the player how the loading process is doing.
+                {_bossbar}.setTitle("&lLoading... [%{_partnumber} * {_pdone}%%%]")
+                set {_progress} to (({_partnumber} * {_pdone})/100)/1.5
+                {_bossbar}.setProgress({_progress})
               #
-              # > Make sure that we have found the matching data in this block
-              # > since multiple transactions could be in one block.
-              if loop-index is "%{_x}%|%{_z}%|%{_i}%":
-                set {_plotparts::%{_x}%|%{_z}%|%{_i}%} to {_data}
+              # > Get the json Metadata as a string and check if the world matches with the
+              # > world which should be loaded.
+              set {_objectMapper} to new ObjectMapper()
+              set {_json} to {_ops}.get({_tx}).get("op").get(1).get("json").textValue()
+              set {_jsonNode} to {_objectMapper}.readTree({_json})
+
+              if {_jsonNode}.get("w").textValue() is {_shortworld}:
+                set {_x} to {_jsonNode}.get("x")
+                set {_z} to {_jsonNode}.get("z")
+                set {_i} to {_jsonNode}.get("i")
+                set {_data} to {_jsonNode}.get("data").textValue()
+
+                #
+                # > Make sure that we have found the matching data in this block
+                # > since multiple transactions could be in one block.
+                if loop-index is "%{_x}%|%{_z}%|%{_i}%":
+                  set {_plotparts::%{_x}%|%{_z}%|%{_i}%} to {_data}
 
   if {_bossbar} is not null:
     #

@@ -91,6 +91,8 @@ function VisitSteemWorld(player:player,username:text="",worldname:text="home"):
           else:
             if getGeneralStorageData("steemworlds",{_world},"created") is not true:
               message "%getChatPrefix()% Creating %{_worldname}% now..." to {_player}
+              execute console command "/lp user %{_player}% permission set worldedit.* world=steemworlds-%{_world}%"
+              execute console command "/lp user %{_player}% permission set fawe.bypass world=steemworlds-%{_world}%"
 
     #
     # > Only create and save general storage information, if the world is not loaded.

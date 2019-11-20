@@ -14,6 +14,9 @@ function SteemPlayWorldSpawn(world:world) :: location:
   if SteemGetPlayWorldId({_world}) is not false:
     set {_id} to SteemGetPlayWorldId({_world})
     set {_worldname} to GetSteemWorldNameById({_id})
-  set {_l} to getGeneralStorageData("steemworlds",GetSteemWorldShortName({_worldname}),"spawn")
+  else:
+    set {_worldname} to "%{_world}%"
+  set {_shortname} to GetSteemWorldShortName({_worldname})
+  set {_l} to getGeneralStorageData("steemplay",{_shortname},"spawn")
   set {_l} to deserializelocation({_l},{_world})
   return {_l}

@@ -1,0 +1,38 @@
+#
+# ==============
+# SteemPlayParkourGetWR.sk
+# ==============
+# SteemPlayParkourGetWR.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+
+#
+# > Function - SteemPlayParkourGetWR
+# > Gets the world record of a specific map.
+# > Parameters:
+# > <text> The author of the map.
+# > <text> The permlink of the map.
+function SteemPlayParkourGetWR(author:text,permlink:text):
+  set metadata value "SteemPlayParkour|RetrieveWR|%{_author}%|%{_permlink}%" of getDummy() to "wait"
+
+  SteemPlayParkourGetRunToplist({_author}, {_permlink})
+  while SteemPlayParkourRetrieveRunToplist({_author}, {_permlink}) is "wait":
+    wait 1 tick
+  set {_toplist} to SteemPlayParkourRetrieveRunToplist({_author}, {_permlink})
+  
+  set metadata value "SteemPlayParkour|RetrieveWR|%{_author}%|%{_permlink}%" of getDummy() to {_toplist}.get(0)
+  wait 1 second
+  delete metadata value "SteemPlayParkour|RetrieveWR|%{_author}%|%{_permlink}%" of getDummy()
+
+#
+# > Function - SteemPlayParkourRetrieveWR
+# > Retrieves the requested world record for the map.
+# > Parameters:
+# > <text> The author of the map.
+# > <text> The permlink of the map.
+# > Returns:
+# > <HashMap> A HashMap that contains the steem name of the runner and the time.
+function SteemPlayParkourRetrieveWR(author:text,permlink:text) :: object:
+  return metadata value "SteemPlayParkour|RetrieveWR|%{_author}%|%{_permlink}%" of getDummy()
