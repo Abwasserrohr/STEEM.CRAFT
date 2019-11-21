@@ -1,0 +1,19 @@
+#
+# ==============
+# SteemPlayLoadConfig.sk
+# ==============
+# SteemPlayLoadConfig.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+options:
+  moderators: ["skyroad"]
+  configpath: "plugins/STEEM.CRAFT/SteemPlay/config.yml"
+
+#
+# > Function - SteemPlayLoadConfig
+# > Load the configuration of SteemPlay.
+function SteemPlayLoadConfig():
+  loadyamlconfig({@configpath},"steemplay")
+  if getyamlconfigobject("steemplay","moderators") is not set:
+    setyamlconfigobject("steemplay","moderators",{@moderators})
+  saveyamlconfig({@configpath},"steemplay")

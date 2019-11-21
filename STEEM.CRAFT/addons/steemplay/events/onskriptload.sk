@@ -8,3 +8,4 @@
 on skript load:
   wait 1 tick
   SteemDeleteAllPlayWorlds()
+  SteemPlayLoadConfig()

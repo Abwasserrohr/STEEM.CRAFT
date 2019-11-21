@@ -27,14 +27,35 @@ function SteemPlayParkourGetRunToplist(author:text,permlink:text):
     set {_i} to loop-number - 1
     set {_metadata} to {_result}.get("result").get({_i}).get("json_metadata").textValue()
     set {_metadata} to {_objectMapper}.readTree({_metadata})
+    delete {_removed}
     if {_metadata}.get("runid") is set:
       if {_metadata}.get("start") is set:
         if {_metadata}.get("end") is set:
-          set {_start} to {_metadata}.get("start").doubleValue()
-          set {_end} to {_metadata}.get("end").doubleValue()
-          set {_time} to {_end} - {_start}
-          set {_runner} to {_result}.get("result").get({_i}).get("author").textValue()
-          set {_list::%{_runner}%} to {_time}
+          #
+          # > If the comment has replies, it may has been removed
+          # > by a moderator. Moderators can remove entires from
+          # > being shown in toplists by adding the #removed tag
+          # > to the body of their comment as a reply.
+          if {_result}.get("result").get({_i}).get("children").doubleValue() is not 0:
+            set {_requestid} to getRawSteemContentReplies({_result}.get("result").get({_i}).get("author").textValue(),{_result}.get("result").get({_i}).get("permlink").textValue())
+            while CustomSteemRequestResult({_requestid}) is "wait":
+              wait 1 tick
+            set {_childreturn} to CustomSteemRequestResult({_requestid})
+            loop {_childreturn}.get("result").size() times:
+              add 1 to {_ci}
+              set {_childauthor} to {_childreturn}.get("result").get({_ci}).get("author").textValue()
+              loop ...getyamlconfigobject("steemplay","moderators"):
+                if {_childauthor} is loop-value-3:
+                  if {_childreturn}.get("result").get({_ci}).get("body").textValue() contains "##removed":
+                    set {_removed} to true
+
+          if {_removed} is not set:
+            set {_start} to {_metadata}.get("start").doubleValue()
+            set {_end} to {_metadata}.get("end").doubleValue()
+            set {_time} to {_end} - {_start}
+            set {_runner} to {_result}.get("result").get({_i}).get("author").textValue()
+            set {_list::%{_runner}%} to {_time}
+
   #
   # > Start sorting the timings list: low to high.
   loop {_list::*}:

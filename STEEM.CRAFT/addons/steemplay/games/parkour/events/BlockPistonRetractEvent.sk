@@ -1,0 +1,21 @@
+#
+# ==============
+# BlockPistonRetractEvent.sk
+# ==============
+# BlockPistonRetractEvent.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  org.bukkit.event.block.BlockPistonRetractEvent
+
+#
+# > Event - BlockPistonRetractEvent
+# > Prevents parkour blocks from being moved by a
+# > piston that retracts.
+on BlockPistonRetractEvent:
+  loop ...event.getBlocks():
+    if "%loop-value.getWorld()%" does not contain "SteemPlayWorld" or "steemworlds-":
+      stop
+    set {_loc} to loop-value.getLocation()
+    if SteemPlayGetTempCache(loop-value.getWorld(),"%{_loc}.getX()%_%{_loc}.getY()%_%{_loc}.getZ()%") is set:
+      event.setCancelled(true)
