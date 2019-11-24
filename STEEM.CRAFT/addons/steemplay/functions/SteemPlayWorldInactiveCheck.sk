@@ -1,0 +1,34 @@
+#
+# ==============
+# SteemPlayWorldInactiveCheck.sk
+# ==============
+# SteemPlayWorldInactiveCheck.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+options:
+  #
+  # > Set the time in minutes after which the
+  # > world should be unloaded and deleted.
+  inactivedelete: 10 seconds
+
+#
+# > Function - SteemPlayWorldInactiveCheck
+# > This function checks for inactive SteemPlay worlds
+# > and unloads, deletes them after the predefined
+# > threshold has been passed.
+function SteemPlayWorldInactiveCheck():
+  if metadata value "SteemPlayWorld|WorldsLastActive" of getDummy() is not set:
+    set metadata value "SteemPlayWorld|WorldsLastActive" of getDummy() to HashMap()
+  if metadata value "SteemPlayWorld|Worlds" of getDummy() is set:
+    loop ...(metadata value "SteemPlayWorld|Worlds" of getDummy()).keySet():
+      set {_world} to SteemGetPlayWorldById("%loop-value%")
+      if {_world} is not false:
+        if number of players in {_world} is 0:
+          if (metadata value "SteemPlayWorld|WorldsLastActive" of getDummy()).get("%loop-value%") is not set:
+            (metadata value "SteemPlayWorld|WorldsLastActive" of getDummy()).put("%loop-value%",now)
+          else:
+            set {_lastactive} to (metadata value "SteemPlayWorld|WorldsLastActive" of getDummy()).get("%loop-value%")
+            if difference between {_lastactive} and now > {@inactivedelete}:
+              SteemDeletePlayWorld({_world})
+        else:
+          (metadata value "SteemPlayWorld|WorldsLastActive" of getDummy()).remove("%loop-value%")

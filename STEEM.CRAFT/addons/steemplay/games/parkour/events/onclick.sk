@@ -1,0 +1,9 @@
+#
+# ==============
+# onclick.sk
+# ==============
+# onclick.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+on click:
+  SteemPlayParkourHandleClickEvent(player,event)

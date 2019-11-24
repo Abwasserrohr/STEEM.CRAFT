@@ -1,0 +1,29 @@
+#
+# ==============
+# SteemPlayParkourMenuClick.sk
+# ==============
+# SteemPlayParkourMenuClick.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlayParkourMenuClick
+# > Executes some action that has been triggered from a menu.
+# > Parameters:
+# > <player> The player who clicked in the menu.
+# > <text> The menu part that has been clicked.
+function SteemPlayParkourMenuClick(player:player,clicked:text):
+  if {_clicked} is "startblock" or "checkpointblock" or "endblock":
+    set {_item} to getyamlconfigobject("parkour",{_clicked})
+    set {_item} to {_item} parsed as item
+    if {_clicked} is "startblock":
+      set {_item}'s name to "&r&lStart Block"
+    else if {_clicked} is "checkpointblock":
+      set {_item}'s name to "&r&lCheckpoint Block"
+    else if {_clicked} is "endblock":
+      set {_item}'s name to "&r&lEnd Block"
+    set {_item} to setnbtvalue({_item},"parkour",{_clicked})
+    give 1 of {_item} to {_player}
+  if {_clicked} is "recoverparkourblocks":
+    SteemPlayParkourRecoverBlocks({_player})
+  if {_clicked} is "starttestrun":
+    message "%getChatPrefix()% To start the test run, walk over the start block." to {_player}

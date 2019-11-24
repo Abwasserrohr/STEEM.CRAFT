@@ -1,0 +1,22 @@
+#
+# ==============
+# SteemGetPlayWorldId.sk
+# ==============
+# SteemGetPlayWorldId.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemGetPlayWorldId
+# > Returns the world id of the given world.
+# > Parameters:
+# > <world> The world to which the world id should be returned.
+# > Returns:
+# > <text|boolean(false)> If the specified world is a PlayWorld,
+# > return the id, if not, it returns false.
+function SteemGetPlayWorldId(world:world) :: object:
+  if "%{_world}%" contains "SteemPlayWorld-":
+    set {_worldid} to "%{_world}%"
+    replace all "SteemPlayWorld-" with "" in {_worldid}
+    return {_worldid}
+  else:
+    return false

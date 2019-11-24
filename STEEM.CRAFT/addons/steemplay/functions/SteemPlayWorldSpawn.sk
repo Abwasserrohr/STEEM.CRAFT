@@ -1,0 +1,22 @@
+#
+# ==============
+# SteemPlayWorldSpawn.sk
+# ==============
+# SteemPlayWorldSpawn.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlayWorldSpawn
+# > Gets the spawn for the defined steemworld from storage.
+# > Parameters:
+# > <world>the steem world which should be changed
+function SteemPlayWorldSpawn(world:world) :: location:
+  if SteemGetPlayWorldId({_world}) is not false:
+    set {_id} to SteemGetPlayWorldId({_world})
+    set {_worldname} to GetSteemWorldNameById({_id})
+  else:
+    set {_worldname} to "%{_world}%"
+  set {_shortname} to GetSteemWorldShortName({_worldname})
+  set {_l} to getGeneralStorageData("steemplay",{_shortname},"spawn")
+  set {_l} to deserializelocation({_l},{_world})
+  return {_l}

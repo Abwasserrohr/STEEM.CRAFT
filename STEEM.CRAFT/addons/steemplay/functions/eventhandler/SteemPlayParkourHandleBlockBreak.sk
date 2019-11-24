@@ -1,0 +1,51 @@
+#
+# ==============
+# SteemPlayParkourHandleBlockBreak.sk
+# ==============
+# SteemPlayParkourHandleBlockBreak.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlayParkourHandleBlockBreak
+# > This function should be called by a on break event.
+# > Works in a thread.
+# > Parameters:
+# > <player> The player who triggered the event.
+# > <event> The event itself that has been triggered. 
+function SteemPlayParkourHandleBlockBreak(player:player,event:object):
+  set {_author} to GetSteemWorldAuthor({_player}'s world)
+  set {_permlink} to GetSteemWorldPermlink({_player}'s world)
+  while SteemPlayGetConfig({_author},{_permlink}) is "wait":
+    wait 1 tick
+  wait 1 tick
+  set {_config} to SteemPlayGetConfig({_author},{_permlink})
+  set {_ex} to x-coord of {_event}.getBlock()
+  set {_ey} to y-coord of {_event}.getBlock()
+  set {_ez} to z-coord of {_event}.getBlock()
+
+  #
+  # > Check for the start- or endblock matches with this block
+  # > that has been broken and remove it out of the configuration.
+  add "startblock", "endblock" to {_checkblocks::*}
+  loop {_checkblocks::*}:
+    if {_config}.get(loop-value) is set:
+      set {_x} to {_config}.get(loop-value).get("x").doubleValue()
+      set {_y} to {_config}.get(loop-value).get("y").doubleValue()
+      set {_z} to {_config}.get(loop-value).get("z").doubleValue()
+    if {_ex} is {_x}:
+      if {_ey} is {_y}:
+        if {_ez} is {_z}:
+          {_config}.remove(loop-value)
+          SteemPlaySetConfig({_author},{_permlink},{_config})
+          stop
+  if {_config}.get("checkpointblock") is set:
+    set {_i} to -1
+    loop ...{_config}.get("checkpointblock"):
+      add 1 to {_i}
+      if {_ex} is loop-value.get("x").doubleValue():
+        if {_ey} is loop-value.get("y").doubleValue():
+          if {_ez} is loop-value.get("z").doubleValue():
+            set {_checkpointblock} to {_config}.get("checkpointblock")
+            {_checkpointblock}.remove({_i})
+            {_config}.set("checkpointblock",{_checkpointblock})
+            SteemPlaySetConfig({_author},{_permlink},{_config})

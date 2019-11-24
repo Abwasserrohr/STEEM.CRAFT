@@ -23,6 +23,6 @@ function CheckSteemWorldPermission(world:world,player:player,permissiontype:text
   replace all "%{_steemaccount}%-" with "" in {_check}
   if "%{_world}%" is not "steemworlds-%{_steemaccount}%-%{_check}%":
     if {_senderror} is true:
-      message "%getChatPrefix()% You can only change the settings of your own worlds." to {_player}
+      message "%getChatPrefix()% This action is only available to the owner of the world." to {_player}
     return false
   return true

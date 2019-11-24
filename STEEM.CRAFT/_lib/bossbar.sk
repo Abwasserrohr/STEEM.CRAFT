@@ -5,6 +5,12 @@
 # bossbar.sk is part of the STEEM.CRAFT library.
 # ==============
 
+#
+# > On some Skript versions, this needs an extra reload to work.
+on skript load:
+  wait 5 seconds
+  execute console command "/sk reload STEEM.CRAFT/_lib/bossbar.sk"
+
 import:
   org.bukkit.Bukkit
   org.bukkit.boss.BarStyle

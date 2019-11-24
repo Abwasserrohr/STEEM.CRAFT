@@ -1,0 +1,20 @@
+#
+# ==============
+# SteemPlaySetTempCache.sk
+# ==============
+# SteemPlaySetTempCache.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlaySetTempCache
+# > Sets a object to a key for a specific world, the data
+# > is removed once the SteemPlay world gets deleted.
+# > necessary to run the game.
+# > Parameters:
+# > <world> The world that should have something stored.
+# > <text> The key to get the value later.
+# > <object> The value that should be stored.
+function SteemPlaySetTempCache(world:world,key:text,value:object):
+  if metadata value "SteemPlayWorld|TempData" of {_world} is not set:
+    set metadata value "SteemPlayWorld|TempData" of {_world} to HashMap()
+  (metadata value "SteemPlayWorld|TempData" of {_world}).put({_key},{_value})

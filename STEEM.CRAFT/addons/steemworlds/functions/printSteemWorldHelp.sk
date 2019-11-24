@@ -27,6 +27,7 @@ function printSteemWorldHelp(player:player,page:text="1"):
   message "%{_prefix}% /sw biome <biome> - Changes the biome" to {_player}
   message "%{_prefix}% /sw set spawn - Changes the spawn" to {_player}
   message "%{_prefix}% /sw save - Saves the world to Steem" to {_player}
+  message "%{_prefix}% /sw publish - Saves & publishes the world" to {_player}
   message "%{_prefix}% /sw c <Comment> - Creates a comment" to {_player}
 
   message "%{_prefix}% &m                                              &m" to {_player}

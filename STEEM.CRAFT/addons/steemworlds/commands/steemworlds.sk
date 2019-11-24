@@ -40,6 +40,8 @@ command /steemworlds [<text>] [<text>] [<text>]:
         if {_size} < 1:
           set {_size} to 1
         SetSteemWorldSize(player's world,round({_size}))
+        saveGeneralStorageData("steemworlds",GetSteemWorldShortName(player's world),"parkourtestrun",false)
+
         stop
     # > == Set World Settings
     if arg-1 is "set":
@@ -47,6 +49,7 @@ command /steemworlds [<text>] [<text>] [<text>]:
         if arg-2 is "spawn":
           SetSteemWorldSpawn(player's world,player's location)
           message "%getChatPrefix()% The spawn of this world has been changed."
+          saveGeneralStorageData("steemworlds",GetSteemWorldShortName(player's world),"parkourtestrun",false)
           stop
       message "%getChatPrefix()% /sw set spawn"
     # > == Save World
@@ -54,6 +57,12 @@ command /steemworlds [<text>] [<text>] [<text>]:
       if CheckSteemWorldPermission(player's world,player,"onlyowner",true) is true:
         $ thread
         SaveSteemWorld(player)
+        stop
+    # > == Save & Publish World
+    if arg-1 is "publish":
+      if CheckSteemWorldPermission(player's world,player,"onlyowner",true) is true:
+        $ thread
+        SaveSteemWorld(player,true)
         stop
     # > == Load World
     if arg-1 is "load":

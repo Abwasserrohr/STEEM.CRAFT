@@ -1,0 +1,35 @@
+#
+# ==============
+# SteemPlayparkourInitGame.sk
+# ==============
+# SteemPlayparkourInitGame.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  org.bukkit.Bukkit
+
+#
+# > Function - SteemPlayparkourInitGame
+# > Should be called when the game is initialized. Prepares everything
+# > necessary to run the game.
+# > Parameters:
+# > <world> The world of the game.
+function SteemPlayparkourInitGame(world:world):
+
+  #
+  # > Recover all parkour blocks to be sure they match with
+  # > the blocks of the configuration of the server.
+  SteemPlayParkourRecoverBlocks({_world})
+  
+  SteemPlaySetTempCache({_world},"game","parkour")
+
+  while metadata value "SteemPlayWorld|TempData" of {_world} is not set:
+    wait 1 tick
+
+  #
+  # > Prevent players within a parkour map to be not in the adventure mode.
+  while metadata value "SteemPlayWorld|TempData" of {_world} is set:
+    loop all players in {_world}:
+      if loop-player's gamemode is not adventure:
+        set loop-player's gamemode to adventure
+    wait 1 tick

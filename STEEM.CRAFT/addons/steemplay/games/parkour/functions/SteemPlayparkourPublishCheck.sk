@@ -1,0 +1,18 @@
+#
+# ==============
+# SteemPlayparkourPublishCheck.sk
+# ==============
+# SteemPlayparkourPublishCheck.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlayparkourPublishCheck
+# > Sets true if the world can be published to be available in SteemPlay.
+# > Parameters:
+# > <player> The player who wants to publish the world.
+# > <text> The author (Steem account) who wants to publish the world.
+# > <text> The permlink of the world that should be published.
+function SteemPlayparkourPublishCheck(player:player,author:text,permlink:text):
+  set {_shortworld} to GetSteemWorldShortName({_player}'s world)
+  set {_testsrun} to getGeneralStorageData("steemworlds",{_shortworld},"parkourtestrun")
+  set metadata value "SteemPlay-%{_author}%-%{_permlink}%" of {_player} to {_testsrun}

@@ -1,0 +1,70 @@
+#
+# ==============
+# SteemPlayParkourBroadcastStart.sk
+# ==============
+# SteemPlayParkourBroadcastStart.sk is part of the STEEM.CRAFT addons.
+# ==============
+import:
+  java.util.TimeZone
+
+options:
+  #
+  # > The time until a transaction is timed out and repeated in ticks.
+  timeoutticks: 800
+  jsonidsteemplayparkourstart: STEEM.CRAFT/parkour
+  
+#
+# > Function - SteemPlayParkourBroadcastStart
+# > Broadcasts the started run for a specific parkour.
+# > Parameters:
+# > <player> The player who started a parkour
+# > <world> The SteemPlay world in which the player started the run
+# > <text> The run uuid which identifies this run
+# > <Date> The date at which the player started the run
+function SteemPlayParkourBroadcastStart(player:player,world:object,runid:text,date:object) :: text:
+
+  set {_steemname} to getSyncedAccount({_player})
+  if {_steemname} is not false:
+
+    #
+    # > Get the account in a thread to validate.
+    getAccount("%{_steemname}%",false)
+    
+    wait 1 tick
+
+    #
+    # > Set the response to a local usable variable.
+    set {_account} to getAccountResponse("%{_steemname}%")
+
+    #
+    # > Check if the account is valid and usable for broadcasting.
+    if validateSyncedSteemAccountUUID({_player},{_account}) is false:
+      stop
+    if validateSyncedSteemAccountAuths({_player},{_account}) is false:
+      stop
+    set {_author} to GetSteemWorldAuthor({_world})
+    set {_permlink} to GetSteemWorldPermlink({_world})
+
+    set {_txcontent} to "{""event"":""start"",""type"":""run"",""runid"":""%{_runid}%"",""author"":""%{_author}%"",""permlink"":""%{_permlink}%"",""timestamp"":%{_date}.getTime()%}"
+    set {_txuuid} to getRandomUUID()
+    while {_done} is not true:
+      customJsonOperation({_txuuid},{_steemname},"{@jsonidsteemplayparkourstart}",{_txcontent})
+
+      #
+      # > Reset the timeout timer.
+      delete {_waittime}
+
+      while getSteemResponse({_txuuid}) is "wait":
+        #
+        # > Add 1 to the timeout timer, if it goes above 800, set the
+        # > repsonse to an error to repeat.
+        add 1 to {_waittime}
+        if {_waittime} > {@timeoutticks}:
+          set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "error"
+
+        wait 1 tick
+
+        if getSteemResponse({_txuuid}) is "done":
+          set {_done} to true
+
+      wait 1 second

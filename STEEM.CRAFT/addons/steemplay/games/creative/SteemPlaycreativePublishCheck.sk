@@ -1,0 +1,18 @@
+#
+# ==============
+# SteemPlaycreativePublishCheck.sk
+# ==============
+# SteemPlaycreativePublishCheck.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlaycreativePublishCheck
+# > Sets true if the world can be published to be available in SteemPlay.
+# > Parameters:
+# > <player> The player who wants to publish the world.
+# > <text> The author (Steem account) who wants to publish the world.
+# > <text> The permlink of the world that should be published.
+function SteemPlaycreativePublishCheck(player:player,author:text,permlink:text):
+  #
+  # > Creative worlds do not have any check, just return true.
+  set metadata value "SteemPlay-%{_author}%-%{_permlink}%" of {_player} to true

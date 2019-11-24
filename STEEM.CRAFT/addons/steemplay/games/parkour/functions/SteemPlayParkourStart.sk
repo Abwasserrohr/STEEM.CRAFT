@@ -1,0 +1,143 @@
+#
+# ==============
+# SteemPlayParkourStart.sk
+# ==============
+# SteemPlayParkourStart.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  java.util.Date
+  org.bukkit.GameMode
+
+#
+# > Function - SteemPlayParkourStart
+# > Called when a player starts a parkour.
+# > Parameters:
+# > <player> The who triggered the parkour to start.
+# > <block> The block which has triggered the start.
+function SteemPlayParkourStart(player:player,block:object):
+  set {_world} to {_player}'s world
+  if "%{_world}%" contains "steemworlds-":
+    #
+    # > If the testrun is already active, then prevent it from
+    # > restarting, since the player is teleported to the world
+    # > spawn on start in the testrun.
+    if metadata value "SteemPlayParkour|Game" of {_player} is set:
+      stop
+    set {_testrun} to true
+    if CheckSteemWorldPermission({_world},{_player},"onlyowner",true) is false:
+      stop
+
+    #
+    # > If the world doesn't have a spawn location, tell the player
+    # > to do that before the testrun.
+    if GetSteemWorldSpawn({_world}) is not set:
+      message "%getChatPrefix()% Set a spawn location first:" to {_player}
+      message "%getChatPrefix()% /sw set spawn" to {_player}
+      stop
+    else:
+      teleport {_player} to GetSteemWorldSpawn({_world})
+
+  {_player}.setGameMode(GameMode.ADVENTURE!)
+  heal {_player}
+  feed {_player}
+  clear {_player}'s inventory
+  
+  
+  set {_restart} to getyamlconfigobject("parkour","restartitem")
+  set {_toplist} to getyamlconfigobject("parkour","toplistitem")
+  set {_checkpoint} to getyamlconfigobject("parkour","checkpointitem")
+  set {_exit} to getyamlconfigobject("parkour","exititem")
+  set {_restart} to {_restart} parsed as item named "&rRestart"
+  set {_toplist} to {_toplist} parsed as item named "&rToplist"
+  set {_checkpoint} to {_checkpoint} parsed as item named "&rCheckpoint"
+  set {_exit} to {_exit} parsed as item named "&rExit"
+  
+  
+  set slot 0 of {_player}'s inventory to {_checkpoint}
+  set slot 2 of {_player}'s inventory to {_restart}
+  set slot 4 of {_player}'s inventory to {_toplist}
+  set slot 8 of {_player}'s inventory to {_exit}
+
+  #
+  # > By giving this run a uuid, we prevent multiple runs at
+  # > a time by just stopping once the run uuid of the player changes.
+  set {_runid} to getRandomUUID()
+  set metadata value "SteemPlayParkour|Game" of {_player} to {_runid}
+
+  #
+  # > Use the location of the block and increase it by 0.5 on the y-coordinate
+  # > to allow a good experience. Save the current yaw and pitch from the player
+  # > for faster gameplay and better orientation.
+  if {_testrun} is set:
+    set {_loc} to GetSteemWorldSpawn({_world})
+  else:
+    set {_loc} to {_block}'s location
+    add 0.5 to y-coord of {_loc}
+    set {_loc}'s yaw to {_player}'s yaw
+    set {_loc}'s pitch to {_player}'s pitch
+
+  set metadata value "SteemPlayParkour|StartLocation" of {_player} to {_loc}
+  set metadata value "SteemPlayParkour|Checkpoint" of {_player} to {_loc}
+  set {_start} to new Date()
+  
+  if {_testrun} is true:
+    while metadata value "SteemPlayParkour|Game" of {_player} is {_runid}:
+      if {_player}'s gamemode is not adventure:
+        delete metadata value "SteemPlayParkour|Game" of {_player}
+      if {_player}'s world is not {_world}:
+        delete metadata value "SteemPlayParkour|Game" of {_player}
+      send action bar "&8&l[&6&lTestrun&8&l]&f Solve your parkour to make it publishable." to {_player}
+      wait 1 tick
+  else:
+    SteemPlayParkourBroadcastStart({_player},{_world},{_runid},{_start})
+    set {_steemname} to getSyncedAccount({_player})
+    if {_steemname} is not false:
+      set {_permlink} to GetSteemWorldPermlink({_world})
+      set {_author} to GetSteemWorldAuthor({_world})
+      set {_txuuid} to "pb-%{_permlink}%"
+      set {_pbpermlink} to "re-%{_author}%-%{_txuuid}%"
+      SteemPlayParkourGetPB({_steemname},{_pbpermlink})
+      SteemPlayParkourGetWR({_author},{_permlink})
+
+    while metadata value "SteemPlayParkour|Game" of {_player} is {_runid}:
+      if {_pb} is not set:
+        if SteemPlayParkourRetrievePB({_steemname},{_pbpermlink}) is not "wait":
+          set {_pb} to SteemPlayParkourRetrievePB({_steemname},{_pbpermlink})
+          if {_pb} is 0:
+            set {_pb} to "-"
+          else if {_pb} is not set:
+            set {_pb} to "-"
+          else:
+            set {_pb} to "%{_pb}%ms"
+      if {_wr} is not set:
+        if SteemPlayParkourRetrieveWR({_author},{_permlink}) is not "wait":
+          set {_wr} to SteemPlayParkourRetrieveWR({_author},{_permlink})
+          set {_wr} to {_wr}.get("time")
+          if {_wr} is 0:
+            set {_wr} to "-"
+          else if {_wr} is not set:
+            set {_wr} to "-"
+          else:
+            set {_wr} to "%{_wr}%ms"
+
+      if {_player}'s gamemode is not adventure:
+        delete metadata value "SteemPlayParkour|Game" of {_player}
+      if {_player}'s world is not {_world}:
+        delete metadata value "SteemPlayParkour|Game" of {_player}
+      if {_wr} is not set:
+        set {_wrfin} to "-"
+      else:
+        set {_wrfin} to {_wr}
+      if {_pb} is set:
+        send action bar "&8&l[&6&lParkour&8&l]&f Current Run: %SteemPlayParkourTime({_start}, new Date())% &8&l|&f PB: %{_pb}% &8&l|&f WR: %{_wrfin}% &8&l|" to {_player}
+      else:
+        send action bar "&8&l[&6&lParkour&8&l]&f Current Run: %SteemPlayParkourTime({_start}, new Date())% &8&l|&f PB: - &8&l|&f WR: %{_wrfin}% &8&l|" to {_player}
+
+      wait 1 tick
+  send action bar " " to {_player}
+  if metadata value "SteemPlayParkour|GameEnd" of {_player} is set:
+    delete metadata value "SteemPlayParkour|GameEnd" of {_player}
+    if {_testrun} is not set:
+      SteemPlayParkourBroadcastEnd({_player},{_world},{_runid},{_start},new Date())
+    message "%getChatPrefix()% You solved the parkour in %SteemPlayParkourTime({_start}, new Date())% seconds." to {_player}

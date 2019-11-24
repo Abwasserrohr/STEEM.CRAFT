@@ -1,0 +1,32 @@
+#
+# ==============
+# SteemPlayParkourCheckpoint.sk
+# ==============
+# SteemPlayParkourCheckpoint.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlayParkourCheckpoint
+# > Called when a player runs over a checkpoint block.
+# > Parameters:
+# > <player> The who triggered the checkpoint.
+# > <block> The block which has triggered the checkpoint.
+function SteemPlayParkourCheckpoint(player:player,block:object):
+  if metadata value "SteemPlayParkour|Game" of {_player} is set:
+    #
+    # > Use the location of the block and increase it by 0.5 on the y-coordinate
+    # > to allow a good experience. Save the current yaw and pitch from the player
+    # > for faster gameplay and better orientation.
+    set {_loc} to {_block}'s location
+    add 0.5 to y-coord of {_loc}
+    set {_loc}'s yaw to {_player}'s yaw
+    set {_loc}'s pitch to {_player}'s pitch
+
+    set {_sound} to getyamlconfigobject("parkour","checkpointsound")
+    if {_sound} is not "":
+      play sound {_sound} with volume 0.2 with pitch 1 at location of {_player} for {_player}
+    send title " " with subtitle "&6&lCheckpoint!" to {_player} for 0.2 seconds
+
+    set metadata value "SteemPlayParkour|Checkpoint" of {_player} to {_loc}
+    heal {_player}
+    feed {_player}

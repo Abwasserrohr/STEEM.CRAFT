@@ -1,0 +1,8 @@
+
+
+
+on click on sign:
+  if 1st line of event-block is "[SteemPlay]":
+    if 2nd line of event-block is set:
+      if 3rd line of event-block is set:
+        make player execute "/steemplay play %2nd line of event-block% %3rd line of event-block%"

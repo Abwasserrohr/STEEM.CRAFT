@@ -1,0 +1,35 @@
+#
+# ==============
+# getRawSteemContentReplies.sk
+# ==============
+# getRawSteemContentReplies.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+  java.util.ArrayList
+
+#
+# > Function - getRawSteemContentReplies
+# > Returns a request id that can be used to retrieve the replies using CustomSteemRequestResult(id)
+# > Parameters:
+# > <text> The author of the post to which the replies are wanted.
+# > <text> The permlink of the post to which the replies are wanted.
+function getRawSteemContentReplies(author:text,permlink:text) :: text:
+
+  set {_mapper} to new ObjectMapper()
+
+  set {_request} to HashMap()
+  set {_params} to new ArrayList() 
+
+  {_params}.add({_author})
+  {_params}.add({_permlink})
+
+  {_request}.put("jsonrpc", "2.0")
+  {_request}.put("method", "condenser_api.get_content_replies")
+  {_request}.put("params", {_params})
+  {_request}.put("id", 1)
+
+  set {_requestID} to getRandomUUID()
+  CustomSteemRequest({_mapper}.writeValueAsString({_request}),{_requestID})
+  return {_requestID}

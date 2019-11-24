@@ -11,45 +11,65 @@
 # > Parameters:
 # > <world>the world
 function ApplySteemWorldSettings(world:world):
+  
   #
-  # > We just need the short name of the world here.
-  set {_name} to GetSteemWorldShortName({_world})
+  # > Depending on why the world is loaded, save the world
+  # > data into separate folders.
+  if "%{_world}%" contains "SteemPlayWorld-":
+    set {_storagefolder} to "steemplay"
+    set {_worldid} to SteemGetPlayWorldId({_world})
+    set {_name} to GetSteemWorldNameById({_worldid})
+    set {_name} to GetSteemWorldShortName({_name})
+  else:
+    set {_storagefolder} to "steemworlds"
+    #
+    # > We just need the short name of the world here.
+    set {_name} to GetSteemWorldShortName({_world})
 
   #
-  # > Check for each setting and apply it to the world.
-  set {_size} to getGeneralStorageData("steemworlds",{_name},"size")
-  if {_size} is set:
-    SetSteemWorldSize({_world},round({_size}))
+  # > Only apply the world border to steemworlds, not to SteemPlay.
+  if {_storagefolder} is "steemworlds":
+    #
+    # > Check for each setting and apply it to the world.
+    set {_size} to getGeneralStorageData({_storagefolder},{_name},"size")
+    if {_size} is set:
+      SetSteemWorldSize({_world},round({_size}))
 
-  set {_randomTickSpeed} to getGeneralStorageData("steemworlds",{_name},"randomTickSpeed")
+  set {_randomTickSpeed} to getGeneralStorageData({_storagefolder},{_name},"randomTickSpeed")
   if {_randomTickSpeed} is set:
     SetSteemWorldGamerule({_world},"randomTickSpeed",{_randomTickSpeed} parsed as integer)
 
-  set {_difficulty} to getGeneralStorageData("steemworlds",{_name},"difficulty")
+  set {_difficulty} to getGeneralStorageData({_storagefolder},{_name},"difficulty")
   if {_difficulty} is set:
     SetSteemWorldDifficulty({_world},{_difficulty})
 
-  set {_mobspawning} to getGeneralStorageData("steemworlds",{_name},"doMobSpawning")
+  set {_mobspawning} to getGeneralStorageData({_storagefolder},{_name},"doMobSpawning")
   if {_mobspawning} is set:
     SetSteemWorldGamerule({_world},"doMobSpawning",{_mobspawning} parsed as boolean)
 
   #
   # > Only apply the weather if the doWeatherCycle gamerule is set.
-  set {_weathercycle} to getGeneralStorageData("steemworlds",{_name},"doWeatherCycle")
+  set {_weathercycle} to getGeneralStorageData({_storagefolder},{_name},"doWeatherCycle")
   if {_weathercycle} is set:
     SetSteemWorldGamerule({_world},"doWeatherCycle",{_weathercycle} parsed as boolean)
 
-    set {_weather} to getGeneralStorageData("steemworlds",{_name},"weather")
+    set {_weather} to getGeneralStorageData({_storagefolder},{_name},"weather")
     if {_weather} is set:
       SetSteemWorldWeather({_world},{_weather})
 
   #
   # > Only apply the time if the doDaylightCycle gamerule is set.
-  set {_daylightcycle} to getGeneralStorageData("steemworlds",{_name},"doDaylightCycle")
+  set {_daylightcycle} to getGeneralStorageData({_storagefolder},{_name},"doDaylightCycle")
   if {_daylightcycle} is set:
     SetSteemWorldGamerule({_world},"doDaylightCycle",{_daylightcycle} parsed as boolean)
 
-    set {_time} to getGeneralStorageData("steemworlds",{_name},"time")
+    set {_time} to getGeneralStorageData({_storagefolder},{_name},"time")
     if {_time} is set:
       set {_setting} to {_time} parsed as time
       set the time in {_world} to {_setting}
+
+  #
+  # > Apply a custom biome to the world, if one is set.
+  set {_biome} to getGeneralStorageData({_storagefolder},{_name},"biome")
+  if {_biome} is set:
+    SetSteemWorldBiome({_world},{_biome},null)

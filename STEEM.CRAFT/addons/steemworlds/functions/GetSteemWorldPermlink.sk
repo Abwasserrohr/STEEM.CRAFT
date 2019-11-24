@@ -1,0 +1,21 @@
+#
+# ==============
+# GetSteemWorldPermlink.sk
+# ==============
+# GetSteemWorldPermlink.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - GetSteemWorldPermlink
+# > Returns the permlink of the world.
+# > Parameters:
+# > <object> The world to which the short name should be returned.
+function GetSteemWorldPermlink(world:object) :: text:
+  if SteemGetPlayWorldId({_world}) is false:
+    set {_name} to "%{_world}%"
+    set {_permlink} to "re-steemcraft-%{_name}%"
+  else:
+    set {_id} to SteemGetPlayWorldId({_world})
+    set {_name} to GetSteemWorldNameById({_id})
+    set {_permlink} to "re-steemcraft-publish-%{_name}%"
+  return {_permlink}

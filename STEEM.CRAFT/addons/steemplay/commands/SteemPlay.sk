@@ -1,0 +1,54 @@
+#
+# ==============
+# SteemPlay.sk
+# ==============
+# SteemPlay.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+command /steemplay [<text>] [<text>] [<text>]:
+  trigger:
+    if arg-1 is "reload":
+      make player execute "/sk reload STEEM.CRAFT/addons/steemplay/"
+    if arg-1 is "testworld":
+      message "/steemplay testworld <worlds>"
+      set {_loops} to arg-2 parsed as number
+      if {_loops} is not set:
+        set {_loops} to 1
+      message "Trying to create and delete %{_loops}% worlds."
+      loop {_loops} times:
+        set {_worldid} to SteemCreatePlayWorld()
+        message "Created world %{_worldid}%"
+        while SteemGetPlayWorldById({_worldid}) is false:
+          wait 1 tick
+
+        set {_world} to SteemGetPlayWorldById({_worldid})
+        message "World is %{_world}%"
+
+        set {_worldid1} to SteemGetPlayWorldId({_world})
+        message "World ID is %{_worldid1}%"
+
+        if {_worldid} is {_worldid1}:
+          message "Testing %{_world}% done and worked."
+          message "WorldId 1: %{_worldid}%"
+          message "WorldId 2: %{_worldid1}%"
+        wait 1 second
+        message "Trying to delete the world."
+        SteemDeletePlayWorld({_world})
+        set {_world1} to SteemGetPlayWorldId({_worldid})
+        message "If delete works, this is false: &l%{_world1}%"
+    if arg-1 is "createworld":
+      set {_worldid} to SteemCreatePlayWorld()
+      message "Created world %{_worldid}%"
+    if arg-1 is "clearworlds":
+      SteemDeleteAllPlayWorlds()
+    if arg-1 is "play":
+      SteemLoadPlayWorld(arg-2, arg-3,player)
+      while metadata value "SteemPlayWorld|Wait" of player is set:
+        set {_worldid} to metadata value "SteemPlayWorld|Wait" of player
+        wait 1 tick
+      set {_world} to SteemGetPlayWorldById({_worldid})
+	  
+      set {_loc} to SteemPlayWorldSpawn({_world})
+      wait 1 second
+      teleport player to {_loc}
+	  

@@ -20,13 +20,13 @@ function CustomSteemRequest(request:text,requestid:text):
   set {SC::CustomSteemRequest} to {_request}
   set {SC::CustomSteemRequestID} to {_requestid}
   $ thread
-  AsyncCustomSteemRequest({SC::CustomSteemRequest},{SC::CustomSteemRequestID})
+  set {_result} to AsyncCustomSteemRequest({SC::CustomSteemRequest},{SC::CustomSteemRequestID})
 
 #
 # > Function - CustomSteemRequest
 # > Actions:
 # > Sets the result of the request into a temporary global metadata variable.
-function AsyncCustomSteemRequest(request:text,requestid:text):
+function AsyncCustomSteemRequest(request:text,requestid:text,threaded:boolean=true) :: object:
   delete {SC::CustomSteemRequest}
   delete {SC::CustomSteemRequestID}
 
@@ -78,12 +78,17 @@ function AsyncCustomSteemRequest(request:text,requestid:text):
   # > Read the json response using ObjectMapper and save it to metadata for 5 seconds.
   set {_mapper} to new ObjectMapper()
   set {_jsonNode} to {_mapper}.readTree({_response})
-  set metadata value "SC|CustomSteemResult|%{_requestid}%" of getDummy() to {_jsonNode}
+  if {_threaded} is true:
+    set metadata value "SC|CustomSteemResult|%{_requestid}%" of getDummy() to {_jsonNode}
 
-  delete {_response}
+    delete {_response}
 
-  wait 5 seconds
-  delete metadata value "SC|CustomSteemResult|%{_requestid}%" of getDummy()
+    wait 5 seconds
+    delete metadata value "SC|CustomSteemResult|%{_requestid}%" of getDummy()
+
+  else:
+    return {_response}
+
 
 #
 # > Function - CustomSteemRequestResult

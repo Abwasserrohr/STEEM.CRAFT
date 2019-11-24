@@ -13,8 +13,8 @@ import:
 # > to send from a steem based world.
 on ServerCommandEvent:
   if try event.getSender().getBlock() is set:
-    if "%event.getSender().getBlock().getWorld()%" contains "steemworlds-":
+    if "%event.getSender().getBlock().getWorld()%" contains "steemworlds-" or "SteemPlayWorld-":
       cancel event
   else:
-    if "%event.getSender().getWorld()%" contains "steemworlds-":
+    if "%event.getSender().getWorld()%" contains "steemworlds-" or "SteemPlayWorld-":
       cancel event

@@ -1,0 +1,65 @@
+#
+# ==============
+# SteemPlayParkourLoadConfig.sk
+# ==============
+# SteemPlayParkourLoadConfig.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+options:
+  defaultstartblock: "yellow concrete"
+  defaultcheckpointblock: "yellow concrete"
+  defaultendblock: "yellow concrete"
+  recoverblocksitem: "music disc strad"
+  testrunitem: "piston"
+  restartitem: "heart of the sea"
+  toplistitem: "book"
+  checkpointitem: "floor sign"
+  exititem: "oak door"
+  exitcommand: "/lobby"
+  checkpointsound: "entity.experience_orb.pickup"
+  moderators: "[""skyroad""]"
+  configpath: "plugins/STEEM.CRAFT/SteemPlay/parkour.yml"
+
+#
+# > Function - SteemPlayParkourLoadConfig
+# > Load the configuration of parkour.
+function SteemPlayParkourLoadConfig():
+  loadyamlconfig({@configpath},"parkour")
+  if getyamlconfigobject("parkour","startblock") is not set:
+    setyamlconfigobject("parkour","startblock",{@defaultstartblock})
+  if getyamlconfigobject("parkour","checkpointblock") is not set:
+    setyamlconfigobject("parkour","checkpointblock",{@defaultcheckpointblock})
+  if getyamlconfigobject("parkour","endblock") is not set:
+    setyamlconfigobject("parkour","endblock",{@defaultendblock})
+  if getyamlconfigobject("parkour","recoverblocksitem") is not set:
+    setyamlconfigobject("parkour","recoverblocksitem",{@recoverblocksitem})
+  if getyamlconfigobject("parkour","testrunitem") is not set:
+    setyamlconfigobject("parkour","testrunitem",{@testrunitem})
+  if getyamlconfigobject("parkour","restartitem") is not set:
+    setyamlconfigobject("parkour","restartitem",{@restartitem})
+  if getyamlconfigobject("parkour","toplistitem") is not set:
+    setyamlconfigobject("parkour","toplistitem",{@toplistitem})
+  if getyamlconfigobject("parkour","checkpointitem") is not set:
+    setyamlconfigobject("parkour","checkpointitem",{@checkpointitem})
+  if getyamlconfigobject("parkour","exititem") is not set:
+    setyamlconfigobject("parkour","exititem",{@exititem})
+  if getyamlconfigobject("parkour","exitcommand") is not set:
+    setyamlconfigobject("parkour","exitcommand",{@exitcommand})
+  if getyamlconfigobject("parkour","checkpointsound") is not set:
+    setyamlconfigobject("parkour","checkpointsound",{@checkpointsound})
+  saveyamlconfig({@configpath},"parkour")
+  
+  set {SteemPlay::startblock} to getyamlconfigobject("parkour","startblock")
+  set {SteemPlay::checkpointblock} to getyamlconfigobject("parkour","checkpointblock")
+  set {SteemPlay::endblock} to getyamlconfigobject("parkour","endblock")
+  set {SteemPlay::restartitem} to getyamlconfigobject("parkour","restartitem")
+  set {SteemPlay::toplistitem} to getyamlconfigobject("parkour","toplistitem")
+  set {SteemPlay::checkpointitem} to getyamlconfigobject("parkour","checkpointitem")
+  set {SteemPlay::exititem} to getyamlconfigobject("parkour","exititem")
+  set {SteemPlay::startblock} to {SteemPlay::startblock} parsed as item
+  set {SteemPlay::checkpointblock} to {SteemPlay::checkpointblock} parsed as item
+  set {SteemPlay::endblock} to {SteemPlay::endblock} parsed as item
+  set {SteemPlay::restartitem} to {SteemPlay::restartitem} parsed as item
+  set {SteemPlay::toplistitem} to {SteemPlay::toplistitem} parsed as item
+  set {SteemPlay::checkpointitem} to {SteemPlay::checkpointitem} parsed as item
+  set {SteemPlay::exititem} to {SteemPlay::exititem} parsed as item

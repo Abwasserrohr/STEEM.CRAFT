@@ -1,0 +1,33 @@
+#
+# ==============
+# SteemPlayParkourEnd.sk
+# ==============
+# SteemPlayParkourEnd.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemPlayParkourEnd
+# > Called when a player runs over a end block.
+# > Parameters:
+# > <player> The who triggered the parkour end.
+function SteemPlayParkourEnd(player:player):
+  wait 2 ticks
+  if metadata value "SteemPlayParkour|Game" of {_player} is set:
+    #
+    # > The player solved the testrun and can now publish the world.
+    if "%{_player}'s world%" contains "steemworlds-":
+      message "%getChatPrefix()% You have completed the testrun!" to {_player}
+      message "%getChatPrefix()% You can now publish your map using" to {_player}
+      message "%getChatPrefix()% the command: &f/sw publish" to {_player}
+      set {_shortworld} to GetSteemWorldShortName({_player}'s world)
+      saveGeneralStorageData("steemworlds",{_shortworld},"parkourtestrun",true)
+    set metadata value "SteemPlayParkour|GameEnd" of {_player} to true
+    delete metadata value "SteemPlayParkour|Game" of {_player}
+    clear {_player}'s inventory
+    heal {_player}
+    feed {_player}
+    delete metadata value "SteemPlayParkour|StartLocation" of {_player}
+    delete metadata value "SteemPlayParkour|Checkpoint" of {_player}
+	
+	
+	

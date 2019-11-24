@@ -1,0 +1,16 @@
+#
+# ==============
+# ArrayNode.sk
+# ==============
+# ArrayNode.sk is part of the STEEM.CRAFT library.
+# ==============
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+
+#
+# > Function - ArrayNode
+# > Returns a new ArrayNode.
+function ArrayNode() :: object:
+  set {_ObjectMapper} to new ObjectMapper()
+  return {_ObjectMapper}.createArrayNode()

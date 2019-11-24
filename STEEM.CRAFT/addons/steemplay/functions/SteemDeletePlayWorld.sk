@@ -1,0 +1,74 @@
+#
+# ==============
+# SteemDeletePlayWorld.sk
+# ==============
+# SteemDeletePlayWorld.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  org.apache.commons.io.FileUtils
+  java.io.File
+  org.bukkit.Bukkit
+
+#
+# > Function - SteemDeletePlayWorld
+# > Teleports all players out of the world, unloads all chunks, the world and deletes all world files instantly.
+# > Parameters:
+# > <world>the world that should be deleted. Be careful.
+function SteemDeletePlayWorld(world:world):
+
+  #
+  # > Teleports all players of this world out of it.
+  set {_block} to getDummy()
+  teleport all players in {_world} to location(0, 0, 0, {_block}'s world)
+  
+  wait 1 tick
+
+  #
+  # > Kill all entities in the world that are loaded to prevent them from
+  # > blocking a chunk unload trough other scripts.
+  loop ...{_world}.getEntities():
+    kill loop-value
+
+  wait 1 tick
+
+  #
+  # > Remove the world from the loaded SteemPlayWorld list.
+  if metadata value "SteemPlayWorld|Worlds" of getDummy() is set:
+    (metadata value "SteemPlayWorld|Worlds" of getDummy()).remove(SteemGetPlayWorldId({_world}))
+
+  #
+  # > Remove the world name from the SteemPlayWorld names list.
+  if metadata value "SteemPlayWorld|WorldNames" of getDummy() is set:
+    (metadata value "SteemPlayWorld|WorldNames" of getDummy()).remove(SteemGetPlayWorldId({_world}))
+
+  #
+  # > Remove the world name from the WorldsLastActive list.
+  if metadata value "SteemPlayWorld|WorldsLastActive" of getDummy() is set:
+    (metadata value "SteemPlayWorld|WorldsLastActive" of getDummy()).remove(SteemGetPlayWorldId({_world}))
+
+  #
+  # > Delete temporary data that has been saved for this world.
+  if metadata value "SteemPlayWorld|TempData" of {_world} is set:
+    delete metadata value "SteemPlayWorld|TempData" of {_world}
+
+  #
+  # > Loops through all loaded chunks of the world and unloads them without saving.
+  loop ...{_world}.getLoadedChunks():
+    loop-value.unload(true)
+
+  #
+  # > Unload the world.
+  Bukkit.getServer().unloadWorld({_world}, true)
+
+  wait 1 second
+
+  #
+  # > Delete the world.
+  set {_home} to Bukkit.getServer().getWorldContainer().getCanonicalFile()
+  set {_destination} to new File("%{_home}%/%{_world}%/")
+
+  if {_destination}.isDirectory() is true:
+    wait 1 second
+    FileUtils.deleteDirectory({_destination})
+

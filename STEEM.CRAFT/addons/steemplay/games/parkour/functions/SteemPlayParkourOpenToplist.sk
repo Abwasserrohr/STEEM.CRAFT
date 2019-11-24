@@ -1,0 +1,74 @@
+#
+# ==============
+# SteemPlayParkourOpenToplist.sk
+# ==============
+# SteemPlayParkourOpenToplist.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+  java.util.ArrayList
+
+command /testrun:
+  trigger:
+    set {_author} to "immanuel94"
+    set {_permlink} to "re-steemcraft-publish-steemworlds-immanuel94-hotandcold"
+    SteemPlayParkourOpenToplist(player,{_author},{_permlink})
+
+#
+# > Function - SteemPlayParkourOpenToplist
+# > Opens the toplist of the defined parkour to the player.
+# > Parameters:
+# > <player> The player who wants to view the toplist.
+# > <text> The author of the map.
+# > <text> The permlink of the map.
+function SteemPlayParkourOpenToplist(player:player,author:text,permlink:text):
+  SteemPlayParkourGetRunToplist({_author}, {_permlink})
+  while SteemPlayParkourRetrieveRunToplist({_author}, {_permlink}) is "wait":
+    wait 1 tick
+  set {_toplist} to SteemPlayParkourRetrieveRunToplist({_author}, {_permlink})
+  if {_toplist}.size() is 0:
+    message "%getChatPrefix()% There are no saved times for this parkour." to {_player}
+  else:
+    #
+    # > To create valid books, ComponentBuilder is the fastest way.
+    set {_book} to newComponentBuilder()
+
+    #
+    # > {_i} is the page counter for the toplist, each page should have 4 entries.
+    set {_i} to 0
+
+    #
+    # > Loop through the toplist and create the book.
+    loop ...{_toplist}:
+      add 1 to {_rank}
+      #
+      # > On every new site, add the site header.
+      if {_i} is 0:
+        {_book}.append(newTextComponent("-------------------%nl%&lToplist"))
+        {_book}.append(newTextComponent("-------------------%nl%"))
+      #
+      # > Convert the times in milliseconds to a better readable format: 00:00.000
+      set {_time} to loop-value.get("time")
+      set {_loopplayer} to loop-value.get("player")
+      {_book}.append(newTextComponent("&l%{_rank}%&r | %{_loopplayer}% %nl%>> &l%SteemPlayParkourFormatMsToTime({_time})%&r sec."))
+      {_book}.append(newTextComponent("-------------------%nl%"))
+      add 1 to {_i}
+      #
+      # > In the case there are not 4 but 5 entries,
+      # > {_added} will be checked for that reason
+      # > to add the last page, if necessary.
+      set {_added} to true
+      if {_i} >= 4:
+        delete {_added}
+        add {_book}.create() to {_sites::*}
+        set {_book} to newComponentBuilder()
+        set {_i} to 0
+    #
+    # > If there is one more site needed, add it here.
+    if {_added} is true:
+      delete {_added}
+      add {_book}.create() to {_sites::*}
+    #
+    # > Create and open the book with the sites using the createopenbook function.
+    createopenbook({_player},{_sites::*})

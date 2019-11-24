@@ -1,0 +1,214 @@
+#
+# ==============
+# openbook.sk v0.0.13
+# ==============
+# Opens a book from the server side on the client.
+# ==============
+# Dependencies
+# ==============
+# > Spigot 1.13.2 - https://hub.spigotmc.org/jenkins/job/BuildTools/
+# > Skript by bensku - https://github.com/SkriptLang/Skript/releases
+# > skript-mirror - https://github.com/btk5h/skript-mirror/releases
+# ==============
+# How to use it:
+# ==============
+# > Add openbook.sk to your "plugins/Skript/scripts" folder and then reload.
+# --------------
+
+#
+# Import some classes and also use reflection for nms classes.
+import: 
+  org.bukkit.Bukkit
+
+option nms:
+  get:
+    set {_nms version} to Bukkit.getServer().getClass().getPackage().getName().split("\.")[3]
+    return "net.minecraft.server.%{_nms version}%"
+
+import:
+  io.netty.buffer.ByteBuf
+  io.netty.buffer.Unpooled
+  org.bukkit.entity.Player
+  {@nms}.MinecraftKey
+  {@nms}.PacketDataSerializer
+  {@nms}.PacketPlayOutCustomPayload
+  net.md_5.bungee.api.chat.TextComponent
+  net.md_5.bungee.api.chat.BaseComponent
+  net.md_5.bungee.api.chat.ComponentBuilder
+  net.md_5.bungee.api.chat.ClickEvent
+  net.md_5.bungee.api.chat.HoverEvent
+  net.md_5.bungee.api.chat.HoverEvent$Action as HoverEventAction
+  net.md_5.bungee.api.chat.ClickEvent$Action as ClickEventAction
+  net.md_5.bungee.api.chat.TranslatableComponent
+  org.bukkit.inventory.ItemStack
+  org.bukkit.Material
+
+#
+# > Function - openbook
+# > Parameters:
+# > <player>the player who should open the book, has to hold a book to work.
+# > Actions:
+# > Sends a "minecraft:book_open" packet to the client to open a book from the server.
+function openbook(player:player):
+  if {_player}'s tool is a written book:
+    #
+    # > Prepare a byte buffer to send a packet, these packets are documented here:
+    # > https://wiki.vg/Plugin_channels#minecraft:book_open
+    set {_buffer} to Unpooled.buffer(256)
+    {_buffer}.setByte(0, 0)
+    {_buffer}.writerIndex(1)
+    set {_packet} to new PacketPlayOutCustomPayload(new MinecraftKey("minecraft:book_open"), new PacketDataSerializer({_buffer}))
+    {_player}.getHandle().playerConnection!.sendPacket({_packet})
+
+#
+# > Function - createopenbook
+# > Parameters:
+# > <player>the player who should get the created book opened.
+# > <list of ComponentBuilder>the sites which should be added to the book.
+# > Actions:
+# > Creates a book out of sites and opens it to the player.
+function createopenbook(player:player,sites::*:objects):
+  #
+  # > Create a new book which is going to be used, create it as Bukkit ItemStack to prevent
+  # > Skript side bugs.
+  set {_item} to new ItemStack(Material.WRITTEN_BOOK!, 1)
+  set {_bookmeta} to {_item}.getItemMeta()
+  #
+  # > Set the title and the author, this is not displayed but
+  # > needed to function.
+  {_bookmeta}.setTitle("Help")
+  {_bookmeta}.setAuthor("Immanuel94")
+  #
+  # > Set the sites to the book and then open it to the player.
+  {_bookmeta}.spigot().setPages({_sites::*})
+  {_item}.setItemMeta({_bookmeta})
+  #
+  # > Get the item of the player to give it back after the book has been opened.
+  set {_tool} to {_player}'s tool
+  set {_player}'s tool to {_item}
+  openbook({_player})
+  set {_player}'s tool to {_tool}
+
+#
+# > Function - overwritecomponentevents
+# > Paremeters:
+# > <TextComponent>the text component which should get the events overwritten.
+# > Actions:
+# > Overwrites the events of the text components to make them normal again.
+function overwritecomponentevents(msg:object) :: object:
+  #
+  # > Only do something if there is a variable set.
+  # > If there isn't set anything, just return it for now.
+  if {_msg} is set:
+    set {_null} to null
+    {_msg}.setClickEvent(new ClickEvent(ClickEventAction.RUN_COMMAND!,{_null}))
+    {_msg}.setHoverEvent(new HoverEvent(HoverEventAction.SHOW_TEXT!,{_null}))
+  return {_msg}
+
+#
+# > Function - sethovertextevent
+# > Paremeters:
+# > <TextComponent>the text component which should get hover text
+# > Actions:
+# > Setts a on hover event on this text component and then returns it.
+# > HoverEvent: https://ci.md-5.net/job/BungeeCord/ws/chat/target/apidocs/net/md_5/bungee/api/chat/HoverEvent.Action.html
+function sethovertextevent(msg:object,text:object) :: object:
+  if {_msg} is set:
+    replace all "\n" with " %nl%" in {_text}
+    {_msg}.setHoverEvent(new HoverEvent(HoverEventAction.SHOW_TEXT!,new ComponentBuilder({_text}).create()))
+  return {_msg}
+
+#
+# > Function - setclickcmdevent
+# > Paremeters:
+# > <TextComponent>the TextComponent which should get a click event
+# > <text>a text which should be executed from the client of the player
+# > Actions:
+# > Sets the click event to this text component and then returns it.
+# > ClickEvent: https://ci.md-5.net/job/BungeeCord/ws/chat/target/apidocs/net/md_5/bungee/api/chat/ClickEvent.Action.html
+function setclickcmdevent(msg:object,cmd:object) :: object:
+  if {_msg} is set:
+    {_msg}.setClickEvent(new ClickEvent(ClickEventAction.RUN_COMMAND!,{_cmd}))
+  return {_msg}
+
+#
+# > Function - setsuggestcmdevent
+# > Paremeters:
+# > <TextComponent>the TextComponent which should get a click event
+# > <text>a text which should be suggested into the client of the player
+# > Actions:
+# > Sets the suggest command event to this text component and then returns it.
+# > ClickEvent: https://ci.md-5.net/job/BungeeCord/ws/chat/target/apidocs/net/md_5/bungee/api/chat/ClickEvent.Action.html
+function setsuggestcmdevent(msg:object,cmd:object) :: object:
+  if {_msg} is set:
+    {_msg}.setClickEvent(new ClickEvent(ClickEventAction.SUGGEST_COMMAND!,{_cmd}))
+  return {_msg}
+
+#
+# > Function - setclickopenurlevent
+# > Paremeters:
+# > <TextComponent>the text component which should get the events overwritten.
+# > Actions:
+# > Sets the click event to this text component and then returns it.
+# > ClickEvent: https://ci.md-5.net/job/BungeeCord/ws/chat/target/apidocs/net/md_5/bungee/api/chat/ClickEvent.Action.html
+function setclickopenurlevent(msg:object,url:object) :: object:
+  if {_msg} is set:
+    {_msg}.setClickEvent(new ClickEvent(ClickEventAction.OPEN_URL!,{_url} ))
+  return {_msg}
+
+#
+# > Function - getTranslatableComponentFromItem
+# > Parameters:
+# > <item>the item which is needed as translatable component
+# > Actions:
+# > Converts the item stack to a translatable component, which
+# > is going to be translated client side. That means, no translation
+# > on server side is needed.
+function getTranslatableComponentFromItem(item:item=air) :: object:
+  set {_vname} to "%vanilla name of {_item}%"
+  replace all ":" with "." in {_vname}
+  if {_item}.getType().isBlock() is true:
+    set {_vname} to "block.%{_vname}%"
+  else:
+    set {_vname} to "item.%{_vname}%"
+  return new TranslatableComponent({_vname})
+
+#
+# > Function - getTranslatableComponentFromEntityType
+# > Parameters:
+# > <text>the entity type which should be a translatable component
+# > Actions:
+# > Converts the entity type to a TranslatableComponent and returns it.
+function getTranslatableComponentFromEntityType(type:text="") :: object:
+  if {_type} is set:
+    return new TranslatableComponent("entity.minecraft.%{_type}%")
+
+#
+# > Function - newTextComponent
+# > Parameters:
+# > <text>the text which should be created as text component
+# > Actions:
+# > Returns a new text component, removes the need to import
+# > the neccessary classes everywhere.
+function newTextComponent(text:text="") :: object:
+  return new TextComponent({_text})
+
+#
+# > Function - newTranslatableComponent
+# > Parameters:
+# > <text>the text which should be created as translatable component
+# > Actions:
+# > Returns a new translatable component, removes the need to import
+# > the neccessary classes everywhere.
+function newTranslatableComponent(text:text="") :: object:
+  return new TranslatableComponent({_text})
+
+#
+# > Function - newComponentBuilder
+# > Parameters:
+# > <text>the text which should be added to the new ComponentBuilder.
+# > Actions:
+# > Returns a new ComponentBuilder, removes the need to import
+# > the neccessary classes everywhere.
+function newComponentBuilder(text:text="") :: object:
+  return new ComponentBuilder({_text})

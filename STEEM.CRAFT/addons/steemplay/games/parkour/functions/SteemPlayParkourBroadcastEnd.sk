@@ -1,0 +1,107 @@
+#
+# ==============
+# SteemPlayParkourBroadcastEnd.sk
+# ==============
+# SteemPlayParkourBroadcastEnd.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+options:
+  #
+  # > The time until a transaction is timed out and repeated in ticks.
+  timeoutticks: 800
+  jsonidsteemplayparkourstart: STEEM.CRAFT/parkour
+
+#
+# > Function - SteemPlayParkourBroadcastEnd
+# > Broadcasts the ended run for a specific parkour.
+# > Parameters:
+# > <player> The player who ended a parkour
+# > <world> The SteemPlay world in which the player ended the run
+# > <text> The run uuid which identifies this run
+# > <Date> The date at which the player started the run
+# > <Date> The date at which the player ended the run
+function SteemPlayParkourBroadcastEnd(player:player,world:object,runid:text,startdate:object,enddate:object) :: text:
+
+  set {_steemname} to getSyncedAccount({_player})
+  if {_steemname} is not false:
+
+    #
+    # > Get the account in a thread to validate.
+    getAccount("%{_steemname}%",true)
+    
+    while getAccountResponse("%{_steemname}%") is "wait":
+      wait 1 tick
+
+    #
+    # > Set the response to a local usable variable.
+    set {_account} to getAccountResponse("%{_steemname}%")
+
+    #
+    # > Check if the account is valid and usable for broadcasting.
+    if validateSyncedSteemAccountUUID({_player},{_account}) is false:
+      stop
+    if validateSyncedSteemAccountAuths({_player},{_account}) is false:
+      stop
+    set {_author} to GetSteemWorldAuthor({_world})
+    set {_permlink} to GetSteemWorldPermlink({_world})
+
+    set {_txcontent} to "{""event"":""end"",""type"":""run"",""runid"":""%{_runid}%"",""author"":""%{_author}%"",""permlink"":""%{_permlink}%"",""timestamp"":%{_enddate}.getTime()%}"
+    set {_txuuid} to getRandomUUID()
+    while {_done} is not true:
+      customJsonOperation({_txuuid},{_steemname},"{@jsonidsteemplayparkourstart}",{_txcontent})
+
+      #
+      # > Reset the timeout timer.
+      delete {_waittime}
+
+      while getSteemResponse({_txuuid}) is "wait":
+        #
+        # > Add 1 to the timeout timer, if it goes above 800, set the
+        # > repsonse to an error to repeat.
+        add 1 to {_waittime}
+        if {_waittime} > {@timeoutticks}:
+          set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "error"
+
+        wait 1 tick
+
+        if getSteemResponse({_txuuid}) is "done":
+          set {_done} to true
+        else:
+          log "%getSteemResponse({_txuuid})%" to "steemerrors"
+      if {_done} is not true:
+        wait 60 seconds
+
+    delete {_done}
+    while {_done} is not true:
+	
+      set {_comment} to "You finished this parkour in %SteemPlayParkourTime({_startdate}, {_enddate})% seconds."
+      set {_author} to GetSteemWorldAuthor({_world})
+      set {_permlink} to GetSteemWorldPermlink({_world})
+      set {_txuuid} to "pb-%{_permlink}%"
+      set {_pbpermlink} to "re-%{_author}%-%{_txuuid}%"
+      SteemPlayParkourGetPB({_steemname},{_pbpermlink})
+      while SteemPlayParkourRetrievePB({_steemname},{_pbpermlink}) is "wait":
+        wait 1 tick
+      set {_pb} to SteemPlayParkourRetrievePB({_steemname},{_pbpermlink})
+	  
+      set {_endtime} to {_enddate}.getTime()
+      set {_starttime} to {_startdate}.getTime()
+      set {_runtime} to {_endtime} - {_starttime}
+      if {_pb} is 0:
+        set {_pb} to 9999999999999
+      if {_pb} is bigger than {_runtime}:
+        message "%getChatPrefix()% You have set a new personal best record." to {_player}
+
+        set {_comment} to "I have improved my personal best time: %SteemPlayParkourTime({_startdate}, {_enddate})% seconds"
+
+        createComment({_txuuid},{_steemname},{_comment},{_author},{_permlink},["steemcraft","sbi-skip","parkour","battle","steem-ace"],"Parkour run","{""runid"":""%{_runid}%"",""start"":%{_startdate}.getTime()%,""end"":%{_enddate}.getTime()%}")
+
+        while getSteemResponse({_txuuid}) is "wait":
+          wait 1 tick
+
+        if getSteemResponse({_txuuid}) is "done":
+          set {_done} to true
+        else:
+          log "%getSteemResponse({_txuuid})%" to "steemerrors"
+        wait 1 tick
+      wait 60 seconds

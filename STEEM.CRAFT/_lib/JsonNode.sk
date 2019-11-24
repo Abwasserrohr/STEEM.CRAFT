@@ -1,0 +1,16 @@
+#
+# ==============
+# JsonNode.sk
+# ==============
+# JsonNode.sk is part of the STEEM.CRAFT library.
+# ==============
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+
+#
+# > Function - JsonNode
+# > Returns a new JsonNode.
+function JsonNode() :: object:
+  set {_ObjectMapper} to new ObjectMapper()
+  return {_ObjectMapper}.createObjectNode()

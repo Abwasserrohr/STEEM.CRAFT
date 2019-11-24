@@ -1,0 +1,11 @@
+#
+# ==============
+# onskriptload.sk
+# ==============
+# onskriptload.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+on skript load:
+  wait 1 tick
+  SteemDeleteAllPlayWorlds()
+  SteemPlayLoadConfig()
