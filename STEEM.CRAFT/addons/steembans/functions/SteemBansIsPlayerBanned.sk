@@ -1,0 +1,55 @@
+#
+# ==============
+# SteemBansGetPlayerBanned.sk
+# ==============
+# SteemBansGetPlayerBanned.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  com.fasterxml.jackson.databind.ObjectMapper
+  java.lang.String
+
+#
+# > Function - SteemBansGetPlayerBanned
+# > Checks if the player is banned on one of the enforced servers.
+# > The result can be retrieved using SteemBansRetrievePlayerBanned(player).
+# > Parameters:
+# > <offline player> The player who should be checked.
+function SteemBansGetPlayerBanned(player:offline player):
+  set metadata value "SteemBans|Banned|%{_player}%" of getDummy() to "wait"
+  set {_enforcedservers} to getyamlconfigobject("steembans","enforcedservers")
+  set {_uuid} to uuid of {_player}
+  set {_ObjectMapper} to new ObjectMapper()
+
+  loop ...getyamlconfigobject("steembans","enforcedservers"):
+    set {_requestid} to getRawSteemContent("%loop-value%","re-skyroad-ban-%{_uuid}%")
+
+    while CustomSteemRequestResult({_requestid}) is "wait":
+      wait 1 tick
+    set {_parent} to CustomSteemRequestResult({_requestid})
+    if {_parent} is instance of String:
+      set {_banned} to false
+    else if {_parent}.get("result").get("author").textValue() is not loop-value:
+      set {_banned} to false
+    else:
+      set {_json} to {_parent}.get("result").get("json_metadata").textValue()
+      set {_json} to {_ObjectMapper}.readTree({_json})
+      if {_json}.get("ban") is set:
+        if {_json}.get("ban").textValue() is "banned":
+          set {_banned} to true
+          stop loop
+
+  if {_banned} is not set:
+    set {_banned} to false
+
+  set metadata value "SteemBans|Banned|%{_player}%" of getDummy() to {_banned}
+  wait 5 seconds
+  delete metadata value "SteemBans|Banned|%{_player}%" of getDummy()
+
+#
+# > Function - SteemBansRetrievePlayerBanned
+# > Returns a requested value if the player is banned or not.
+# > Pamrameters:
+# > <offline player> The requested player.
+function SteemBansRetrievePlayerBanned(player:offline player) :: object:
+  return metadata value "SteemBans|Banned|%{_player}%" of getDummy()

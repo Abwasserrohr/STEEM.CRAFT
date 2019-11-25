@@ -1,0 +1,10 @@
+#
+# ==============
+# onload.sk
+# ==============
+# onload.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+on load:
+  wait 1 tick
+  SteemBansLoadConfig()

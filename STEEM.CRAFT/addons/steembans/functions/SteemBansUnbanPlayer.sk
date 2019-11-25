@@ -1,0 +1,50 @@
+#
+# ==============
+# SteemBansUnbanPlayer.sk
+# ==============
+# SteemBansUnbanPlayer.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemBansUnbanPlayer
+# > Unbans the defined player with the defined reason.
+# > A unban can fail and result in a still banned account,
+# > make sure the transactions doesn't return an error.
+# > Parameters:
+# > <player> The user who bans a player.
+# > <player> The player who should get unbanned.
+# > [<text>] The reason, why the player is unbanned, can be empty.
+function SteemBansUnbanPlayer(executor:object,bannedplayer:offline player,reason:text="-"):
+  message "%getChatPrefix()% Trying to unban %{_bannedplayer}%..." to {_executor}
+  set {_steemname} to getServerAccountName()
+
+  set {_requestid} to getRawSteemContent({_steemname},"re-steemcraft-bans")
+  while CustomSteemRequestResult({_requestid}) is "wait":
+    wait 1 tick
+  set {_parent} to CustomSteemRequestResult({_requestid})
+  if {_parent}.get("result").get("author").textValue() is "":
+    message "%getChatPrefix()% Creating parent..." to {_executor}
+    set {_txuuid} to "bans"
+    set {_comment} to "Bans of the server @%{_steemname}%."
+    set {_parentauthor} to "steem.craft"
+    set {_parentpermlink} to "bans"
+    createComment({_txuuid},{_steemname},{_comment},{_parentauthor},{_parentpermlink},getDefaultAppTags(),"Bans")
+    while getSteemResponse({_txuuid}) is "wait":
+      wait 1 tick
+    message "%getChatPrefix()% Parent creation successful." to {_executor}
+    wait 5 seconds
+
+  set {_uuid} to uuid of {_bannedplayer}
+  set {_txuuid} to "ban-%{_uuid}%"
+  set {_comment} to "<table><tr><td><strong>User</strong></td><td><strong>Unbanned by</strong></td><td><strong>Reason</strong></td><td><strong>Date</strong></td><td><strong>Status</strong></td><tr><td>%{_uuid}%</td><td>%uuid of {_executor}%</td><td>%{_reason}%</td><td>%now%</td><td>UNBANNED</td></tr></table>"
+  set {_parentauthor} to {_steemname}
+  set {_parentpermlink} to "re-steemcraft-bans"
+  createComment({_txuuid},{_steemname},{_comment},{_parentauthor},{_parentpermlink},getDefaultAppTags(),"Ban","{""tags"":[""steemcraft""],""app"":""%getAppName()%"",""format"":""markdown"",""ban"":""unbanned"",""executed"":""%uuid of {_executor}%"",""bantime"":-1}")
+  while getSteemResponse({_txuuid}) is "wait":
+    wait 1 tick
+
+  if getSteemResponse({_txuuid}) is "done":
+    message "%getChatPrefix()% %{_bannedplayer}% has been unbanned." to {_executor}
+    message "%getChatPrefix()% It may take 30 seconds to take effect globally." to {_executor}
+  else:
+    message "%getChatPrefix()% A error occured: %getSteemResponse({_txuuid})%" to {_executor}

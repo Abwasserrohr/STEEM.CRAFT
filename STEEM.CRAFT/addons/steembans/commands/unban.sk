@@ -1,0 +1,20 @@
+#
+# ==============
+# unban.sk
+# ==============
+# unban.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+command /unban <offline player> [<text>]:
+  aliases: /sunban, /scunban
+  permission: steembans.unban
+  trigger:
+    if arg-1 is set:
+      if arg-2 is set:
+        set {_reason} to arg-2
+      else:
+        set {_reason} to "-"
+      set {_unbanplayer} to arg-1
+      SteemBansUnbanPlayer(player,{_unbanplayer},{_reason})
+    else:
+      make player execute "/steembans help"

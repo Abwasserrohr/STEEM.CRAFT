@@ -1,0 +1,15 @@
+
+
+
+on join:
+  SteemBansGetPlayerBanned(player)
+  while SteemBansRetrievePlayerBanned(player) is "wait":
+    wait 1 tick
+  set {_banned} to SteemBansRetrievePlayerBanned(player)
+  if {_banned} is true:
+    kick player because of "You're banned on this server."
+    if player is not banned:
+      ban player
+  else:
+    if player is banned:
+      unban player
