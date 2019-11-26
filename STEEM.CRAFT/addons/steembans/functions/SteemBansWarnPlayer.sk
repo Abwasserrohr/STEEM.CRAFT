@@ -1,0 +1,72 @@
+#
+# ==============
+# SteemBansWarnPlayer.sk
+# ==============
+# SteemBansWarnPlayer.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemBansWarnPlayer
+# > Warns the player and creates a comment on Steem
+# > which allows everyone to check the warning.
+# > Parameters:
+# > <player> The user who warns a player.
+# > <player> The player who should get warned.
+# > [<text>] The reason, why the player is warned, can be empty.
+function SteemBansWarnPlayer(executor:object,warnedplayer:offline player,reason:text="-"):
+  message "%getChatPrefix()% Trying to warn %{_warnedplayer}%..." to {_executor}
+  set {_steemname} to getServerAccountName()
+
+  set {_requestid} to getRawSteemContent({_steemname},"re-steemcraft-warns")
+  while CustomSteemRequestResult({_requestid}) is "wait":
+    wait 1 tick
+  set {_parent} to CustomSteemRequestResult({_requestid})
+  if {_parent}.get("result").get("author").textValue() is "":
+    message "%getChatPrefix()% Creating parent..." to {_executor}
+    set {_txuuid} to "warns"
+    set {_comment} to "Warns of the server @%{_steemname}%."
+    set {_parentauthor} to "steem.craft"
+    set {_parentpermlink} to "warns"
+    createComment({_txuuid},{_steemname},{_comment},{_parentauthor},{_parentpermlink},getDefaultAppTags(),"Warns")
+    while getSteemResponse({_txuuid}) is "wait":
+      wait 1 tick
+    message "%getChatPrefix()% Parent creation successful." to {_executor}
+    wait 5 seconds
+
+  set {_uuid} to uuid of {_warnedplayer}
+  set {_requestid} to getRawSteemContent({_steemname},"re-%{_steemname}%-warn-%{_uuid}%")
+  while CustomSteemRequestResult({_requestid}) is "wait":
+    wait 1 tick
+  set {_parent} to CustomSteemRequestResult({_requestid})
+  if {_parent}.get("result").get("author").textValue() is "":
+    set {_parentpermlink} to "re-steemcraft-warns"
+    set {_txuuid} to "warn-%{_uuid}%"
+  else:
+    set {_parentpermlink} to "re-%{_steemname}%-warn-%{_uuid}%"
+    set {_txuuid} to "warn-%{_uuid}%-%getRandomUUID()%"
+
+  set {_comment} to "<table><tr><td><strong>User</strong></td><td><strong>Warned by</strong></td><td><strong>Reason</strong></td><td><strong>Date</strong></td><tr><td>%{_uuid}%</td><td>%uuid of {_executor}%</td><td>%{_reason}%</td><td>%now%</td></tr></table>"
+  set {_parentauthor} to {_steemname}
+  
+  set {_metadata} to JsonNode()
+  set {_tags} to ArrayNode()
+  loop ...getDefaultAppTags():
+    {_tags}.add(loop-value)
+  {_metadata}.put("tags", {_tags})
+  {_metadata}.put("app", getAppName())
+  {_metadata}.put("format", "markdown")
+  {_metadata}.put("warn", "warned")
+  {_metadata}.put("executed", uuid of {_executor})
+  {_metadata}.put("reason", {_reason})
+  {_metadata}.put("warntime", -1)
+
+  createComment({_txuuid},{_steemname},{_comment},{_parentauthor},{_parentpermlink},getDefaultAppTags(),"Ban",{_metadata}.toString())
+  while getSteemResponse({_txuuid}) is "wait":
+    wait 1 tick
+
+  if getSteemResponse({_txuuid}) is "done":
+    message "%getChatPrefix()% %{_warnedplayer}% has been warned." to {_executor}
+    if {_warnedplayer} is online:
+      message "%getChatPrefix()% You have been warned: %{_reason}%." to {_warnedplayer}
+  else:
+    message "%getChatPrefix()% A error occured: %getSteemResponse({_txuuid})%" to {_executor}

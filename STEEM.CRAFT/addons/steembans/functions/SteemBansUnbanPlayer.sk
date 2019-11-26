@@ -39,7 +39,20 @@ function SteemBansUnbanPlayer(executor:object,bannedplayer:offline player,reason
   set {_comment} to "<table><tr><td><strong>User</strong></td><td><strong>Unbanned by</strong></td><td><strong>Reason</strong></td><td><strong>Date</strong></td><td><strong>Status</strong></td><tr><td>%{_uuid}%</td><td>%uuid of {_executor}%</td><td>%{_reason}%</td><td>%now%</td><td>UNBANNED</td></tr></table>"
   set {_parentauthor} to {_steemname}
   set {_parentpermlink} to "re-steemcraft-bans"
-  createComment({_txuuid},{_steemname},{_comment},{_parentauthor},{_parentpermlink},getDefaultAppTags(),"Ban","{""tags"":[""steemcraft""],""app"":""%getAppName()%"",""format"":""markdown"",""ban"":""unbanned"",""executed"":""%uuid of {_executor}%"",""bantime"":-1}")
+
+  set {_metadata} to JsonNode()
+  set {_tags} to ArrayNode()
+  loop ...getDefaultAppTags():
+    {_tags}.add(loop-value)
+  {_metadata}.put("tags", {_tags})
+  {_metadata}.put("app", getAppName())
+  {_metadata}.put("format", "markdown")
+  {_metadata}.put("ban", "unbanned")
+  {_metadata}.put("executed", uuid of {_executor})
+  {_metadata}.put("reason", {_reason})
+  {_metadata}.put("bantime", -1)
+
+  createComment({_txuuid},{_steemname},{_comment},{_parentauthor},{_parentpermlink},getDefaultAppTags(),"Ban",{_metadata}.toString())
   while getSteemResponse({_txuuid}) is "wait":
     wait 1 tick
 
