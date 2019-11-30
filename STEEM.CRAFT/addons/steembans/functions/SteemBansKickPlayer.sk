@@ -1,0 +1,74 @@
+#
+# ==============
+# SteemBansKickPlayer.sk
+# ==============
+# SteemBansKickPlayer.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemBansKickPlayer
+# > Kick the player and creates a comment on Steem
+# > which allows everyone to check the kick.
+# > Parameters:
+# > <player> The user who kicks a player.
+# > <player> The player who should get kicked.
+# > [<text>] The reason, why the player is kicked, can be empty.
+function SteemBansKickPlayer(executor:object,kickedplayer:offline player,reason:text="-"):
+  if {_kickedplayer} is not online:
+    message "%getChatPrefix()% %{_kickedplayer}% is not online." to {_executor}
+    stop
+  else:
+    kick {_kickedplayer} because of {_reason}
+    message "%getChatPrefix()% %{_kickedplayer}% has been kicked." to {_executor}
+
+  set {_steemname} to getServerAccountName()
+
+  set {_requestid} to getRawSteemContent({_steemname},"re-steemcraft-kicks")
+  while CustomSteemRequestResult({_requestid}) is "wait":
+    wait 1 tick
+  set {_parent} to CustomSteemRequestResult({_requestid})
+  if {_parent}.get("result").get("author").textValue() is "":
+    message "%getChatPrefix()% Creating parent..." to {_executor}
+    set {_txuuid} to "kicks"
+    set {_comment} to "Kicks of the server @%{_steemname}%."
+    set {_parentauthor} to "steem.craft"
+    set {_parentpermlink} to "kicks"
+    createComment({_txuuid},{_steemname},{_comment},{_parentauthor},{_parentpermlink},getDefaultAppTags(),"Kicks")
+    while getSteemResponse({_txuuid}) is "wait":
+      wait 1 tick
+    message "%getChatPrefix()% Parent creation successful." to {_executor}
+    wait 5 seconds
+
+  set {_uuid} to uuid of {_kickedplayer}
+  set {_requestid} to getRawSteemContent({_steemname},"re-%{_steemname}%-kick-%{_uuid}%")
+  while CustomSteemRequestResult({_requestid}) is "wait":
+    wait 1 tick
+  set {_parent} to CustomSteemRequestResult({_requestid})
+  if {_parent}.get("result").get("author").textValue() is "":
+    set {_parentpermlink} to "re-steemcraft-kicks"
+    set {_txuuid} to "kick-%{_uuid}%"
+  else:
+    set {_parentpermlink} to "re-%{_steemname}%-kick-%{_uuid}%"
+    set {_txuuid} to "kick-%{_uuid}%-%getRandomUUID()%"
+
+  set {_comment} to "<table><tr><td><strong>User</strong></td><td><strong>Kicked by</strong></td><td><strong>Reason</strong></td><td><strong>Date</strong></td><tr><td>%{_uuid}%</td><td>%uuid of {_executor}%</td><td>%{_reason}%</td><td>%now%</td></tr></table>"
+  set {_parentauthor} to {_steemname}
+  
+  set {_metadata} to JsonNode()
+  set {_tags} to ArrayNode()
+  loop ...getDefaultAppTags():
+    {_tags}.add(loop-value)
+  {_metadata}.put("tags", {_tags})
+  {_metadata}.put("app", getAppName())
+  {_metadata}.put("format", "markdown")
+  {_metadata}.put("warn", "warned")
+  {_metadata}.put("executed", uuid of {_executor})
+  {_metadata}.put("reason", {_reason})
+  {_metadata}.put("warntime", -1)
+
+  createComment({_txuuid},{_steemname},{_comment},{_parentauthor},{_parentpermlink},getDefaultAppTags(),"Kick",{_metadata}.toString())
+  while getSteemResponse({_txuuid}) is "wait":
+    wait 1 tick
+
+  if getSteemResponse({_txuuid}) is not "done":
+    message "%getChatPrefix()% A error occured: %getSteemResponse({_txuuid})%" to {_executor}

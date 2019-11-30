@@ -16,6 +16,7 @@
 # > [<text>] The reason, why the player is banned, can be empty.
 function SteemBansBanPlayer(executor:object,bannedplayer:offline player,reason:text="-"):
   message "%getChatPrefix()% Trying to ban %{_bannedplayer}%..." to {_executor}
+  ban {_bannedplayer} because of {_reason}
   set {_steemname} to getServerAccountName()
 
   set {_requestid} to getRawSteemContent({_steemname},"re-steemcraft-bans")

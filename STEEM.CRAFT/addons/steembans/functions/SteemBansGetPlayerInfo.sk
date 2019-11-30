@@ -1,0 +1,80 @@
+#
+# ==============
+# SteemBansGetPlayerBanned.sk
+# ==============
+# SteemBansGetPlayerBanned.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  java.util.ArrayList
+  com.fasterxml.jackson.databind.ObjectMapper
+
+#
+# > Function - SteemBansGetPlayerInfo
+# > Tells the executor if the player is banned and if
+# > there are any warns or kicks listed on Steem from
+# > the current server.
+# > Parameters:
+# > <offline player> The player about which the information is requested.
+# > <player> The player who requested the information.
+function SteemBansGetPlayerInfo(player:offline player,executor:player):
+  if {_player} is set:
+    SteemBansGetPlayerBanned({_player})
+    while SteemBansRetrievePlayerBanned({_player}) is "wait":
+      wait 1 tick
+    set {_banned} to SteemBansRetrievePlayerBanned({_player})
+    message "%getChatPrefix()% ---------------------------------" to {_executor}
+    if {_banned} is true:
+      message "%getChatPrefix()% &l%{_player}% &7[&4&lBanned&7]" to {_executor}
+    else:
+      message "%getChatPrefix()% &l%{_player}% &7[&2&lUnbanned&7]" to {_executor}
+    set {_uuid} to uuid of {_player}
+    set {_server} to getServerAccountName()
+    set {_warnrequest} to getRawSteemContent({_server},"re-%{_server}%-warn-%{_uuid}%")
+    while CustomSteemRequestResult({_warnrequest}) is "wait":
+      wait 1 tick
+    set {_warn} to CustomSteemRequestResult({_warnrequest})
+    set {_ObjectMapper} to new ObjectMapper()
+    set {_warnlist} to new ArrayList()
+    if {_warn}.get("result").get("author").textValue() is not "":
+      set {_json} to {_ObjectMapper}.readTree({_warn}.get("result").get("json_metadata").textValue())
+      {_warnlist}.add({_json}.get("reason").textValue())
+      if {_warn}.get("result").get("children") is not 0:
+        set {_warnrequest} to getRawSteemContentReplies({_server},"re-%{_server}%-warn-%{_uuid}%")
+        while CustomSteemRequestResult({_warnrequest}) is "wait":
+          wait 1 tick
+        set {_warns} to CustomSteemRequestResult({_warnrequest})
+        loop ...{_warns}.get("result"):
+          if loop-value.get("author").textValue() is {_server}:
+            set {_json} to {_ObjectMapper}.readTree(loop-value.get("json_metadata").textValue())
+            {_warnlist}.add({_json}.get("reason").textValue())
+    if {_warnlist}.size() is not 0:
+      message "%getChatPrefix()% &lWarns (%{_warnlist}.size()%):" to {_executor}
+      loop ...{_warnlist}:
+        message "%getChatPrefix()% > %loop-value%" to {_executor}
+		
+    set {_warnrequest} to getRawSteemContent({_server},"re-%{_server}%-kick-%{_uuid}%")
+    while CustomSteemRequestResult({_warnrequest}) is "wait":
+      wait 1 tick
+    set {_kick} to CustomSteemRequestResult({_warnrequest})
+
+    set {_ObjectMapper} to new ObjectMapper()
+    set {_kicklist} to new ArrayList()
+    if {_kick}.get("result").get("author").textValue() is not "":
+      set {_json} to {_ObjectMapper}.readTree({_kick}.get("result").get("json_metadata").textValue())
+      {_kicklist}.add({_json}.get("reason").textValue())
+      if {_kick}.get("result").get("children") is not 0:
+        set {_warnrequest} to getRawSteemContentReplies({_server},"re-%{_server}%-kick-%{_uuid}%")
+        while CustomSteemRequestResult({_warnrequest}) is "wait":
+          wait 1 tick
+        set {_kicks} to CustomSteemRequestResult({_warnrequest})
+        loop ...{_kicks}.get("result"):
+          if loop-value.get("author").textValue() is {_server}:
+            set {_json} to {_ObjectMapper}.readTree(loop-value.get("json_metadata").textValue())
+            {_kicklist}.add({_json}.get("reason").textValue())
+    if {_kicklist}.size() is not 0:
+      message "%getChatPrefix()% &lKicks (%{_kicklist}.size()%):" to {_executor}
+      loop ...{_kicklist}:
+        message "%getChatPrefix()% > %loop-value%" to {_executor}
+
+    message "%getChatPrefix()% ---------------------------------" to {_executor}

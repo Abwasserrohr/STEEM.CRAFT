@@ -1,20 +1,18 @@
 ## Permissions:
 ```steembans.ban
 steembans.unban
-steembans.mute
-steembans.unmute
 steembans.warn
-steembans.kick```
+steembans.kick
+steembans.check```
 
 ## Commands:
 ```/steembans reload
 /steembans help
-/ban
-/unban
-/mute
-/unmute
-/warn
-/kick```
+/steembanns check <player>
+/ban <player> <reason>
+/unban <player> <reason>
+/warn <player> <reason>
+/kick <player> <reason>```
 
 ## Configurationn files:
 Go to your plugins folder and search for STEEM.CRAFT, there, a SteemBans folder
