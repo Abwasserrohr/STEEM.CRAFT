@@ -1,0 +1,149 @@
+#
+# ==============
+# transferToken.sk
+# ==============
+# transferToken.sk is part of the STEEM.CRAFT core functions.
+# ==============
+
+import:
+  java.util.ArrayList
+  java.util.HashMap
+  org.apache.commons.lang3.tuple.ImmutablePair
+  eu.bittrade.libs.steemj.SteemJ
+  eu.bittrade.libs.steemj.enums.ValidationType
+  eu.bittrade.libs.steemj.enums.PrivateKeyType
+  eu.bittrade.libs.steemj.configuration.SteemJConfig
+  eu.bittrade.libs.steemj.base.models.operations.TransferOperation
+  eu.bittrade.libs.steemj.base.models.SignedTransaction
+  eu.bittrade.libs.steemj.base.models.AccountName
+  eu.bittrade.libs.steemj.enums.AssetSymbolType
+  eu.bittrade.libs.steemj.base.models.Asset
+
+#
+# > Function - transferToken
+# > Transfers the amount of tokens from the sender to the receiver.
+# > Parameters:
+# > <text> A random transaction uuid
+# > <text> The active key of the sender to send the token
+# > <text> The sender who should send the token
+# > <text> The receiver who should get the token
+# > <text> The amount of token, e.g. "1000 STEEM"
+# > [<text>] A memo that is added (optional)
+function transferToken(txuuid:text,activekey:text,sender:text,receiver:text,amount:text,memo:text):
+  #
+  # > To allow other scripts to know if there has been an error or not,
+  # > they can wait until this transaction uuid has been processed.
+  set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "wait"
+  #
+  # > Only prepare one transfer transaction at a time.
+  while {steemsk::txtransfer} is set:
+    wait 1 tick
+  #
+  # > Create a HashMap to pass the data using one single variable.
+  set {steemsk::txtransfer} to new HashMap()
+  {steemsk::txtransfer}.put("txuuid",{_txuuid})
+  {steemsk::txtransfer}.put("sender",{_sender})
+  {steemsk::txtransfer}.put("receiver",{_receiver})
+  {steemsk::txtransfer}.put("amount",{_amount})
+  {steemsk::txtransfer}.put("memo",{_memo})
+  {steemsk::txtransfer}.put("activekey",{_activekey})
+  #
+  # > Run the actual transfer transaction using a thread
+  # > to prevent the game from lagging.
+  $ thread
+  #
+  # > Since we're on a new thread, local variables are no longer availabe
+  # > here. This means that we can currently only use global variables.
+  asyncTransferOperation({steemsk::txtransfer})
+
+#
+# > Function - asyncTransferOperation
+# > Sends the token in a thread to the receiver.
+function asyncTransferOperation(tx:object):
+  #
+  # > Once this function has been called, delete the variable which
+  # > has been used to pass the data into this function.
+  delete {steemsk::txtransfer}
+  #
+  # > Get the data out of the HashMap, which has been passed into
+  # > the function. A HashMap is used, since lists are slower to delete.
+  set {_txuuid} to {_tx}.get("txuuid")
+  set {_sender} to {_tx}.get("sender")
+  set {_receiver} to {_tx}.get("receiver")
+  set {_amount} to {_tx}.get("amount")
+  set {_memo} to {_tx}.get("memo")
+  set {_activekey} to {_tx}.get("activekey")
+
+  #
+  # > To process Steem transactions, SteemJ is used here.
+  set {_steemj} to new SteemJ()
+
+  #
+  # > AccountNames are not simply a string but have the type AccountName.
+  set {_sender} to new AccountName({_sender})
+
+  #
+  # > To get SteemJ fully working, the vadilation and maximum 
+  # > expiration date has to be changed. For this, a instance
+  # > of the SteemJ configuration is necessary.
+  set {_config} to SteemJConfig.getInstance()
+  {_config}.setValidationLevel(ValidationType.SKIP_VALIDATION!)
+  {_config}.setMaximumExpirationDateOffset(400000)
+  
+  #
+  # > Every transaction on Steem needs a private key to broadcast.
+  # > Since our transactions requires a private posting key, we
+  # > have to add the private key for the account. Because the
+  # > player should authorize the server wallet, it is not needed
+  # > to store any private key of a user, but only the private
+  # > posting key of the server wallet. In case of a hack or 
+  # > a leak, just the server operator has to change his key.
+  set {_privatekeys} to new ArrayList()
+  {_privatekeys}.add(new ImmutablePair(PrivateKeyType.ACTIVE!, {_activekey}))
+  {_config}.getPrivateKeyStorage().addAccount({_sender},{_privatekeys})
+  delete {_privatekeys}
+
+  #
+  # > Format the input amount to be usable.
+  set {_amount::*} to {_amount} split at " "
+  if {_amount::2} is "STEEM":
+    set {_amount} to new Asset({_amount::1} parsed as number, AssetSymbolType.STEEM!)
+  else if {_amount::2} is "STEEM":
+    set {_amount} to new Asset({_amount::1} parsed as number, AssetSymbolType.SBD!)
+
+  #
+  # > Create a transfer operation.
+  set {_transfer} to new TransferOperation({_sender}, new AccountName({_receiver}), {_amount}, {_memo})
+
+  #
+  # > Each transaction could hold multiple transactions. While this could be
+  # > useful, only one type of the same operation is allowed per user/block.
+  set {_operations} to new ArrayList()
+  {_operations}.add({_transfer})
+
+  set {_HeadBlockId} to {_steemj}.getDynamicGlobalProperties().getHeadBlockId()
+
+  set {_signedTx} to new SignedTransaction({_HeadBlockId}, {_operations}, null)
+
+  {_signedTx}.sign()
+
+  #
+  # > It would be useful to have BroadcastTransactionSynchronousReturn to know
+  # > the block- and transactionid. But currently, it is not working, since
+  # > SteemJ is trying to check for duplicate transactions. While this is good,
+  # > many Steem nodes don't allow querying transaction ids, which results in a
+  # > error for BroadcastTransactionSynchronousReturn.
+  try {_steemj}.broadcastTransaction({_signedTx})
+
+  #
+  # > To know if there has any error occured while broadcasting the transaction,
+  # > the "last java errror" would have been set with it. This allows the addons
+  # > to check for errors. If the response is "done", no error has been reported.
+  if last java error is set:
+    set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to last java error
+  else:
+    set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "done"
+  #
+  # > To prevent holding the data forever, response data is deleted after 5 seconds.
+  wait 5 seconds
+  delete metadata value "steem-tx-response-%{_txuuid}%" of getDummy()
