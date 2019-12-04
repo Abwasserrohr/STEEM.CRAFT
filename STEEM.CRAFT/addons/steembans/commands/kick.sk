@@ -1,0 +1,20 @@
+#
+# ==============
+# kick.sk
+# ==============
+# kick.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+command /kick <offline player> [<text>]:
+  aliases: /skick, /sckick
+  permission: steembans.kick
+  trigger:
+    if arg-1 is set:
+      if arg-2 is set:
+        set {_reason} to arg-2
+      else:
+        set {_reason} to "-"
+      set {_kickedplayer} to arg-1
+      SteemBansKickPlayer(player,{_kickedplayer},{_reason})
+    else:
+      make player execute "/steembans help"

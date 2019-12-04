@@ -1,0 +1,24 @@
+#
+# ==============
+# SteemBans.sk
+# ==============
+# SteemBans.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+command /steembans [<text>] [<text>] [<text>]:
+  aliases: /steemban, /stemban, /stembans
+  trigger:
+    if arg-1 is "reload":
+      make player execute "/sk reload STEEM.CRAFT/addons/steembans/"
+    else if arg-1 is "help":
+      set {_prefix} to getChatPrefix()
+      message "%{_prefix}% Available commands:"
+      message "%{_prefix}% /ban <player> <reason>"
+      message "%{_prefix}% /unban <player> <reason>"
+      message "%{_prefix}% /mute <player> <reason>"
+      message "%{_prefix}% /unmute <player> <reason>"
+      message "%{_prefix}% /warn <player> <reason>"
+      message "%{_prefix}% /kick <player> <reason>"
+    if arg-1 is "check":
+      if player has permission "steembans.check":
+        SteemBansGetPlayerInfo(arg-2 parsed as offline player,player)

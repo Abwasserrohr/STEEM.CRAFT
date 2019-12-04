@@ -1,0 +1,19 @@
+#
+# ==============
+# SteemBansLoadConfig.sk
+# ==============
+# SteemBansLoadConfig.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+options:
+  enforcedservers: ["skyroad"]
+  configpath: "plugins/STEEM.CRAFT/SteemBans/config.yml"
+
+#
+# > Function - SteemBansLoadConfig
+# > Load the configuration of SteemBans.
+function SteemBansLoadConfig():
+  loadyamlconfig({@configpath},"steembans")
+  if getyamlconfigobject("steembans","enforcedservers") is not set:
+    setyamlconfigobject("steembans","enforcedservers",{@enforcedservers})
+  saveyamlconfig({@configpath},"steembans")

@@ -1,0 +1,20 @@
+#
+# ==============
+# ban.sk
+# ==============
+# ban.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+command /ban <offline player> [<text>]:
+  aliases: /sban, /scban
+  permission: steembans.ban
+  trigger:
+    if arg-1 is set:
+      if arg-2 is set:
+        set {_reason} to arg-2
+      else:
+        set {_reason} to "-"
+      set {_bannedplayer} to arg-1
+      SteemBansBanPlayer(player,{_bannedplayer},{_reason})
+    else:
+      make player execute "/steembans help"

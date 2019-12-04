@@ -1,0 +1,68 @@
+#
+# ==============
+# SteemBansBanPlayer.sk
+# ==============
+# SteemBansBanPlayer.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+#
+# > Function - SteemBansBanPlayer
+# > Bans the defined player with the defined reason.
+# > A ban can fail and result in a not banned account,
+# > make sure the transactions doesn't return an error.
+# > Parameters:
+# > <player> The user who bans a player.
+# > <player> The player who should get banned.
+# > [<text>] The reason, why the player is banned, can be empty.
+function SteemBansBanPlayer(executor:object,bannedplayer:offline player,reason:text="-"):
+  message "%getChatPrefix()% Trying to ban %{_bannedplayer}%..." to {_executor}
+  ban {_bannedplayer} because of {_reason}
+  set {_steemname} to getServerAccountName()
+
+  set {_requestid} to getRawSteemContent({_steemname},"re-steemcraft-bans")
+  while CustomSteemRequestResult({_requestid}) is "wait":
+    wait 1 tick
+  set {_parent} to CustomSteemRequestResult({_requestid})
+  if {_parent}.get("result").get("author").textValue() is "":
+    message "%getChatPrefix()% Creating parent..." to {_executor}
+    set {_txuuid} to "bans"
+    set {_comment} to "Bans of the server @%{_steemname}%."
+    set {_parentauthor} to "steem.craft"
+    set {_parentpermlink} to "bans"
+    createComment({_txuuid},{_steemname},{_comment},{_parentauthor},{_parentpermlink},getDefaultAppTags(),"Bans")
+    while getSteemResponse({_txuuid}) is "wait":
+      wait 1 tick
+    message "%getChatPrefix()% Parent creation successful." to {_executor}
+    wait 5 seconds
+
+  set {_uuid} to uuid of {_bannedplayer}
+  set {_txuuid} to "ban-%{_uuid}%"
+  set {_comment} to "<table><tr><td><strong>User</strong></td><td><strong>Banned by</strong></td><td><strong>Reason</strong></td><td><strong>Date</strong></td><td><strong>Status</strong></td><tr><td>%{_uuid}%</td><td>%uuid of {_executor}%</td><td>%{_reason}%</td><td>%now%</td><td>BANNED</td></tr></table>"
+  set {_parentauthor} to {_steemname}
+  set {_parentpermlink} to "re-steemcraft-bans"
+
+  set {_metadata} to JsonNode()
+  set {_tags} to ArrayNode()
+  loop ...getDefaultAppTags():
+    {_tags}.add(loop-value)
+  {_metadata}.put("tags", {_tags})
+  {_metadata}.put("app", getAppName())
+  {_metadata}.put("format", "markdown")
+  {_metadata}.put("ban", "banned")
+  {_metadata}.put("executed", uuid of {_executor})
+  {_metadata}.put("reason", {_reason})
+  {_metadata}.put("bantime", -1)
+
+  createComment({_txuuid},{_steemname},{_comment},{_parentauthor},{_parentpermlink},getDefaultAppTags(),"Ban",{_metadata}.toString())
+  while getSteemResponse({_txuuid}) is "wait":
+    wait 1 tick
+
+  if getSteemResponse({_txuuid}) is "done":
+    message "%getChatPrefix()% %{_bannedplayer}% has been banned." to {_executor}
+    message "%getChatPrefix()% It may take 30 seconds to take effect globally." to {_executor}
+    if {_bannedplayer} is online:
+      kick {_bannedplayer} because of "You have been banned due to %{_reason}%"
+      ban {_bannedplayer} because of {_reason}
+
+  else:
+    message "%getChatPrefix()% A error occured: %getSteemResponse({_txuuid})%" to {_executor}

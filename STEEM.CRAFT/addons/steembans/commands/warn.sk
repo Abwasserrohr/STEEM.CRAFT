@@ -1,0 +1,20 @@
+#
+# ==============
+# warn.sk
+# ==============
+# warn.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+command /warn <offline player> [<text>]:
+  aliases: /swarn, /scwarn
+  permission: steembans.warn
+  trigger:
+    if arg-1 is set:
+      if arg-2 is set:
+        set {_reason} to arg-2
+      else:
+        set {_reason} to "-"
+      set {_warnedplayer} to arg-1
+      SteemBansWarnPlayer(player,{_warnedplayer},{_reason})
+    else:
+      make player execute "/steembans help"

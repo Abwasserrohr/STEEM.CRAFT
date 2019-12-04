@@ -1,0 +1,30 @@
+#
+# ==============
+# onjoin.sk
+# ==============
+# onjoin.sk is part of the STEEM.CRAFT addons.
+# ==============
+
+import:
+  org.bukkit.event.player.PlayerLoginEvent 
+
+#
+# > PlayerLoginEvent
+# > Triggered when a player logs on the server.
+# > Checks if the player is banned and bans the
+# > player. If the player has been unbanned and
+# > is still banned, the player gets unbanned.
+on PlayerLoginEvent with priority highest:
+  set {_player} to event.getPlayer()
+  event.setKickMessage("It seems that you have been banned. &lYou got unbanned? Try again.")
+  SteemBansGetPlayerBanned({_player})
+  while SteemBansRetrievePlayerBanned({_player}) is "wait":
+    wait 1 tick
+  set {_banned} to SteemBansRetrievePlayerBanned({_player})
+  if {_banned} is true:
+    if {_player} is not banned:
+      ban {_player}
+  else:
+    if {_player} is banned:
+      unban {_player}
+      event.allow()
