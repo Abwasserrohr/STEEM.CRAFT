@@ -1,0 +1,6 @@
+
+import:
+  org.bukkit.Bukkit
+  
+function getPlugin() :: object:
+  return Bukkit.getServer().getPluginManager().getPlugin("Skript")
