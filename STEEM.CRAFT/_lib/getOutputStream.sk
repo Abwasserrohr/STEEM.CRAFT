@@ -1,6 +1,15 @@
 
 import:
   com.google.common.io.ByteStreams
+  java.io.ByteArrayOutputStream
+  org.bukkit.Bukkit
+
+on load:
+  wait 1 tick
+  set {_plugin} to getPlugin()
+  Bukkit.getServer().getMessenger().registerOutgoingPluginChannel({_plugin}, "BungeeCord")
 
 function getOutputStream() :: object:
-  return ByteStreams.newDataOutput()
+  set {_stream} to new ByteArrayOutputStream()
+  set {_output} to ByteStreams.newDataOutput({_stream})
+  return {_output}

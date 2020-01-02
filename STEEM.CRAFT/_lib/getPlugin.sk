@@ -3,4 +3,5 @@ import:
   org.bukkit.Bukkit
   
 function getPlugin() :: object:
-  return Bukkit.getServer().getPluginManager().getPlugin("Skript")
+  set {_plugin} to Bukkit.getServer().getPluginManager().getPlugin("Skript")
+  return {_plugin}
