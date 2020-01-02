@@ -5,6 +5,9 @@
 # SteemBansKickPlayer.sk is part of the STEEM.CRAFT addons.
 # ==============
 
+import:
+  org.bukkit.Bukkit
+
 #
 # > Function - SteemBansKickPlayer
 # > Kick the player and creates a comment on Steem
@@ -14,12 +17,14 @@
 # > <player> The player who should get kicked.
 # > [<text>] The reason, why the player is kicked, can be empty.
 function SteemBansKickPlayer(executor:object,kickedplayer:offline player,reason:text="-"):
-  if {_kickedplayer} is not online:
-    message "%getChatPrefix()% %{_kickedplayer}% is not online." to {_executor}
-    stop
-  else:
-    kick {_kickedplayer} because of {_reason}
-    message "%getChatPrefix()% %{_kickedplayer}% has been kicked." to {_executor}
+  kick {_kickedplayer} because of {_reason}
+  set {_output} to getOutputStream()
+  {_output}.writeUTF("KickPlayer")
+  {_output}.writeUTF("%{_kickedplayer}%")
+  {_output}.writeUTF("You were kicked because: %{_reason}%")
+  set {_output} to getOutputStream()
+  {_executor}.sendPluginMessage(getPlugin(), "BungeeCord", {_output}.toByteArray())
+  message "%getChatPrefix()% %{_kickedplayer}% has been kicked." to {_executor}
 
   set {_steemname} to getServerAccountName()
 
