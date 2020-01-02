@@ -22,7 +22,6 @@ function SteemBansKickPlayer(executor:object,kickedplayer:offline player,reason:
   {_output}.writeUTF("KickPlayer")
   {_output}.writeUTF("%{_kickedplayer}%")
   {_output}.writeUTF("You were kicked because: %{_reason}%")
-  set {_output} to getOutputStream()
   {_executor}.sendPluginMessage(getPlugin(), "BungeeCord", {_output}.toByteArray())
   message "%getChatPrefix()% %{_kickedplayer}% has been kicked." to {_executor}
 

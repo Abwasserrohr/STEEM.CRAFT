@@ -69,7 +69,6 @@ function SteemBansBanPlayer(executor:object,bannedplayer:offline player,reason:t
     {_output}.writeUTF("KickPlayer")
     {_output}.writeUTF("%{_bannedplayer}%")
     {_output}.writeUTF("You have been banned due to %{_reason}%")
-    set {_output} to getOutputStream()
     {_executor}.sendPluginMessage(getPlugin(), "BungeeCord", {_output}.toByteArray())
 
   else:
