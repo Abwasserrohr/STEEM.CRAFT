@@ -1,0 +1,6 @@
+
+import:
+  com.google.common.io.ByteStreams
+
+function getOutputStream() :: object:
+  return ByteStreams.newDataOutput()
