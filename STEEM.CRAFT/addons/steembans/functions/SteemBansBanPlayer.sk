@@ -60,9 +60,16 @@ function SteemBansBanPlayer(executor:object,bannedplayer:offline player,reason:t
   if getSteemResponse({_txuuid}) is "done":
     message "%getChatPrefix()% %{_bannedplayer}% has been banned." to {_executor}
     message "%getChatPrefix()% It may take 30 seconds to take effect globally." to {_executor}
-    if {_bannedplayer} is online:
-      kick {_bannedplayer} because of "You have been banned due to %{_reason}%"
-      ban {_bannedplayer} because of {_reason}
+    kick {_bannedplayer} because of "You have been banned due to %{_reason}%"
+    ban {_bannedplayer} because of {_reason}
+    
+    #
+    # > Send Bungeecord kick.
+    set {_output} to getOutputStream()
+    {_output}.writeUTF("KickPlayer")
+    {_output}.writeUTF("%{_bannedplayer}%")
+    {_output}.writeUTF("You have been banned due to %{_reason}%")
+    {_executor}.sendPluginMessage(getPlugin(), "BungeeCord", {_output}.toByteArray())
 
   else:
     message "%getChatPrefix()% A error occured: %getSteemResponse({_txuuid})%" to {_executor}
