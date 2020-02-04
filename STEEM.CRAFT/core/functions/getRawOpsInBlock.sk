@@ -8,6 +8,11 @@
 import:
   com.fasterxml.jackson.databind.ObjectMapper
   java.util.ArrayList
+  java.io.FileWriter
+  java.io.BufferedWriter
+  java.nio.file.Paths
+  java.nio.file.Files
+  java.lang.String
 
 #
 # > Function - getRawOpsInBlock
@@ -28,7 +33,6 @@ function getRawOpsInBlock(blocknumber:number,onlyvirtual:boolean=false,threaded:
   {_request}.put("method", "condenser_api.get_ops_in_block")
   {_request}.put("params", {_params})
   {_request}.put("id", 1)
-
   set {_requestID} to getRandomUUID()
   if {_threaded} is true:
     CustomSteemRequest({_mapper}.writeValueAsString({_request}),{_requestID})
@@ -36,14 +40,22 @@ function getRawOpsInBlock(blocknumber:number,onlyvirtual:boolean=false,threaded:
 
   else:
     if getBlockCached() is true:
-      set {_value} to getGeneralStorageData("steemblocks","%{_blocknumber}%-%{_onlyvirtual}%","ops")
-      if {_value} is set:
-        set {_response} to {_mapper}.readTree(decompressBase64({_value}))
-        return {_response}.get("result")
+      set {_file} to Paths.get("plugins/Skript/storage/steemblocks/%{_blocknumber}%-%{_onlyvirtual}%.json")
+      if Files.exists({_file}) is true:
+        set {_data} to try Files.readAllBytes({_file})
+        set {_value} to try new String({_data})
+        if {_value} is not "":
+          set {_response} to {_mapper}.readTree({_value})
+          return {_response}.get("result")
       set {_response} to AsyncCustomSteemRequest({_mapper}.writeValueAsString({_request}),{_requestID},false)
       set {_jsonNode} to {_mapper}.readTree({_response})
       if {_jsonNode}.get("result").size() is not 0:
-        saveGeneralStorageData("steemblocks","%{_blocknumber}%-%{_onlyvirtual}%","ops",compressBase64({_response}))
+        delete {_file}
+        set {_file} to try new FileWriter("plugins/Skript/storage/steemblocks/%{_blocknumber}%-%{_onlyvirtual}%.json")
+        set {_bufferedWriter} to try new BufferedWriter({_file})
+        if {_file} is set:
+          try {_bufferedWriter}.write({_jsonNode}.toString())
+          try {_bufferedWriter}.close()
       return {_jsonNode}.get("result")
     else:
       set {_response} to AsyncCustomSteemRequest({_mapper}.writeValueAsString({_request}),{_requestID},false)
