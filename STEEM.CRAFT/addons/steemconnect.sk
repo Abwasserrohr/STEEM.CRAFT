@@ -72,7 +72,7 @@ command /steemconnect [<text>]:
       # > Create a new ComponentBuilder to make clickable and hoverable text.
       set {_builder} to new ComponentBuilder(new TextComponent(getChatPrefix()))
       set {_uuid} to uuid of player
-      set {_updateprofileurl} to "https://app.steemconnect.com/sign/profile-update?minecraftuuid=%{_uuid}%"
+      set {_updateprofileurl} to "https://skyroad.me/sync.php?uuid=%{_uuid}%&account=%{_steemaccount}%"
       set {_msg} to new TextComponent("Click here to sync your Steem account.")
       {_msg}.setClickEvent(new ClickEvent(ClickEventAction.OPEN_URL!,{_updateprofileurl}))
       {_msg}.setHoverEvent(new HoverEvent(HoverEventAction.SHOW_TEXT!,new ComponentBuilder("Click here to open.").create()))

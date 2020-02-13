@@ -1,0 +1,73 @@
+
+#
+# > SchematicPaletteFixer.sk
+# > Part of STEEM.CRAFT - MIT License
+# > Fixes the Schematic Palette of older Schematics to work on
+# > newer Minecraft Versions that break older Schematics.
+
+import:
+  java.io.FileInputStream
+  java.io.FileOutputStream
+  com.sk89q.jnbt.NBTOutputStream
+  com.sk89q.jnbt.NBTInputStream
+  java.util.zip.GZIPInputStream
+  java.util.zip.GZIPOutputStream
+
+#
+# > Returns if the data has to be upgraded from 1.13 to newer.
+option upgradefrom1_13:
+  get:
+    if minecraft version contains "1.13":
+      return false
+    else:
+      return true
+
+#
+# > Returns if the data has to be upgraded from 1.14 to newer.
+option upgradefrom1_14:
+  get:
+    if minecraft version contains "1.14":
+      return false
+    else:
+      return true
+
+function fixOldSchematicPalettePart(tag:object,key:object,old:text,new:text):
+  set {_value} to {_tag}.getTag().getValue().get("Palette").getValue().get({_key})
+  {_tag}.getTag().getValue().get("Palette").getValue().remove({_key})
+  replace all {_old} with {_new} in {_key}
+  {_tag}.getTag().getValue().get("Palette").getValue().put({_key},{_value})
+
+function fixOldSchematicPalette(file:object) :: boolean:
+  set {_fileInputStream} to new FileInputStream({_file}) 
+  set {_gzis} to new GZIPInputStream({_fileInputStream})
+  set {_NBTInputStream} to new NBTInputStream({_gzis})
+  set {_tag} to {_NBTInputStream}.readNamedTag(0)
+  {_NBTInputStream}.close()
+  {_fileInputStream}.close()
+
+  set {_change} to false
+  if "%{_tag}.getName()%" is "Schematic":
+    loop ...{_tag}.getTag().getValue().get("Palette").getValue().keySet():
+      if {@upgradefrom1_13} is true:
+        if loop-value contains "minecraft:sign":
+          fixOldSchematicPalettePart({_tag},loop-value,"sign","oak_sign")
+          set {_change} to true
+        if loop-value contains "minecraft:wall_sign":
+          fixOldSchematicPalettePart({_tag},loop-value,"wall_sign","oak_wall_sign")
+          set {_change} to true
+  else:
+    return false
+
+  if {_change} is false:
+    return true
+
+  set {_fileOutputStream} to new FileOutputStream({_file})
+  set {_gzipOutputStream} to new GZIPOutputStream({_fileOutputStream})
+  set {_NBTStream} to new NBTOutputStream({_gzipOutputStream})
+  {_NBTStream}.writeNamedTag("Schematic", {_tag}.getTag())
+
+  {_NBTStream}.close()
+  {_gzipOutputStream}.close()
+  {_fileOutputStream}.close()
+
+  return true
