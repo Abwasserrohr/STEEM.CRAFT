@@ -1,0 +1,224 @@
+#
+# > This optional script was made by Krippi and is licenced as this repository.
+# > Edited by Abwasserrohr.
+
+#
+# > party.sk
+# > Creates a iron sword that allows to invite other players into a party.
+# > Party members are following the party leader for joining into SteemPlay
+# > maps. This allows them to player SteemPlay maps together easily.
+
+options:
+  prefix: &7[&6&lJnR&7]&r
+
+import:
+  java.util.ArrayList
+  net.md_5.bungee.api.chat.ComponentBuilder
+  net.md_5.bungee.api.chat.TextComponent
+  net.md_5.bungee.api.chat.ClickEvent
+  net.md_5.bungee.api.chat.HoverEvent
+  net.md_5.bungee.api.chat.HoverEvent$Action as HoverEventAction
+  net.md_5.bungee.api.chat.ClickEvent$Action as ClickEventAction
+
+every 1 second:
+  $ thread
+  checkPartyInventory()
+
+on teleport:
+  if metadata value "STEEM.CRAFT|PartyLeader" of player is set:
+    if metadata value "STEEM.CRAFT|PartyLeader" of player is player:
+      wait 5 ticks
+      if "%player's world%" contains "SteemPlayWorld-":
+        loop ...metadata value "STEEM.CRAFT|Party" of player:
+          set {_loopplayer} to loop-value
+          if {_loopplayer}'s world is not player's world:
+            message "{@prefix} &7Der Gruppenleiter ist in einer anderen Spielwelt." to {_loopplayer}
+            message "{@prefix} &7Du wirst zur Welt von %player% teleportiert." to {_loopplayer}
+            teleport {_loopplayer} to player
+
+function checkPartyInventory():
+  loop all players:
+    if metadata value "STEEM.CRAFT|PartyLeader" of loop-player is loop-player:
+      if slot 7 of loop-player's inventory is not barrier:
+        set slot 7 of loop-player's inventory to barrier named "&rGruppe löschen"
+      if slot 6 of loop-player's inventory is not iron sword:
+        set slot 6 of loop-player's inventory to barrier named "&rSpieler zur Gruppe einladen"
+
+    else if metadata value "STEEM.CRAFT|PartyLeader" of loop-player is set:
+      if slot 6 of loop-player's inventory is not barrier:
+        set slot 6 of loop-player's inventory to barrier named "&rGruppe verlassen"
+    else:
+      if slot 6 of loop-player's inventory is not iron sword:
+        set slot 6 of loop-player's inventory to iron sword named "&rSpieler zur Gruppe einladen"
+      if slot 7 of loop-player's inventory is barrier:
+        set slot 7 of loop-player's inventory to air
+
+on click with barrier:
+  if metadata value "STEEM.CRAFT|PartyLeader" of player is player:
+    deleteParty(player)
+  else:
+    leaveParty(player)
+
+
+on click with iron sword:
+  if target is a player:
+    inviteParty(player, target)
+
+command /party [<text>] [<player>]:
+  trigger:
+    set {_selection} to arg-1
+    set {_leader} to arg-2
+    if {_selection} is "join" or "Join":
+      joinParty({_leader}, player)
+    else if {_selection} is "leave" or "Leave":
+      leaveParty(player)
+    else if {_selection} is "del" or "delete":
+      deleteParty(player)
+    else:
+      message "{@prefix} /party leave"
+      message "{@prefix} /party delete"
+
+function joinParty(leader:player, invited:player):
+  #
+  # > Loop through all party invites of the invited player to check
+  # > if the player can join the party of the leader.
+  loop ...metadata value "STEEM.CRAFT|PartyInvites" of {_invited}:
+    if loop-value is {_leader}:
+      set {_allowed} to true
+  if {_allowed} is not set:
+    message "{@prefix} &7Die Einladung von &6&l%{_leader}% &7ist nicht länger gültig." to {_invited}
+    stop
+
+  #
+  # > The player can join, delete all invitations.
+  delete metadata value "STEEM.CRAFT|PartyInvites" of {_invited}
+
+  #
+  # > Check if the invited player is already in the party of the leader.
+  # > If so, stop this function.
+  loop ...metadata value "STEEM.CRAFT|Party" of {_leader}:
+    if loop-value is {_invited}:
+      stop
+
+  #
+  # > The invited player is not in the party of the leader.
+  # > Check if the player is in a group.
+  if metadata value "STEEM.CRAFT|PartyLeader" of {_invited} is set:
+    #
+	# > If the player is the leader of another party, delete the party.
+    if metadata value "STEEM.CRAFT|PartyLeader" of {_invited} is {_invited}:
+      deleteParty({_invited})
+    #
+    # > If not, then leave the party of the current party leader.
+    else:
+      leaveParty(metadata value "STEEM.CRAFT|PartyLeader" of {_invited}, {_invited})
+
+  #
+  # > Set the new party leader for the invited player.
+  set metadata value "STEEM.CRAFT|PartyLeader" of {_invited} to {_leader}
+
+  #
+  # > If the party is new, create a ArrayList first and set the PartyLeader
+  # > for the leader of the new party.
+  if metadata value "STEEM.CRAFT|Party" of {_leader} is not set:
+    set metadata value "STEEM.CRAFT|Party" of {_leader} to new ArrayList()
+    set metadata value "STEEM.CRAFT|PartyLeader" of {_leader} to {_leader}
+
+  #
+  # > Add the inviteed player to the party list of the party leader.
+  (metadata value "STEEM.CRAFT|Party" of {_leader}).add({_invited})
+
+  #
+  # > Tell everybody that the invited player joined.
+  message "{@prefix} &6&l%{_invited}% &7ist deiner Party beigetreten." to {_leader}
+  loop ...metadata value "STEEM.CRAFT|Party" of {_leader}:
+    message "{@prefix} &6&l%{_invited}%&7 ist der Party beigetreten." to loop-value
+
+
+function leaveParty(leaver:player):
+  #
+  # > Get the party leader of the leaver.
+  set {_leader} to metadata value "STEEM.CRAFT|PartyLeader" of {_leaver}
+  #
+  # > Maybe, the player isn't even in a party, stop in that case.
+  if {_leader} is not set:
+    stop
+  
+  #
+  # > If the leaver is also the leader, delete the party instead.
+  if {_leader} is {_leaver}:
+    deleteParty({_leaver})
+    stop
+  #
+  # > Remove the player from the party list of the leader.
+  (metadata value "STEEM.CRAFT|Party" of {_leader}).remove({_leaver})
+  #
+  # > Delete the PartyLeader metadata value of the leaver.
+  delete metadata value "STEEM.CRAFT|PartyLeader" of {_leaver}
+
+  message "{@prefix} &7Du hast die Party verlassen." to {_leaver}
+  message "{@prefix} &6&l%{_leaver}%&7 hat die Party verlassen." to {_leader}
+  set {_size} to 0
+  loop ...metadata value "STEEM.CRAFT|Party" of {_leader}:
+    add 1 to {_size}
+    message "{@prefix} &6&l%{_leaver}%&7 hat die Party verlassen." to loop-value
+  if {_size} is 0:
+    message "{@prefix} &7Deine Gruppe ist nun leer." to {_leader}
+    deleteParty({_leader})
+
+  $ thread
+  checkPartyInventory()
+
+function deleteParty(leader:player):
+  #
+  # > If the player is not the leader, leave the party instead.
+  if metadata value "STEEM.CRAFT|PartyLeader" of {_leader} is not {_leader}:
+    leaveParty({_leader})
+    stop
+
+  message "{@prefix} &7Deine Party wurde gelöscht." to {_leader}
+
+  #
+  # > Loop through all members and delete their PartyLeader metadata.
+  loop ...metadata value "STEEM.CRAFT|Party" of {_leader}:
+    message "{@prefix} &7Die Party von &6&l%{_leader}% &7wurde gelöscht." to loop-value
+    delete metadata value "STEEM.CRAFT|PartyLeader" of loop-value
+
+  #
+  # > Delete the party leaders PartyLeader and Party metadata.
+  delete metadata value "STEEM.CRAFT|PartyLeader" of {_leader}
+  delete metadata value "STEEM.CRAFT|Party" of {_leader}
+
+  $ thread
+  checkPartyInventory()
+
+function inviteParty(leader:player,invited:player):
+  loop ...metadata value "STEEM.CRAFT|Party" of {_leader}:
+    if loop-value is {_invited}:
+      message "{@prefix} &6&l%{_invited}%&7 ist schon in deiner Party." to {_leader}
+      stop
+  if metadata value "STEEM.CRAFT|PartyInvites" of {_invited} is not set:
+    set metadata value "STEEM.CRAFT|PartyInvites" of {_invited} to new ArrayList()
+  loop ...metadata value "STEEM.CRAFT|PartyInvites" of {_invited}:
+    if loop-value is {_leader}:
+      message "{@prefix} &7Du hast &6&l%{_invited}% &7bereits eingeladen." to {_leader}
+      stop
+
+  message "{@prefix} &6&l%{_leader}% &7hat dich zu einer Party eingeladen." to {_invited}
+  message "{@prefix} &7Du hast &6&l%{_invited}% &7zu einer Party eingeladen." to {_leader}
+
+  set {_message} to new ComponentBuilder("{@prefix} Einladung ")
+  # 
+  # > Create clickable "Discard" and "Confirm" text.
+  set {_component} to new TextComponent("&a&l&nAkzeptieren&7.")
+  {_component}.setClickEvent(new ClickEvent(ClickEventAction.RUN_COMMAND!, "/party join %{_leader}%"))
+  {_component}.setHoverEvent(new HoverEvent(HoverEventAction.SHOW_TEXT!, new ComponentBuilder( "&7Klicke hier, um beizutreten." ).create()))
+  {_message}.append({_component})
+  #
+  # > Send the clickable text to the player.
+  {_invited}.spigot().sendMessage({_message}.create())
+
+  (metadata value "STEEM.CRAFT|PartyInvites" of {_invited}).add({_leader})
+
+on quit:
+  delete metadata value "STEEM.CRAFT|PartyInvites" of player

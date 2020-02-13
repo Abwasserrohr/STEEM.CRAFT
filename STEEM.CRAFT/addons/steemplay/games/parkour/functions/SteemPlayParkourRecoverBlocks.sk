@@ -50,8 +50,8 @@ function SteemPlayParkourRecoverBlocks(object:object):
       set {_z} to {_config}.get(loop-value).get("z").doubleValue()
 
       set {_loc} to location at {_x}, {_y}, {_z} in {_world}
-      if block at {_loc} is not {_%loop-value%}:
-        set block at {_loc} to {_%loop-value%}
+      if block at {_loc} is not {_recoverblocks-%loop-value%}:
+        set block at {_loc} to {_recoverblocks-%loop-value%}
       SteemPlaySetTempCache({_world},"%{_x}%_%{_y}%_%{_z}%",loop-value)
 
   #

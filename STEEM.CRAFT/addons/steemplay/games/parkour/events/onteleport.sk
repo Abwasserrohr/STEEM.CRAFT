@@ -5,8 +5,9 @@
 # onteleport.sk is part of the STEEM.CRAFT addons.
 # ==============
 
-
 on teleport:
+  if "%event.getCause()%" is "unknown":
+    stop
   if metadata value "SteemPlayParkour|Checkpoint" of player is set:
     if distance between metadata value "SteemPlayParkour|Checkpoint" of player and event-location >= 1.5:
       delete metadata value "SteemPlayParkour|Game" of player

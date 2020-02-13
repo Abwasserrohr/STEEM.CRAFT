@@ -17,18 +17,26 @@ options:
 # > and unloads, deletes them after the predefined
 # > threshold has been passed.
 function SteemPlayWorldInactiveCheck():
+  if getDebug() is true:
+    message "SteemPlay Checking for inactive worlds." to console
   if metadata value "SteemPlayWorld|WorldsLastActive" of getDummy() is not set:
     set metadata value "SteemPlayWorld|WorldsLastActive" of getDummy() to HashMap()
   if metadata value "SteemPlayWorld|Worlds" of getDummy() is set:
     loop ...(metadata value "SteemPlayWorld|Worlds" of getDummy()).keySet():
       set {_world} to SteemGetPlayWorldById("%loop-value%")
+      if getDebug() is true:
+        message "SteemPlay Checking %{_world}%..." to console
       if {_world} is not false:
         if number of players in {_world} is 0:
+          if getDebug() is true:
+            message "SteemPlay There are 0 players in %{_world}%." to console
           if (metadata value "SteemPlayWorld|WorldsLastActive" of getDummy()).get("%loop-value%") is not set:
             (metadata value "SteemPlayWorld|WorldsLastActive" of getDummy()).put("%loop-value%",now)
           else:
             set {_lastactive} to (metadata value "SteemPlayWorld|WorldsLastActive" of getDummy()).get("%loop-value%")
             if difference between {_lastactive} and now > {@inactivedelete}:
+              if getDebug() is true:
+                message "SteemPlay %{_world}% is now inactive for %difference between {_lastactive} and now%, this is longer than {@inactivedelete}. Deleting now." to console
               SteemDeletePlayWorld({_world})
         else:
           (metadata value "SteemPlayWorld|WorldsLastActive" of getDummy()).remove("%loop-value%")
