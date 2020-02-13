@@ -13,6 +13,7 @@ import:
   java.nio.file.Paths
   java.nio.file.Files
   java.lang.String
+  java.util.UUID
 
 #
 # > Function - getRawOpsInBlock
@@ -33,11 +34,12 @@ function getRawOpsInBlock(blocknumber:number,onlyvirtual:boolean=false,threaded:
   {_request}.put("method", "condenser_api.get_ops_in_block")
   {_request}.put("params", {_params})
   {_request}.put("id", 1)
-  set {_requestID} to getRandomUUID()
+  set {_requestID} to UUID.randomUUID().toString()
   if {_threaded} is true:
+    if getDebug() is true:
+      message "STEEM.CRAFT Using threaded process for %{_blocknumber}%. Do not use caching for now." to console
     CustomSteemRequest({_mapper}.writeValueAsString({_request}),{_requestID})
     return {_requestID}
-
   else:
     if getBlockCached() is true:
       set {_file} to Paths.get("plugins/Skript/storage/steemblocks/%{_blocknumber}%-%{_onlyvirtual}%.json")
@@ -47,6 +49,8 @@ function getRawOpsInBlock(blocknumber:number,onlyvirtual:boolean=false,threaded:
         if {_value} is not "":
           set {_response} to {_mapper}.readTree({_value})
           return {_response}.get("result")
+      if getDebug() is true:
+        message "STEEM.CRAFT %{_blocknumber}% is not available. Load and store it." to console
       set {_response} to AsyncCustomSteemRequest({_mapper}.writeValueAsString({_request}),{_requestID},false)
       set {_jsonNode} to {_mapper}.readTree({_response})
       if {_jsonNode}.get("result").size() is not 0:
@@ -58,6 +62,8 @@ function getRawOpsInBlock(blocknumber:number,onlyvirtual:boolean=false,threaded:
           try {_bufferedWriter}.close()
       return {_jsonNode}.get("result")
     else:
+      if getDebug() is true:
+        message "STEEM.CRAFT Do not use cached blocks, loading %{_blocknumber}%." to console
       set {_response} to AsyncCustomSteemRequest({_mapper}.writeValueAsString({_request}),{_requestID},false)
       set {_jsonNode} to {_mapper}.readTree({_response})
       return {_jsonNode}.get("result")

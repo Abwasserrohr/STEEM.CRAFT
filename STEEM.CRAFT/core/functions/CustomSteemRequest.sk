@@ -19,6 +19,10 @@ function CustomSteemRequest(request:text,requestid:text):
   set metadata value "SC|CustomSteemResult|%{_requestid}%" of getDummy() to "wait"
   set {SC::CustomSteemRequest} to {_request}
   set {SC::CustomSteemRequestID} to {_requestid}
+
+  if getDebug() is true:
+    message "STEEM.CRAFT Custom Steem API request: %{_request}%" to console
+
   $ thread
   set {_result} to AsyncCustomSteemRequest({SC::CustomSteemRequest},{SC::CustomSteemRequestID})
 
@@ -30,7 +34,11 @@ function AsyncCustomSteemRequest(request:text,requestid:text,threaded:boolean=tr
   delete {SC::CustomSteemRequest}
   delete {SC::CustomSteemRequestID}
 
-  set {_url} to new URL("https://api.steemit.com")
+  if getDebug() is true:
+    message "STEEM.CRAFT Recieved Custom Steem API request: %{_request}%" to console
+
+  #set {_url} to new URL("https://api.steemit.com")
+  set {_url} to new URL("https://anyx.io")
   set {_urlConnection} to {_url}.openConnection()
 
   #
@@ -63,8 +71,10 @@ function AsyncCustomSteemRequest(request:text,requestid:text,threaded:boolean=tr
   set {_inputStreamReader} to new InputStreamReader({_urlConnection}.getContent())
   set {_bufferedReader} to new BufferedReader({_inputStreamReader})
   set {_response} to {_bufferedReader}.readLine()
-  {_inputStreamReader}.close()
-
+  #{_inputStreamReader}.close()
+  #{_bufferedReader}.close()
+  if "%{_urlConnection}.getResponseCode()% %{_urlConnection}.getResponseMessage()%" is not "OK 200":
+    log "%{_urlConnection}.getResponseCode()% %{_urlConnection}.getResponseMessage()%" to "steemconnectionerror"
   {_urlConnection}.disconnect()
 
   #
@@ -78,6 +88,10 @@ function AsyncCustomSteemRequest(request:text,requestid:text,threaded:boolean=tr
   # > Read the json response using ObjectMapper and save it to metadata for 5 seconds.
   set {_mapper} to new ObjectMapper()
   set {_jsonNode} to {_mapper}.readTree({_response})
+
+  if getDebug() is true:
+    message "STEEM.CRAFT Custom Steem API returned: %{_jsonNode}%" to console
+
   if {_threaded} is true:
     set metadata value "SC|CustomSteemResult|%{_requestid}%" of getDummy() to {_jsonNode}
 

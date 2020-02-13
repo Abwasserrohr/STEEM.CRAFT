@@ -11,6 +11,7 @@ import:
   eu.bittrade.libs.steemj.base.models.Permlink
   eu.bittrade.libs.steemj.base.models.operations.CommentOperation
   java.lang.Integer
+  java.net.URI
 
 #
 # > Function - getSteemContent:
@@ -53,7 +54,9 @@ function getSteemContentAsync(array:object):
   # > Convert the array to a Skript list.
   set {_array::*} to ...{_array}
   set {_steemj} to new SteemJ()
-  
+  set {_config} to {_steemj}.getInstance()
+  {_config}.addEndpointURI(new URI("https://anyx.io"), true)
+
   if {_array::3} is 0:
     #
     # > Get the content, the strings have to be converted to AccountName and Permlink.
