@@ -16,7 +16,6 @@ import:
 # > is still banned, the player gets unbanned.
 on PlayerLoginEvent with priority highest:
   set {_player} to event.getPlayer()
-  event.setKickMessage("It seems that you have been banned. &lYou got unbanned? Try again.")
   SteemBansGetPlayerBanned({_player})
   while SteemBansRetrievePlayerBanned({_player}) is "wait":
     wait 1 tick
@@ -24,6 +23,8 @@ on PlayerLoginEvent with priority highest:
   if {_banned} is true:
     if {_player} is not banned:
       ban {_player}
+      event.setKickMessage("It seems that you have been banned. &lYou got unbanned? Try again.")
+
   else:
     if {_player} is banned:
       unban {_player}
