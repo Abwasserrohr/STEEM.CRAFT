@@ -10,6 +10,8 @@ import:
   org.apache.commons.io.IOUtils
   java.io.ByteArrayOutputStream
   java.util.zip.GZIPOutputStream
+  java.nio.charset.StandardCharsets
+  me.skyroad.steemcraft.compression.CompressedBase64
 
 #
 # > Function - compressBase64:
@@ -19,9 +21,11 @@ import:
 # > Returns:
 # > <text>compressed base64 string
 function compressBase64(text:text) :: text:
+  #set {_result} to new CompressedBase64().compress({_text})
+  #return {_result}
   set {_baos} to new ByteArrayOutputStream()
   set {_gzos} to new GZIPOutputStream({_baos})
-  {_gzos}.write({_text}.getBytes("Cp1047"))
+  {_gzos}.write({_text}.getBytes(StandardCharsets.UTF_8!))
   IOUtils.closeQuietly({_gzos})
   set {_bytes} to {_baos}.toByteArray()
   return Base64.encodeBase64String({_bytes})

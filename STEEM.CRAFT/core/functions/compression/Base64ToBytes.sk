@@ -16,7 +16,4 @@ import:
 # > Returns:
 # > <text>bytes
 function Base64ToBytes(base64:text) :: object:
-  set {_bytes} to Base64.decodeBase64({_base64}.getBytes("utf-8"))
-  if {_bytes} is not set:
-    set {_bytes} to Base64.decodeBase64({_base64}.getBytes("Cp1047"))
-  return {_bytes}
+  return Base64.decodeBase64({_base64})
