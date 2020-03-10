@@ -67,8 +67,10 @@ function SteemDeletePlayWorld(world:world):
   # > Delete the world.
   set {_home} to Bukkit.getServer().getWorldContainer().getCanonicalFile()
   set {_destination} to new File("%{_home}%/%{_world}%/")
-
   if {_destination}.isDirectory() is true:
+    if getDebug() is true:
+      message "SteemPlay Deleting %{_destination}%." to console
     wait 1 second
     FileUtils.deleteDirectory({_destination})
-
+    if getDebug() is true:
+      message "SteemPlay Deleted %{_destination}%. Returned error: %last java error%" to console

@@ -5,6 +5,11 @@
 # LoadSteemWorldData.sk is part of the STEEM.CRAFT addons.
 # ==============
 
+options:
+  #
+  # > Until retry loading content.
+  contenttimeout: 5 seconds^
+
 import:
   com.fasterxml.jackson.databind.ObjectMapper
   eu.bittrade.libs.steemj.base.models.operations.CustomJsonOperation
@@ -20,11 +25,15 @@ import:
 # > Returns:
 # > <Hashmap>["response",SteemJ response],["world",<HashMap>["chunkid","base64 string"]]
 function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid:number=0,steemplay:boolean=false) :: object:
+  if getDebug() is true:
+    message "STEEM.CRAFT Trying to load Steem world data for %{_worldname}% by %{_steemname}%." to console
   #
   # > If the world should be loaded for SteemPlay, load it
   # > from the published worlds area and not from the
   # > steemworlds storage location.
   if {_steemplay} is true:
+    if getDebug() is true:
+      message "STEEM.CRAFT Loaded Steem world data is meant for SteemPlay." to console
     #
     # > Set the permlink to allow getting the comment content.
     set {_permlink} to "re-steemcraft-publish-%{_worldname}%"
@@ -36,10 +45,16 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
     # > Set the permlink to allow getting the comment content.
     set {_permlink} to "re-steemcraft-%{_worldname}%"
 
+  if getDebug() is true:
+    message "STEEM.CRAFT Trying to get the comment of %{_worldname}% (%{_permlink}%) by %{_steemname}%." to console
+
   #
   # > Load the content using getSteemContent without thread,
   # > since we're already in a thread.
-  getSteemContent({_steemname},{_permlink},false,{_blockid})
+  if {_blockid} is 0:
+    set {_requestid} to getRawSteemContent({_steemname},{_permlink})
+  else:
+    getSteemContent({_steemname},{_permlink},false,{_blockid})
 
   #
   # > Create a HashMap which stores all the data.
@@ -48,13 +63,30 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
   #
   # > Get the Steem content response.
   while {_c} is not set:
-    set {_c} to getSteemContentResponse({_steemname},{_permlink})
+    if {_blockid} is 0:
+      set {_result} to CustomSteemRequestResult({_requestid})
+      if {_result} is not "wait":
+        set {_c} to {_result}
+    else:
+      set {_c} to getSteemContentResponse({_steemname},{_permlink})
   {_map}.put("response",{_c})
+
+  if getDebug() is true:
+    message "STEEM.CRAFT Got content response for %{_worldname}% by %{_steemname}%:" to console
+    message "%{_c}%" to console
 
   #
   # > Reading the json metadata of the content which is done using ObjectMapper.
-  set {_objectMapper} to new ObjectMapper()    
-  set {_jsonNode} to {_objectMapper}.readTree({_c}.getJsonMetadata())
+  set {_objectMapper} to new ObjectMapper()
+  if {_blockid} is 0:
+    set {_jsonNode} to {_c}.get("result").get("json_metadata").textValue()
+    set {_jsonNode} to {_objectMapper}.readTree({_jsonNode})
+  else:
+    set {_jsonNode} to {_objectMapper}.readTree({_c}.getJsonMetadata())
+
+  if getDebug() is true:
+    message "STEEM.CRAFT Extracted json_metadata for %{_worldname}% by %{_steemname}%:" to console
+    message "%{_jsonNode}%" to console
 
   #
   # > Get the compressed and base64 encoded string.
@@ -72,6 +104,9 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
     set {_storagefolder} to "steemplay"
   else:
     set {_storagefolder} to "steemworlds"
+
+  if getDebug() is true:
+    message "STEEM.CRAFT Load data into local storage for %{_worldname}% by %{_steemname}%:" to console
 
   #
   # > Store new world data only if it is a world loading process with
@@ -180,14 +215,25 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
     {_wb}.setWarningDistance(0)
     {_wb}.setSize({_size})
 
+  if getDebug() is true:
+    message "STEEM.CRAFT Decompress world data for %{_worldname}% by %{_steemname}%:" to console
+    message "STEEM.CRAFT %{_plot}%" to console
+
   #
   # > Decompress and decode the base64 string, this increases the size.
   set {_plot} to decompressBase64({_plot})
+
+  if getDebug() is true:
+    message "STEEM.CRAFT Reading decompressed JSON String for %{_worldname}% by %{_steemname}%:" to console
 
   #
   # > Since we now have a string, it has to be loaded using jackson again,
   # > to access it later.
   set {_plot} to {_objectMapper}.readTree({_plot})
+
+  if getDebug() is true:
+    message "STEEM.CRAFT Looping through world chunks for %{_worldname}% by %{_steemname}%:" to console
+    message "STEEM.CRAFT %{_plot}%" to console
 
   #
   # > Get all the block numers to load the chunks.
@@ -219,6 +265,8 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
     #
     # > Get the operations of a block.
     set {_ops} to getRawOpsInBlock(loop-value,false,false)
+    if getDebug() is true:
+      message "STEEM.CRAFT Looping through block %loop-value% for important operations with data." to console
 
     loop {_ops}.size() times:
       set {_tx} to loop-number - 1
@@ -231,6 +279,8 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
 
         if {_auths}.size() is not 0:
           if {_ops}.get({_tx}).get("op").get(1).get("required_posting_auths").get(0).textValue() is {_steemname}:
+            if getDebug() is true:
+              message "STEEM.CRAFT There is a custom_json that matches with the user." to console
             if {_ops}.get({_tx}).get("op").get(1).get("id").textValue() is "STEEM.CRAFT/worlds":
               if {_bossbar} is not null:
                 #
@@ -256,6 +306,11 @@ function LoadSteemWorldData(steemname:text,worldname:text,bossbar:object,blockid
                 # > since multiple transactions could be in one block.
                 if loop-index is "%{_x}%|%{_z}%|%{_i}%":
                   set {_plotparts::%{_x}%|%{_z}%|%{_i}%} to {_data}
+                  if getDebug() is true:
+                    message "STEEM.CRAFT Found world data for  %{_worldname}% by %{_steemname}%:" to console
+                    message "STEEM.CRAFT Chunk X %{_x}% Z %{_z}% with ID %{_i}%:" to console
+                    message "STEEM.CRAFT %{_data}%" to console
+
 
   if {_bossbar} is not null:
     #

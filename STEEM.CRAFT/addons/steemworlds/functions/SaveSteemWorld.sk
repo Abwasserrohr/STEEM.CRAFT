@@ -38,7 +38,7 @@ options:
   customjsonlength: 1800
   #
   # > The time until a transaction is timed out and repeated in ticks.
-  timeoutticks: 800
+  timeoutticks: 400
   #
   # > The comment parent author is the author of the comments which hold
   # > all the worlds. If this is changed, all already saved worlds can't
@@ -54,9 +54,13 @@ options:
   #
   # > Set the maximum amount of custom json transactions that are allowed per block.
   maximumcustomjsontxperblock: 5
+  #
+  # > Debug messages in console.
+  debug: true
 
 import:
   java.io.File
+  java.lang.String
   java.nio.file.Files
   java.util.regex.Pattern
   java.util.ArrayList
@@ -80,14 +84,20 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     # > Get the steem account of the player. Since the server
     # > will broadcast transactions, the steem account needs 
     # > to be synced with the server.
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Trying to get synced account from %{_player}%." to console
     set {_steemname} to getSyncedAccount({_player})
     if {_steemname} is false:
+      if {@debug} is true:
+        message "[STEEM.CRAFT] [DEBUG] Could not find account from %{_player}%." to console
       message "%getChatPrefix()% You have to sync your account first:" to {_player}
       message "%getChatPrefix()% /steemconnect <steem username>" to {_player}
       stop
 
     #
     # > Get the account in a thread to validate.
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Found %{_player}%'s account: %{_steemname}%." to console
     getAccount("%{_steemname}%",false)
     
     wait 1 tick
@@ -95,7 +105,11 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     #
     # > Set the response to a local usable variable.
     set {_account} to getAccountResponse("%{_steemname}%")
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Revieved account data from Steem for %{_steemname}%." to console
 
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Checking %{_steemname}% for UUID and authority." to console
     #
     # > Check if the account is valid and usable for broadcasting.
     if validateSyncedSteemAccountUUID({_player},{_account}) is false:
@@ -106,6 +120,11 @@ function SaveSteemWorld(player:player,publish:boolean=false):
       message "%getChatPrefix()% The server has no authorisation to broadcast transactions for you." to {_player}
       message "%getChatPrefix()% /steemconnect <steem username>" to {_player}
       stop
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] %{_steemname}% has UUID and authority set correctly." to console
+
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Load some data from %{_steemname}%'s world to save it." to console
 
     set {_world} to {_player}'s world
     set {_shortworld} to GetSteemWorldShortName({_player}'s world)
@@ -125,18 +144,16 @@ function SaveSteemWorld(player:player,publish:boolean=false):
       set {_game} to "creative"
     {_finaljson}.put("game", {_game})
 
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] %{_steemname}%'s world is going to be a game: %{_game}%." to console
+
     #
     # > If the player wants to publish the world to SteemPlay, check if
     # > the function of the game accepts that publish or not.
     if {_publish} is true:
-      #
-      # > A unique function is called for every game, for that, we need the game name.
-      set {_game} to getGeneralStorageData("steemworlds",{_shortworld},"game")
 
-      #
-      # > If no game name is set, default it to "creative".
-      if {_game} is not set:
-        set {_game} to "creative"
+      if {@debug} is true:
+        message "[STEEM.CRAFT] [DEBUG] Player wants to publish map. Checking %{_steemname}%'s map if it can be published." to console
 
       set {_permlink} to "re-steemcraft-%{_world}%"
 
@@ -153,12 +170,20 @@ function SaveSteemWorld(player:player,publish:boolean=false):
       set {_publishable} to metadata value "SteemPlay-%{_steemname}%-%{_permlink}%" of {_player}
       delete metadata value "SteemPlay-%{_steemname}%-%{_permlink}%" of {_player}
       if {_publishable} is false:
+        if {@debug} is true:
+          message "[STEEM.CRAFT] [DEBUG] Evaluated the map, %{_steemname}%'s map is not ready for publish." to console
         message "%getChatPrefix()% The game you selected prevents you" to {_player}
         message "%getChatPrefix()% from publishing this world to Steem." to {_player}
         message "%getChatPrefix()% Check the game settings in the /sw menu." to {_player}
         message "%getChatPrefix()% To save the world without publishing it," to {_player}
         message "%getChatPrefix()% use the command /sw save." to {_player}
         stop
+
+      if {@debug} is true:
+        message "[STEEM.CRAFT] [DEBUG] Evaluated %{_steemname}%'s map, the map is ready." to console
+
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Get more data from %{_steemname}%'s map." to console
 
     #
     # > Get the size of the world to set the correct world coordinates.
@@ -247,14 +272,13 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     if {_weather} is set:
       {_finaljson}.put("weather", {_weather})
 
-	
     #
     # > Calculate both x- and z-start and endcoordinates of the world.
     set {_xstart} to (0 - ({_size} * 16)) + 1
     set {_zstart} to (0 - ({_size} * 16)) + 1
     set {_xend} to ({_size} * 16) - 1
     set {_zend} to ({_size} * 16) - 1
-	
+
     #
     # > Loop through the coordinates and add all chunks of the world
     # > to a list.
@@ -284,6 +308,9 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     {_bossbar}.addPlayer({_player})
     {_bossbar}.setVisible(true)
 
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Get the head block to later go through blocks for %{_steemname}%'s map." to console
+
     #
     # > Since getting the block number of a transaction is currenttly not working for me,
     # > the start block number is saved here. This is used to query the history of the account
@@ -295,9 +322,15 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     set {_plotsize} to size of {_chunks::*}
     set {_pdone} to 100 / {_plotsize}
 
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Loading world data for %{_steemname}%'s map to check if there are unchanged chunks that don't have to be broadcasted again." to console
+
     # 
     # > Load the world data using LoadSteemWorldData.
     set {_map} to LoadSteemWorldData({_steemname},"%{_world}%",null,0)
+
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Got response for Steem world data for %{_steemname}%'s map: %{_map}.textValue()%." to console
 
     #
     # > The returned HashMap contains the response and the world. We need the
@@ -305,6 +338,10 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     # > Steem blockchain, which we do not need to broadcast again.
     set {_worlddata} to {_map}.get("world")
     set {_response} to {_map}.get("response")
+
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Returned world data for %{_steemname}%'s map: %{_worlddata}%" to console
+      message "[STEEM.CRAFT] [DEBUG] Returned response for %{_steemname}%'s map: %{_response}%" to console
 
     #
     # > Create a new ArrayNode which is used to add all necessary blocks of
@@ -321,6 +358,9 @@ function SaveSteemWorld(player:player,publish:boolean=false):
       add 1000 to y-coord of {_playerlocations::%loop-player%}
       teleport loop-player to {_playerlocations::%loop-player%}
     wait 5 ticks
+
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Saving schematic files to temp folder for %{_steemname}%'s map." to console
 
     #
 	# > Save the world to take the current snapshot of it.
@@ -369,6 +409,9 @@ function SaveSteemWorld(player:player,publish:boolean=false):
       teleport loop-player to {_playerlocations::%loop-player%}
       delete {_playerlocations::%loop-player%}
 
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Starting Steem broadcast loop for %{_steemname}%'s map." to console
+
     #
     # > All chunks are now looped. A schematic file is created and splitted
     # > into usable parts and encoded with base64.
@@ -383,19 +426,35 @@ function SaveSteemWorld(player:player,publish:boolean=false):
       set {_chunkx} to loop-value.getX()
       set {_chunkz} to loop-value.getZ()
 
+      if {@debug} is true:
+        message "[STEEM.CRAFT] [DEBUG] Loaded schematic file  ""tmp/steemworlds_%{_world}%_%loop-value.getX()%_%loop-value.getZ()%.schem"" for %{_steemname}%'s map." to console
+
       while {_file}.exists() is false:
+        if {@debug} is true:
+          message "[STEEM.CRAFT] [DEBUG] Schematic file for %{_steemname}%'s map doesn't exist yet, waiting 1 tick." to console
         wait 1 tick
 
+      if {@debug} is true:
+        message "[STEEM.CRAFT] [DEBUG] Reading bytes from schematic for %{_steemname}%'s map." to console
+
       set {_bytes} to Files.readAllBytes({_file}.toPath())
+      set {_bytecontent} to new String({_bytes},"UTF-8")
+      set {_bytes} to {_bytes}.getBytes("UTF-8")
 
       #
       # > Delete the temporary created file again, since it was only
       # > needed to get the bytes from it.
       {_file}.delete()
 
+      if {@debug} is true:
+        message "[STEEM.CRAFT] [DEBUG] Converting bytes into base64 for %{_steemname}%'s map." to console
+
       #
       # > The bytes of the schematic file now get converted to a base64 encoded string.
       set {_base64} to BytesToBase64({_bytes})
+
+      if {@debug} is true:
+        message "[STEEM.CRAFT] [DEBUG] gzip compress the base64 into a smaller string for %{_steemname}%'s map." to console
 
       #
       # > Since a simple base64 encoded string could be compressed further, it
@@ -403,14 +462,20 @@ function SaveSteemWorld(player:player,publish:boolean=false):
       # > Since schematic files hold some data, it will be always worth it.
       set {_string} to compressBase64({_base64})
 
+      if {@debug} is true:
+        message "[STEEM.CRAFT] [DEBUG] Check if this chunk schematic matches a already stored version on blockchain for %{_steemname}%'s map." to console
+
       #
       # > If the base64 encoded string matches with the already stored one, skip
       # > broadcasting new transactions for this chunk and broadcast the already
       # > stored block to the new comment.
       if {_string} is {_worlddata}.get("%{_chunkx}%|%{_chunkz}%"):
+        if {@debug} is true:
+          message "[STEEM.CRAFT] [DEBUG] This is already on blockchain for %{_steemname}%'s map. Reuse data." to console
+
         #
         # > Reading the json metadata of the content is done using ObjectMapper.
-        set {_jsonNode} to {_objectMapper}.readTree({_response}.getJsonMetadata())
+        set {_jsonNode} to {_objectMapper}.readTree({_response}.get("result").get("json_metadata").textValue())
 
         #
         # > Get the compressed and base64 encoded string of the duplicate chunk.
@@ -440,6 +505,11 @@ function SaveSteemWorld(player:player,publish:boolean=false):
       #
       # > If the chunk is not exactly the same, broadcast it again.
       else:
+        if {@debug} is true:
+          message "[STEEM.CRAFT] [DEBUG] Chunk schematic data doesn't exist on blockchain yet for %{_steemname}%'s map." to console
+
+        if {@debug} is true:
+          message "[STEEM.CRAFT] [DEBUG] Splitting chunk into usable pieces for %{_steemname}%'s map." to console
         #
         # > Here, the compressed base64 encoded string is split into multiple, usable strings.
         while {_done} is not set:
@@ -452,6 +522,9 @@ function SaveSteemWorld(player:player,publish:boolean=false):
         delete {_done}
         delete {_partid}
 
+        if {@debug} is true:
+          message "[STEEM.CRAFT] [DEBUG] Chunk has been splitted into usable pieces for %{_steemname}%'s map." to console
+
         #
         # > Now, the splitted chunks are being looped through. Every splitted chunk
         # > gets a custom json transaction, which is currently set by simply settings
@@ -459,6 +532,8 @@ function SaveSteemWorld(player:player,publish:boolean=false):
         loop {_chunksplit::*}:
           add 1 to {_partid}
           set {_txcontent} to "{""w"":""%{_shortworld}%"",""x"":%{_chunkx}%,""z"":%{_chunkz}%,""s"":%size of {_chunksplit::*}%,""i"":%{_partid}%,""data"":""%{_chunksplit::%{_partid}%}%""}"
+          if {@debug} is true:
+            message "[STEEM.CRAFT] [DEBUG] Trying to broadcast chunk data x %{_chunkx}%,z %{_chunkz}% with size %size of {_chunksplit::*}% and current index %{_partid}% to blockchain for %{_steemname}%'s map." to console
 
           #
           # > Now, the custom json is broadcasted. The saving process will repeat the
@@ -472,6 +547,8 @@ function SaveSteemWorld(player:player,publish:boolean=false):
             # > Reset the timeout timer.
             delete {_waittime}
 
+            if {@debug} is true:
+              message "[STEEM.CRAFT] [DEBUG] Waiting for response if transaction worked for %{_steemname}%'s map." to console
             while getSteemResponse({_txuuid}) is "wait":
               #
               # > Add 1 to the timeout timer, if it goes above 800, set the
@@ -479,16 +556,24 @@ function SaveSteemWorld(player:player,publish:boolean=false):
               add 1 to {_waittime}
               if {_waittime} > {@timeoutticks}:
                 set metadata value "steem-tx-response-%{_txuuid}%" of getDummy() to "error"
-
+                if {@debug} is true:
+                  message "[STEEM.CRAFT] [DEBUG] Waited too long for a response. Returning error for %{_steemname}%'s map." to console
               wait 1 tick
 
             if getSteemResponse({_txuuid}) is "done":
               set {_done} to true
+              if {@debug} is true:
+                message "[STEEM.CRAFT] [DEBUG] Broadcasting did worked for %{_steemname}%'s map." to console
 
             #
 		    # > If there has been a error, wait 1 second and repeat.
             else:
               log "%{_player}% - custom json tx errror: %getSteemResponse({_txuuid})%" to "steemworlds-errors"
+              if {@debug} is true:
+                message "[STEEM.CRAFT] [DEBUG] A error occured for %{_steemname}%'s map:  %getSteemResponse({_txuuid})%" to console
+                message "[STEEM.CRAFT] [DEBUG] Chunk data for error tx: x %{_chunkx}%,z %{_chunkz}% with size %size of {_chunksplit::*}% and current index %{_partid}% to blockchain for %{_steemname}%'s map." to console
+                message "[STEEM.CRAFT] [DEBUG] Actual Chunk data that should have been broadcasted: %{_chunksplit::%{_partid}%}% for %{_steemname}%'s map." to console
+
               set {_wait} to {@maximumcustomjsontxperblock}
               set {_wait} to "%3 / {_wait}% seconds" parsed as timespan
               wait {_wait}
@@ -511,22 +596,35 @@ function SaveSteemWorld(player:player,publish:boolean=false):
       {_bossbar}.setProgress({_progress})
     set {_objectMapper} to new ObjectMapper()
 
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Broadcasting chunk data for %{_steemname}%'s map is done." to console
+
     {_bossbar}.setTitle("&lChecking chunks...")
 
     wait 5 seconds
     set {_doneheadblocknumber} to getHeadBlockNumber()
     set {_loopblock} to {_startHeadBlockNumber}
 	
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Looping blocks since start to collect data together for %{_steemname}%'s map." to console
 
     while {_searchdone} is not set:
       if {_loopblock} is {_doneheadblocknumber}:
         set {_searchdone} to true
 
+      if {@debug} is true:
+        message "[STEEM.CRAFT] [DEBUG] Trying to get block id %{_loopblock}% for %{_steemname}%'s map." to console
+
       set {_id} to getRawBlock({_loopblock})
       while CustomSteemRequestResult({_id}) is "wait":
         wait 1 tick
       set {_block} to CustomSteemRequestResult({_id})
+
       set {_transactions::*} to ...try {_block}.get("result").get("transactions")
+
+      if {@debug} is true:
+        message "[STEEM.CRAFT] [DEBUG] Got a result for block id %{_loopblock}%, there are a total of %size of {_transactions::*}% transactions in this block checked for %{_steemname}%'s map." to console
+
       if {_transactions::*} is set:
         loop {_transactions::*}:
           loop ...loop-value.get("operations"):
@@ -548,7 +646,10 @@ function SaveSteemWorld(player:player,publish:boolean=false):
         #
         # > Increase the block number only, if the transactions variable is set.
         add 1 to {_loopblock}
- 
+
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Found all needed blocks for %{_steemname}%'s map." to console
+
 
     set {_progress} to 0.90
 
@@ -556,6 +657,9 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     # > Tell the player that the world is now being broadcasted.
     {_bossbar}.setTitle("&lBroadcasting world...")
     {_bossbar}.setProgress({_progress})
+
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Load some data for %{_steemname}%'s map." to console
 
     #
     # > Get the time from the local storage and add it to the json.
@@ -582,7 +686,18 @@ function SaveSteemWorld(player:player,publish:boolean=false):
     set {_txuuid} to "%{_txid}.toLowerCase()%"
     set {_comment} to "{@postprefix}"
     set {_title} to {@commenttitle}
-    replace all "<world>" with "%{_shortworld}%" in {_title}	
+    replace all "<world>" with "%{_shortworld}%" in {_title}
+
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] Trying to broadcast the world for %{_steemname}%'s map." to console
+      message "[STEEM.CRAFT] [DEBUG] Transaction UUID: %{_txuuid}%" to console
+      message "[STEEM.CRAFT] [DEBUG] Steem Name: %{_steemname}%" to console
+      message "[STEEM.CRAFT] [DEBUG] Body: %{_comment}%" to console
+      message "[STEEM.CRAFT] [DEBUG] Parent author: {@commentparentauthor}" to console
+      message "[STEEM.CRAFT] [DEBUG] Parent permlink: {@commentparentpermlink}" to console
+      message "[STEEM.CRAFT] [DEBUG] Tags: Look at options." to console
+      message "[STEEM.CRAFT] [DEBUG] Title: %{_title}%" to console
+      message "[STEEM.CRAFT] [DEBUG] JSON Metadata: %{_finaljson}.toString()%" to console
 
     #
     # > The createComment function is going to create a comment.
@@ -601,6 +716,9 @@ function SaveSteemWorld(player:player,publish:boolean=false):
       wait 1 tick
 
     if getSteemResponse({_txuuid}) is "done":
+      if {@debug} is true:
+        message "[STEEM.CRAFT] [DEBUG] Broadcasting the world for %{_steemname}%'s map has worked." to console
+
       message "%getChatPrefix()% Your world has been saved sucessfully." to {_player}
       #
       # > Set the loading bossbar to 100% and the title to a success message
@@ -608,6 +726,9 @@ function SaveSteemWorld(player:player,publish:boolean=false):
       {_bossbar}.setTitle("&lWorld sucessfully saved.")
       {_bossbar}.setProgress(1.0)
     else:
+      if {@debug} is true:
+        message "[STEEM.CRAFT] [DEBUG] Broadcasting the world for %{_steemname}%'s map returned a error: %getSteemResponse({_txuuid})%" to console
+
       message "%getChatPrefix()% A error occured." to {_player}
       message "%getChatPrefix()% %getSteemResponse({_txuuid})%" to {_player}
       {_bossbar}.removeAll()
@@ -615,6 +736,9 @@ function SaveSteemWorld(player:player,publish:boolean=false):
       stop
     if {_publish} is true:
       wait 8 seconds
+      if {@debug} is true:
+        message "[STEEM.CRAFT] [DEBUG] Trying to publish the world for %{_steemname}%'s map." to console
+
       set {_txid} to "%{_world}%"
       set {_txuuid} to "publish-%{_txid}.toLowerCase()%"
       set {_parentpermlink} to "{@publishedcommentparentpermlink}"
@@ -644,6 +768,9 @@ function SaveSteemWorld(player:player,publish:boolean=false):
         wait 1 tick
 
       if getSteemResponse({_txuuid}) is "done":
+        if {@debug} is true:
+          message "[STEEM.CRAFT] [DEBUG] Publishing the world for %{_steemname}%'s map worked." to console
+
         message "%getChatPrefix()% Your world has been published sucessfully." to {_player}
         #
         # > Set the loading bossbar to 100% and the title to a success message
@@ -651,8 +778,14 @@ function SaveSteemWorld(player:player,publish:boolean=false):
         {_bossbar}.setTitle("&lWorld sucessfully published.")
         {_bossbar}.setProgress(1.0)
       else:
+        if {@debug} is true:
+          message "[STEEM.CRAFT] [DEBUG] Publishing the world for %{_steemname}%'s map returned a error: %getSteemResponse({_txuuid})%" to console
+
         message "%getChatPrefix()% A error occured." to {_player}
         message "%getChatPrefix()% %getSteemResponse({_txuuid})%" to {_player}
+
+    if {@debug} is true:
+      message "[STEEM.CRAFT] [DEBUG] World has been saved and published successfully for %{_steemname}%'s map." to console
 
     #
     # > Remove the bossbar after one second.

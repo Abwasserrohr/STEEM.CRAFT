@@ -8,6 +8,7 @@
 import:
   com.fasterxml.jackson.databind.ObjectMapper
   java.util.ArrayList
+  java.util.UUID
 
 #
 # > Function - getRawBlock
@@ -28,6 +29,6 @@ function getRawBlock(blocknumber:number) :: text:
   {_request}.put("params", {_params})
   {_request}.put("id", 1)
 
-  set {_requestID} to getRandomUUID()
+  set {_requestID} to UUID.randomUUID().toString()
   CustomSteemRequest({_mapper}.writeValueAsString({_request}),{_requestID})
   return {_requestID}

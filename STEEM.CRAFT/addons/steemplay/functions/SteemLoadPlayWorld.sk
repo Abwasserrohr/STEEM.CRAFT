@@ -7,6 +7,7 @@
 
 import:
   java.io.File
+  org.bukkit.Bukkit
   com.sk89q.worldedit.math.BlockVector3
   com.sk89q.worldedit.bukkit.BukkitWorld
   org.apache.commons.io.FileUtils
@@ -81,7 +82,14 @@ function AsyncLoadSteemPlayWorld(data:object):
     {_bossbar}.addPlayer({_player})
     {_bossbar}.setVisible(true)
 
+    if getDebug() is true:
+      message "SteemPlay Loading world data for %{_steemname}% by %{_worldname}%." to console
+
     set {_map} to LoadSteemWorldData({_steemname},{_worldname},{_bossbar},{_blockid},true)
+
+    if getDebug() is true:
+      message "SteemPlay Loaded world data for %{_steemname}% by %{_worldname}%:" to console
+      message "SteemPlay %{_map}%" to console
 
     if {_map} is not set:
       message "%getChatPrefix()% This world has not been published yet." to {_player}
@@ -111,6 +119,11 @@ function AsyncLoadSteemPlayWorld(data:object):
     set {_plotsize} to size of {_worlddataparts::*}
     set {_pdone} to 100 / {_plotsize}
 
+    if getDebug() is true:
+      message "SteemPlay Preparing world data for %{_steemname}% by %{_worldname}%:" to console
+      loop {_worlddataparts::*}:
+        message "SteemPlay %loop-value%: %{_worlddata}.get(loop-value)%" to console
+
     loop {_worlddataparts::*}:
       #
       # > Decompress the big chunk data, save it to file and load it.
@@ -127,9 +140,13 @@ function AsyncLoadSteemPlayWorld(data:object):
       # > Decompress and save the data to a schematic file to allow other programs
       # > to load and insert it into the world of the server.
       set {_body} to decompressBase64({_worlddata}.get({_loop-value}))
+
       set {_newbytes} to Base64ToBytes({_body})
-      set {_file} to new File("tmp/%{_txid}%_%{_x}%_%{_z}%.schem")
+
+      set {_path} to "%Bukkit.getServer().getWorldContainer().getCanonicalFile()%/tmp/%{_txid}%_%{_x}%_%{_z}%.schem"
+      set {_file} to new File("%Bukkit.getWorldContainer()%/tmp/%{_txid}%_%{_x}%_%{_z}%.schem")
       FileUtils.writeByteArrayToFile({_file}, {_newbytes})
+      set {_fixed} to fixOldSchematicPalette({_file})
 
       #
       # > To place the chunk, a vector needs to be created, which has to be at the
@@ -181,8 +198,8 @@ function AsyncLoadSteemPlayWorld(data:object):
 
     #
     # > Execute a game based function that will initialize the game.
-    set {_objectMapper} to new ObjectMapper()    
-    set {_jsonNode} to {_objectMapper}.readTree({_map}.get("response").getJsonMetadata())
+    set {_objectMapper} to new ObjectMapper()
+    set {_jsonNode} to {_objectMapper}.readTree({_map}.get("response").get("result").get("json_metadata").textValue())
     if {_jsonNode}.get("game") is set:
       set {_game} to {_jsonNode}.get("game").textValue()
 

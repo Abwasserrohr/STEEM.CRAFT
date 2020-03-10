@@ -8,6 +8,7 @@
 import:
   com.fasterxml.jackson.databind.ObjectMapper
   java.util.ArrayList
+  java.util.UUID
 
 #
 # > Function - getRawSteemContent
@@ -29,6 +30,13 @@ function getRawSteemContent(author:text,permlink:text) :: text:
   {_request}.put("params", {_params})
   {_request}.put("id", 1)
 
-  set {_requestID} to getRandomUUID()
-  CustomSteemRequest({_mapper}.writeValueAsString({_request}),{_requestID})
+  set {_requestID} to UUID.randomUUID().toString()
+  set {_request} to {_mapper}.writeValueAsString({_request})
+  delete {_mapper}
+  delete {_params}
+
+  if getDebug() is true:
+    message "STEEM.CRAFT Getting steem content using CustomSteemRequest: %{_request}%" to console
+
+  CustomSteemRequest({_request},{_requestID})
   return {_requestID}

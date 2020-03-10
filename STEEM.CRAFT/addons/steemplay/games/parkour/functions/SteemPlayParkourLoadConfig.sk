@@ -17,7 +17,6 @@ options:
   exititem: "oak door"
   exitcommand: "/lobby"
   checkpointsound: "entity.experience_orb.pickup"
-  moderators: "[""skyroad""]"
   configpath: "plugins/STEEM.CRAFT/SteemPlay/parkour.yml"
 
 #

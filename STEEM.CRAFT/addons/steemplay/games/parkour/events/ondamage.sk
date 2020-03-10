@@ -8,6 +8,7 @@ on damage:
         victim.teleport({_cp})
         heal victim
         feed victim
+        extinguish victim
         if metadata value "SteemPlayParkour|StartLocation" of victim is metadata value "SteemPlayParkour|Checkpoint" of victim:
           set {_loc} to metadata value "SteemPlayParkour|StartLocation" of victim
           remove 0.5 from y-coord of {_loc}

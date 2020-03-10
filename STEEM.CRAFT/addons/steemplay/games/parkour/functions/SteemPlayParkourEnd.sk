@@ -28,6 +28,4 @@ function SteemPlayParkourEnd(player:player):
     feed {_player}
     delete metadata value "SteemPlayParkour|StartLocation" of {_player}
     delete metadata value "SteemPlayParkour|Checkpoint" of {_player}
-	
-	
-	
+    make {_player} execute "%getyamlconfigobject(""parkour"",""exitcommand"")%"

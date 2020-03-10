@@ -49,6 +49,6 @@ command /steemplay [<text>] [<text>] [<text>]:
       set {_world} to SteemGetPlayWorldById({_worldid})
 	  
       set {_loc} to SteemPlayWorldSpawn({_world})
-      wait 1 second
-      teleport player to {_loc}
-	  
+      wait 0.25 seconds
+      player.teleport({_loc})
+      player.teleport({_loc})

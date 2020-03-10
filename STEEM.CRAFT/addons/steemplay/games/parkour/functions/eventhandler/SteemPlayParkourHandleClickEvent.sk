@@ -13,8 +13,6 @@
 # > <event> The event that has been triggered.
 function SteemPlayParkourHandleClickEvent(player:player,event:object):
   if metadata value "SteemPlayParkour|Game" of {_player} is set:
-    heal {_player}
-    feed {_player}
 
     if {_event}.getItem().getType() is {SteemPlay::restartitem}.getType():
       set {_cp} to metadata value "SteemPlayParkour|StartLocation" of {_player}
@@ -22,9 +20,15 @@ function SteemPlayParkourHandleClickEvent(player:player,event:object):
       set {_loc} to metadata value "SteemPlayParkour|StartLocation" of {_player}
       remove 0.5 from y-coord of {_loc}
       SteemPlayParkourStart({_player},{_loc})
+      heal {_player}
+      feed {_player}
+      extinguish {_player}
     if {_event}.getItem().getType() is {SteemPlay::checkpointitem}.getType():
       set {_cp} to metadata value "SteemPlayParkour|Checkpoint" of {_player}
       {_player}.teleport({_cp})
+      heal {_player}
+      feed {_player}
+      extinguish {_player}
       if metadata value "SteemPlayParkour|StartLocation" of {_player} is metadata value "SteemPlayParkour|Checkpoint" of {_player}:
         set {_loc} to metadata value "SteemPlayParkour|StartLocation" of {_player}
         remove 0.5 from y-coord of {_loc}
@@ -33,6 +37,9 @@ function SteemPlayParkourHandleClickEvent(player:player,event:object):
       delete metadata value "SteemPlayParkour|Game" of {_player}
       clear {_player}'s inventory
       make {_player} execute "%getyamlconfigobject(""parkour"",""exitcommand"")%"
+      heal {_player}
+      feed {_player}
+      extinguish {_player}
     if {_event}.getItem().getType() is {SteemPlay::toplistitem}.getType():
       set {_author} to GetSteemWorldAuthor({_player}'s world)
       set {_permlink} to GetSteemWorldPermlink({_player}'s world)
