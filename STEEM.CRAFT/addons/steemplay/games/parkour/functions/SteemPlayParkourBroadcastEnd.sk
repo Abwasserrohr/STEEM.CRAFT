@@ -97,7 +97,7 @@ function SteemPlayParkourBroadcastEnd(player:player,world:object,runid:text,star
 
         set {_comment} to "I have improved my personal best time: %SteemPlayParkourTime({_startdate}, {_enddate})% seconds"
         log "%{_txuuid}%,%{_steemname}%,%{_comment}%,%{_author}%,%{_permlink}%" to "pbs"
-        createComment({_txuuid},{_steemname},{_comment},{_author},{_permlink},["steemcraft","sbi-skip","parkour","battle","steem-ace"],"Parkour run","{""runid"":""%{_runid}%"",""start"":%{_startdate}.getTime()%,""end"":%{_enddate}.getTime()%}")
+        createComment({_txuuid},{_steemname},{_comment},{_author},{_permlink},["steemcraft","sbi-skip","parkour","battle","steem-ace"],"Parkour run","{""tags"":[""steemcraft"",""parkour""],""app"":""steem.craft"",""runid"":""%{_runid}%"",""start"":%{_startdate}.getTime()%,""end"":%{_enddate}.getTime()%}")
 
         while getSteemResponse({_txuuid}) is "wait":
           wait 1 tick
